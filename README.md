@@ -1,2 +1,3 @@
-# vertx-blueprint-microservice
-Vert.x blueprint application - A micro-service application
+# Vert.x Microservice Blueprint
+
+Vert.x blueprint application - A micro-service application.
