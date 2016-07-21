@@ -10,6 +10,6 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>movie-microservice</artifactId>
+  <artifactId>order-microservice</artifactId>
 
 </project>

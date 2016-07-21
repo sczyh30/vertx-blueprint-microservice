@@ -11,12 +11,12 @@
 
   <modules>
     <module>microservice-blueprint-common</module>
-    <module>users-microservice</module>
-    <module>api-gateway-microservice</module>
+    <module>user-service</module>
     <module>recommendation-microservice</module>
-    <module>consul-microservice</module>
-    <module>movie-microservice</module>
-    <module>movies-ui</module>
+    <module>shopping-microservice</module>
+    <module>shopping-ui</module>
+    <module>order-microservice</module>
+    <module>dashboard</module>
   </modules>
 
   <properties>
@@ -114,11 +114,36 @@
       <plugins>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.1</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
           </configuration>
+          <executions>
+            <execution>
+              <id>default-compile</id>
+              <configuration>
+                <annotationProcessors>
+                  <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
+                </annotationProcessors>
+                <generatedSourcesDirectory>src/main/generated</generatedSourcesDirectory>
+                <compilerArgs>
+                  <arg>-AoutputDirectory=${project.basedir}/src/main</arg>
+                </compilerArgs>
+              </configuration>
+            </execution>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <annotationProcessors>
+                  <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
+                </annotationProcessors>
+                <generatedTestSourcesDirectory>src/test/generated</generatedTestSourcesDirectory>
+                <compilerArgs>
+                  <arg>-AoutputDirectory=${project.basedir}/src/test</arg>
+                </compilerArgs>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
 
         <plugin>
