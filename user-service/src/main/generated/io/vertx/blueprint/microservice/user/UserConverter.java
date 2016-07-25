@@ -14,27 +14,27 @@
  * under the License.
  */
 
-package io.vertx.blueprint.microservice.user.entity;
+package io.vertx.blueprint.microservice.user;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 
 /**
- * Converter for {@link io.vertx.blueprint.microservice.user.entity.User}.
+ * Converter for {@link io.vertx.blueprint.microservice.user.User}.
  *
- * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.user.entity.User} original class using Vert.x codegen.
+ * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.user.User} original class using Vert.x codegen.
  */
 public class UserConverter {
 
   public static void fromJson(JsonObject json, User obj) {
-    if (json.getValue("birthDate") instanceof String) {
-      obj.setBirthDate((String)json.getValue("birthDate"));
+    if (json.getValue("birthDate") instanceof Number) {
+      obj.setBirthDate(((Number)json.getValue("birthDate")).longValue());
     }
     if (json.getValue("email") instanceof String) {
       obj.setEmail((String)json.getValue("email"));
     }
-    if (json.getValue("id") instanceof Number) {
-      obj.setId(((Number)json.getValue("id")).longValue());
+    if (json.getValue("id") instanceof String) {
+      obj.setId((String)json.getValue("id"));
     }
     if (json.getValue("phone") instanceof String) {
       obj.setPhone((String)json.getValue("phone"));

@@ -12,6 +12,7 @@
   <modules>
     <module>microservice-blueprint-common</module>
     <module>user-service</module>
+    <module>user-rest-api</module>
     <module>recommendation-microservice</module>
     <module>shopping-microservice</module>
     <module>shopping-ui</module>

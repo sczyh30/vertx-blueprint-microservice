@@ -1,0 +1,23 @@
+= Cheatsheets
+
+[[Order]]
+== Order
+
+++++
+ Vert.x Blueprint - B2B Shopping Microservice
+ Order data object
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[buyerId]]`buyerId`|`String`|-
+|[[createTime]]`createTime`|`Number (Long)`|-
+|[[orderId]]`orderId`|`Number (Long)`|-
+|[[productId]]`productId`|`String`|-
+|[[sellerId]]`sellerId`|`String`|-
+|[[totalPrice]]`totalPrice`|`Number (Double)`|-
+|===
+

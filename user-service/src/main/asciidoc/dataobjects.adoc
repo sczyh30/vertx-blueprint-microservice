@@ -4,7 +4,6 @@
 == User
 
 ++++
- Vert.x Blueprint - Shopping Microservice
  User data object
 ++++
 '''
@@ -13,9 +12,9 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
-|[[birthDate]]`birthDate`|`String`|-
+|[[birthDate]]`birthDate`|`Number (Long)`|-
 |[[email]]`email`|`String`|-
-|[[id]]`id`|`Number (Long)`|-
+|[[id]]`id`|`String`|-
 |[[phone]]`phone`|`String`|-
 |[[username]]`username`|`String`|-
 |===

@@ -1,12 +1,12 @@
-package io.vertx.blueprint.microservice.user.entity;
+package io.vertx.blueprint.microservice.user;
 
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.core.json.JsonObject;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
- * Vert.x Blueprint - Shopping Microservice
  * User data object
  *
  * @author Eric Zhao
@@ -14,11 +14,11 @@ import java.time.LocalDateTime;
 @DataObject(generateConverter = true)
 public class User {
 
-  private Long id;
+  private String id;
   private String username;
   private String phone;
   private String email;
-  private String birthDate;
+  private Long birthDate;
 
   public User() {
     // Empty constructor
@@ -43,43 +43,48 @@ public class User {
   }
 
 
-  public Long getId() {
+  public String getId() {
     return id;
   }
 
-  public void setId(Long id) {
+  public User setId(String id) {
     this.id = id;
+    return this;
   }
 
   public String getUsername() {
     return username;
   }
 
-  public void setUsername(String username) {
+  public User setUsername(String username) {
     this.username = username;
+    return this;
   }
 
   public String getPhone() {
     return phone;
   }
 
-  public void setPhone(String phone) {
+  public User setPhone(String phone) {
     this.phone = phone;
+    return this;
   }
 
   public String getEmail() {
     return email;
   }
 
-  public void setEmail(String email) {
+  public User setEmail(String email) {
     this.email = email;
+    return this;
   }
 
-  public String getBirthDate() {
+  public Long getBirthDate() {
     return birthDate;
   }
 
-  public void setBirthDate(String birthDate) {
+  public User setBirthDate(Long birthDate) {
     this.birthDate = birthDate;
+    return this;
   }
 }
