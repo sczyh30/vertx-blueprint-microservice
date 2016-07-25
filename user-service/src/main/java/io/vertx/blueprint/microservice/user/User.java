@@ -1,7 +1,6 @@
 package io.vertx.blueprint.microservice.user;
 
 import io.vertx.codegen.annotations.DataObject;
-import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.core.json.JsonObject;
 
 import java.time.Instant;

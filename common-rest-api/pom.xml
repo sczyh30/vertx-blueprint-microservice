@@ -10,7 +10,7 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>user-rest-api</artifactId>
+  <artifactId>common-rest-api</artifactId>
 
   <dependencies>
     <dependency>

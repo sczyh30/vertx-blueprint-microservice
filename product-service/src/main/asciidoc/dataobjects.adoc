@@ -1,0 +1,20 @@
+= Cheatsheets
+
+[[Product]]
+== Product
+
+++++
+ Product data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[illustration]]`illustration`|`String`|-
+|[[name]]`name`|`String`|-
+|[[price]]`price`|`Number (double)`|-
+|[[productId]]`productId`|`String`|-
+|===
+

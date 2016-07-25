@@ -27,6 +27,9 @@ import io.vertx.core.json.JsonArray;
 public class OrderConverter {
 
   public static void fromJson(JsonObject json, Order obj) {
+    if (json.getValue("amount") instanceof Number) {
+      obj.setAmount(((Number)json.getValue("amount")).intValue());
+    }
     if (json.getValue("buyerId") instanceof String) {
       obj.setBuyerId((String)json.getValue("buyerId"));
     }
@@ -48,6 +51,9 @@ public class OrderConverter {
   }
 
   public static void toJson(Order obj, JsonObject json) {
+    if (obj.getAmount() != null) {
+      json.put("amount", obj.getAmount());
+    }
     if (obj.getBuyerId() != null) {
       json.put("buyerId", obj.getBuyerId());
     }

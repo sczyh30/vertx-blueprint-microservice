@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * JDBC implementation of {@link UserService}.
+ * JDBC implementation of {@link io.vertx.blueprint.microservice.user.UserService}.
  *
  * @author Eric Zhao
  */

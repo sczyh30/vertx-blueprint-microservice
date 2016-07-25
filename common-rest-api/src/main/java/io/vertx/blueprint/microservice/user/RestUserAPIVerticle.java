@@ -7,7 +7,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
 /**
- * This verticle exposes a HTTP endpoint to retrieve user data via REST API.
+ * This verticle exposes a HTTP endpoint to process user data via REST API.
  *
  * @author Eric Zhao
  */

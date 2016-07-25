@@ -13,6 +13,7 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
+|[[amount]]`amount`|`Number (Integer)`|-
 |[[buyerId]]`buyerId`|`String`|-
 |[[createTime]]`createTime`|`Number (Long)`|-
 |[[orderId]]`orderId`|`Number (Long)`|-

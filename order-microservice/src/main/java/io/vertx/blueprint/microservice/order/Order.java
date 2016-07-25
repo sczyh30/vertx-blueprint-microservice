@@ -19,6 +19,7 @@ public class Order {
 
   private Long createTime;
 
+  private Integer amount;
   private Double totalPrice;
 
   public Order() {
@@ -31,6 +32,7 @@ public class Order {
     this.productId = other.productId;
     this.sellerId = other.sellerId;
     this.createTime = other.createTime;
+    this.amount = other.amount;
     this.totalPrice = other.totalPrice;
   }
 
@@ -86,6 +88,15 @@ public class Order {
 
   public Order setCreateTime(Long createTime) {
     this.createTime = createTime;
+    return this;
+  }
+
+  public Integer getAmount() {
+    return amount;
+  }
+
+  public Order setAmount(Integer amount) {
+    this.amount = amount;
     return this;
   }
 
