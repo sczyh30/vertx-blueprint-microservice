@@ -31,6 +31,12 @@ public class Product {
     ProductConverter.fromJson(json, this);
   }
 
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    ProductConverter.toJson(this, json);
+    return json;
+  }
+
   public String getProductId() {
     return productId;
   }
