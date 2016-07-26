@@ -1,6 +1,5 @@
 package io.vertx.blueprint.microservice.common;
 
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
@@ -9,7 +8,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * An abstract base verticle that provides several helper methods for REST API.
  */
-public abstract class RestAPIVerticle extends AbstractVerticle {
+public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
 
   /**
    * This method generates handler for async methods in REST APIs.
@@ -20,6 +19,18 @@ public abstract class RestAPIVerticle extends AbstractVerticle {
         handler.handle(res.result());
       } else {
         serviceUnavailable(context, res.cause());
+      }
+    };
+  }
+
+  protected Handler<AsyncResult<Void>> deleteResultHandler(RoutingContext context) {
+    return res -> {
+      if (res.succeeded()) {
+        context.response().setStatusCode(204)
+          .putHeader("content-type", "application/json")
+          .end(new JsonObject().put("message", "delete_success").encodePrettily());
+      } else {
+        serviceUnavailable(context);
       }
     };
   }

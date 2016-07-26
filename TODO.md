@@ -19,3 +19,7 @@
 ## Failure
 
 - [ ] Introduce Circuit Breaker in order processing microservice
+
+## Auth
+
+- [ ] Introduce Vert.x-Auth and how to integrate it into the microservice

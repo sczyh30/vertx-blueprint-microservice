@@ -1,4 +1,4 @@
-package io.vertx.blueprint.microservice.user;
+package io.vertx.blueprint.microservice.rest;
 
 import io.vertx.blueprint.microservice.common.RestAPIVerticle;
 import io.vertx.core.Future;

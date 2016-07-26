@@ -72,4 +72,9 @@ public class Product {
     this.illustration = illustration;
     return this;
   }
+
+  @Override
+  public String toString() {
+    return this.toJson().encodePrettily();
+  }
 }

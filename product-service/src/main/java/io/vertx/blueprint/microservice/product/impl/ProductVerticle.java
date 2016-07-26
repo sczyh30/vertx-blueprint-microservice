@@ -28,7 +28,7 @@ public class ProductVerticle extends BaseMicroserviceVerticle {
     // register the service proxy on event bus
     ProxyHelper.registerService(ProductService.class, vertx, userService, ADDRESS);
     // publish the service in the discovery infrastructure
-    publishEventBusService("product-eb", ADDRESS, ProductService.class, ar -> {
+    publishEventBusService("product-eb-service", ADDRESS, ProductService.class, ar -> {
       if (ar.failed()) {
         future.fail(ar.cause());
       } else {

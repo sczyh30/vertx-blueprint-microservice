@@ -9,6 +9,7 @@ import io.vertx.serviceproxy.ProxyHelper;
 
 import static io.vertx.blueprint.microservice.user.UserService.ADDRESS;
 
+
 /**
  * A verticle publishing the user service.
  *
@@ -43,8 +44,6 @@ public class UserVerticle extends BaseMicroserviceVerticle {
         });
       }
     });
-
   }
-
 
 }

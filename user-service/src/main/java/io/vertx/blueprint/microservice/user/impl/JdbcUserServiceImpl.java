@@ -15,13 +15,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * JDBC implementation of {@link io.vertx.blueprint.microservice.user.UserService}.
+ * JDBC implementation of {@link UserService}.
  *
  * @author Eric Zhao
  */
 public class JdbcUserServiceImpl implements UserService {
 
-  public static final String CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS `user` (\n" +
+  private static final String CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS `user` (\n" +
     "  `id` varchar(30) NOT NULL,\n" +
     "  `username` varchar(20) NOT NULL,\n" +
     "  `phone` varchar(20) NOT NULL,\n" +
@@ -29,11 +29,11 @@ public class JdbcUserServiceImpl implements UserService {
     "  `birthDate` date NOT NULL,\n" +
     "  PRIMARY KEY (`id`),\n" +
     "  UNIQUE KEY `username_UNIQUE` (`username`) )";
-  public static final String INSERT_STATEMENT = "INSERT INTO user (id, username, phone, email, birthDate) VALUES (?, ?, ?, ?, ?)";
-  public static final String FETCH_STATEMENT = "SELECT * FROM user WHERE id = ?";
-  public static final String FETCH_ALL_STATEMENT = "SELECT * FROM user";
-  public static final String DELETE_STATEMENT = "DELETE FROM user WHERE id = ?";
-  public static final String DELETE_ALL_STATEMENT = "DELETE FROM user";
+  private static final String INSERT_STATEMENT = "INSERT INTO user (id, username, phone, email, birthDate) VALUES (?, ?, ?, ?, ?)";
+  private static final String FETCH_STATEMENT = "SELECT * FROM user WHERE id = ?";
+  private static final String FETCH_ALL_STATEMENT = "SELECT * FROM user";
+  private static final String DELETE_STATEMENT = "DELETE FROM user WHERE id = ?";
+  private static final String DELETE_ALL_STATEMENT = "DELETE FROM user";
 
   private final Vertx vertx;
   private final JDBCClient jdbc;
