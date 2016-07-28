@@ -23,11 +23,15 @@ import java.util.List;
 @ProxyGen
 public interface ProductService {
 
+  /**
+   * The name of the event bus service.
+   */
+  String SERVICE_NAME = "product-eb-service";
 
   /**
    * The address on which the service is published.
    */
-  String ADDRESS = "service.product";
+  String SERVICE_ADDRESS = "service.product";
 
   /**
    * A static method that creates a product service.

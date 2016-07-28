@@ -139,6 +139,11 @@ public class ProductServiceImpl implements ProductService {
     return this;
   }
 
+  /**
+   * A helper methods that generates async handler for SQLConnection
+   *
+   * @return generated handler
+   */
   private <T> Handler<AsyncResult<SQLConnection>> connHandler(Handler<AsyncResult<T>> h1, Handler<SQLConnection> h2) {
     return conn -> {
       if (conn.succeeded()) {

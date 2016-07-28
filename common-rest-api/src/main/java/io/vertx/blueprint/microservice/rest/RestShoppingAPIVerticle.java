@@ -17,6 +17,7 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
 
   @Override
   public void start(Future<Void> future) throws Exception {
+    super.start();
     final Router router = Router.router(vertx);
     // body handler
     router.route().handler(BodyHandler.create());

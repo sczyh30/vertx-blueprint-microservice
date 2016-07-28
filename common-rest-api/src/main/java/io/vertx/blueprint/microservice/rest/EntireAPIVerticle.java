@@ -10,7 +10,7 @@ public class EntireAPIVerticle extends BaseMicroserviceVerticle {
   @Override
   public void start() throws Exception {
     super.start();
-    vertx.deployVerticle(RestProductAPIVerticle.class.getName());
+    vertx.deployVerticle(new RestProductAPIVerticle());
   }
 
 }

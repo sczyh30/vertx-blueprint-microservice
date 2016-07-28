@@ -11,17 +11,20 @@ import io.vertx.ext.web.handler.BodyHandler;
  *
  * @author Eric Zhao
  */
-public class RestUserAPIVerticle extends RestAPIVerticle {
+class RestUserAPIVerticle extends RestAPIVerticle {
 
-  public static final String API_ADD = "/user";
-  public static final String API_RETRIEVE = "/user/:id";
-  public static final String API_RETRIEVE_ALL = "/user";
-  public static final String API_UPDATE = "/user/:id";
-  public static final String API_DELETE = "/user/:id";
-  public static final String API_DELETE_ALL = "/user";
+  private static final String SERVICE_NAME = "user-rest-api";
+
+  private static final String API_ADD = "/user";
+  private static final String API_RETRIEVE = "/user/:id";
+  private static final String API_RETRIEVE_ALL = "/user";
+  private static final String API_UPDATE = "/user/:id";
+  private static final String API_DELETE = "/user/:id";
+  private static final String API_DELETE_ALL = "/user";
 
   @Override
   public void start(Future<Void> future) throws Exception {
+    super.start();
     final Router router = Router.router(vertx);
     // body handler
     router.route().handler(BodyHandler.create());
@@ -33,17 +36,13 @@ public class RestUserAPIVerticle extends RestAPIVerticle {
     router.delete(API_DELETE).handler(this::apiDeleteUser);
     router.delete(API_DELETE_ALL).handler(this::apiDeleteAll);
 
-    // create http server for the REST service
-    vertx.createHttpServer()
-      .requestHandler(router::accept)
-      .listen(config().getInteger("user.http.port", 8081),
-        config().getString("user.http.address", "0.0.0.0"), result -> {
-          if (result.succeeded()) {
-            future.complete();
-          } else {
-            future.fail(result.cause());
-          }
-        });
+    String host = config().getString("user.http.address", "0.0.0.0");
+    int port = config().getInteger("user.http.port", 8081);
+
+    // create HTTP server and publish REST service
+    createHttpServer(router, host, port)
+      .compose(serverCreated -> publishHttpEndpoint(SERVICE_NAME, host, port))
+      .setHandler(future.completer());
   }
 
   private void apiAddUser(RoutingContext context) {
