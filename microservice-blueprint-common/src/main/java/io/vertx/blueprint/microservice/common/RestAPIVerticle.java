@@ -1,14 +1,33 @@
 package io.vertx.blueprint.microservice.common;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * An abstract base verticle that provides several helper methods for REST API.
  */
 public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
+
+  /**
+   * Create http server for the REST service.
+   *
+   * @param router router instance
+   * @param host http host
+   * @param port http port
+   * @return async result of the procedure
+   */
+  protected Future<HttpServer> createHttpServer(Router router, String host, int port) {
+    Future<HttpServer> httpServerFuture = Future.future();
+    vertx.createHttpServer()
+      .requestHandler(router::accept)
+      .listen(port, host, httpServerFuture.completer());
+    return httpServerFuture;
+  }
 
   /**
    * This method generates handler for async methods in REST APIs.
@@ -33,10 +52,6 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
         serviceUnavailable(context);
       }
     };
-  }
-
-  protected void sendError(int statusCode, RoutingContext context) {
-    context.response().setStatusCode(statusCode).end();
   }
 
   protected void badRequest(RoutingContext context, Throwable ex) {
