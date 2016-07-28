@@ -18,8 +18,11 @@
 
 ## Failure
 
+- [ ] Heartbeat check (via TCP)
 - [ ] Introduce Circuit Breaker in order processing microservice
 
-## Auth
+## Metrics/Monitoring
+
+## Web/Auth
 
 - [ ] Introduce Vert.x-Auth and how to integrate it into the microservice

@@ -16,13 +16,13 @@
 
 package io.vertx.blueprint.microservice.user;
 
-import io.vertx.blueprint.microservice.user.User;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
 
 /**
- * Converter for {@link User}.
+ * Converter for {@link io.vertx.blueprint.microservice.user.User}.
  *
- * NOTE: This class has been automatically generated from the {@link User} original class using Vert.x codegen.
+ * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.user.User} original class using Vert.x codegen.
  */
 public class UserConverter {
 

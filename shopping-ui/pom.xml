@@ -12,4 +12,12 @@
 
   <artifactId>shopping-ui</artifactId>
 
+  <dependencies>
+    <dependency>
+      <groupId>io.vertx.blueprint</groupId>
+      <artifactId>shopping-microservice</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
 </project>

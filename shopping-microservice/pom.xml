@@ -12,4 +12,16 @@
 
   <artifactId>shopping-microservice</artifactId>
 
+  <properties>
+    <main.verticle>io.vertx.blueprint.microservice.shopping.SimpleShopVerticle</main.verticle>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.vertx.blueprint</groupId>
+      <artifactId>microservice-blueprint-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
 </project>
