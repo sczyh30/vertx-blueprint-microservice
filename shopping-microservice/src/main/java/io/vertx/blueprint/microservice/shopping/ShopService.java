@@ -36,6 +36,12 @@ public interface ShopService {
   String SERVICE_ADDRESS = "service.shopping";
 
   /**
+   * Payment and order event address.
+   */
+  String PAYMENT_EVENT_ADDRESS = "events.service.shopping.to.payment";
+  String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
+
+  /**
    * Create a shop service instance
    */
   static ShopService createService(Vertx vertx, ServiceDiscovery discovery) {

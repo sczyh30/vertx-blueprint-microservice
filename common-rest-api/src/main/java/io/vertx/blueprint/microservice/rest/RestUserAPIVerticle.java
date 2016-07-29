@@ -29,7 +29,7 @@ class RestUserAPIVerticle extends RestAPIVerticle {
     // body handler
     router.route().handler(BodyHandler.create());
     // api route handler
-    router.put(API_ADD).handler(this::apiAddUser);
+    router.post(API_ADD).handler(this::apiAddUser);
     router.get(API_RETRIEVE).handler(this::apiRetrieveUser);
     router.get(API_RETRIEVE_ALL).handler(this::apiRetrieveAll);
     router.patch(API_UPDATE).handler(this::apiUpdateUser);

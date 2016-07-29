@@ -44,7 +44,7 @@ class RestProductAPIVerticle extends RestAPIVerticle {
     // body handler
     router.route().handler(BodyHandler.create());
     // API route handler
-    router.put(API_ADD).handler(this::apiAdd);
+    router.post(API_ADD).handler(this::apiAdd);
     router.get(API_RETRIEVE).handler(this::apiRetrieve);
     router.get(API_RETRIEVE_PRICE).handler(this::apiRetrievePrice);
     router.get(API_RETRIEVE_ALL).handler(this::apiRetrieveAll);
@@ -57,7 +57,8 @@ class RestProductAPIVerticle extends RestAPIVerticle {
     int port = config().getInteger("product.http.port", 8082);
 
     // create HTTP server and publish REST service
-    createHttpServer(router, host, port)
+    initProductDatabase()
+      .compose(databaseOkay -> createHttpServer(router, host, port))
       .compose(serverCreated -> publishHttpEndpoint(SERVICE_NAME, host, port))
       .setHandler(future.completer());
   }
@@ -109,31 +110,16 @@ class RestProductAPIVerticle extends RestAPIVerticle {
 
   private void apiRetrievePrice(RoutingContext context) {
     String productId = context.request().getParam("productId");
-    // retrieve JDBC connection
-    Future<SQLConnection> connectionFuture = retrieveJDBCConnection();
-    connectionFuture.setHandler(ar -> {
-      if (ar.succeeded()) {
-        SQLConnection connection = ar.result();
-        // query product price
-        connection.queryWithParams("SELECT price FROM product WHERE productId = ?",
-          new JsonArray().add(productId),
-          r -> {
-            if (r.succeeded()) {
-              List<JsonObject> resList = r.result().getRows();
-              if (resList == null || resList.isEmpty()) {
-                notFound(context);
-              } else {
-                context.response()
-                  .putHeader("content-type", "application/json")
-                  .end(resList.get(0).encode());
-              }
-            } else {
-              serviceUnavailable(context, r.cause());
-            }
-          });
-      } else {
-        serviceUnavailable(context, ar.cause());
-      }
+    callAsync(context, service -> {
+      service.retrieveProductPrice(productId, resultHandler(context, price -> {
+        if (price == null) {
+          notFound(context);
+        } else {
+          context.response()
+            .putHeader("content-type", "application/json")
+            .end(price.encode());
+        }
+      }));
     });
   }
 
@@ -171,16 +157,16 @@ class RestProductAPIVerticle extends RestAPIVerticle {
 
   // Helper methods
 
-  private Future<SQLConnection> retrieveJDBCConnection() {
-    Future<JDBCClient> clientFuture = Future.future();
-    // retrieve JDBCClient from JDBC data source
-    JDBCDataSource.getJDBCClient(discovery,
-      new JsonObject().put("name", "product-jdbc-data-source-service"),
-      clientFuture.completer());
-    return clientFuture.compose(client -> {
-      Future<SQLConnection> connectionFuture = Future.future();
-      client.getConnection(connectionFuture.completer());
-      return connectionFuture;
+  private Future<Void> initProductDatabase() {
+    Future<ProductService> serviceFuture = Future.future();
+    EventBusService.<ProductService>getProxy(discovery,
+      new JsonObject().put("name", ProductService.SERVICE_NAME),
+      serviceFuture.completer()
+    );
+    return serviceFuture.compose(service -> {
+      Future<Void> initFuture = Future.future();
+      service.initializePersistence(initFuture.completer());
+      return initFuture;
     });
   }
 

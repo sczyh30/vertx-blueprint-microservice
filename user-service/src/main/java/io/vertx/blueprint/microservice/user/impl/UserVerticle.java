@@ -5,7 +5,8 @@ import io.vertx.blueprint.microservice.user.UserService;
 import io.vertx.core.Future;
 import io.vertx.serviceproxy.ProxyHelper;
 
-import static io.vertx.blueprint.microservice.user.UserService.ADDRESS;
+import static io.vertx.blueprint.microservice.user.UserService.SERVICE_ADDRESS;
+import static io.vertx.blueprint.microservice.user.UserService.SERVICE_NAME;
 
 
 /**
@@ -22,9 +23,9 @@ public class UserVerticle extends BaseMicroserviceVerticle {
     // create the service instance
     UserService userService = UserService.createService(vertx, config());
     // register the service proxy on event bus
-    ProxyHelper.registerService(UserService.class, vertx, userService, ADDRESS);
+    ProxyHelper.registerService(UserService.class, vertx, userService, SERVICE_ADDRESS);
     // publish the service and JDBC data source in the discovery infrastructure
-    publishEventBusService("user-eb-service", ADDRESS, UserService.class)
+    publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, UserService.class)
       .compose(servicePublished -> publishJDBCDataSource("user-jdbc-data-source-service", config()))
       .setHandler(future.completer());
   }

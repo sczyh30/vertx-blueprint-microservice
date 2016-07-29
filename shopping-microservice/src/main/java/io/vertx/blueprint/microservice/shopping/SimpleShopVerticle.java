@@ -24,6 +24,10 @@ public class SimpleShopVerticle extends BaseMicroserviceVerticle {
     ProxyHelper.registerService(ShopService.class, vertx, shopService, SERVICE_ADDRESS);
     // publish the service in the discovery infrastructure
     publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, ShopService.class)
+      .compose(servicePublished ->
+        publishMessageSource("shop-payment-message-source", ShopService.PAYMENT_EVENT_ADDRESS))
+      .compose(servicePublished ->
+        publishMessageSource("shop-order-message-source", ShopService.ORDER_EVENT_ADDRESS))
       .setHandler(future.completer());
   }
 }

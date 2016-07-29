@@ -2,9 +2,9 @@
 
 ## Polyglot persistence
 
-- [ ] User: **Neo4j**
-- [ ] Product: **MySQL/PostgreSQL**
-- [ ] Cache: **Redis**
+- [ ] Recommendation: **Neo4j**
+- [x] Common persistence: **MySQL/PostgreSQL**
+- [x] Cache: **Redis**
 
 ## Order processing
 
@@ -23,6 +23,20 @@
 
 ## Metrics/Monitoring
 
+- [ ] Performance/Metrics monitoring and tuning
+
 ## Web/Auth
 
 - [ ] Introduce Vert.x-Auth and how to integrate it into the microservice
+- [ ] UI: SPA with Angular 2 or Vue.js
+
+## Integration
+
+- [ ] With Consul (Discovery, heartbeat check)
+- [ ] With Netflix Hystrix
+
+## Deployment
+
+- [ ] Docker compose
+- [ ] Kubernetes
+- [ ] Openshift

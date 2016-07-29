@@ -1,5 +1,7 @@
 package io.vertx.blueprint.microservice.common;
 
+import io.vertx.circuitbreaker.CircuitBreaker;
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -31,12 +33,22 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
   private static final Logger logger = LoggerFactory.getLogger(BaseMicroserviceVerticle.class);
 
   protected ServiceDiscovery discovery;
+  protected CircuitBreaker circuitBreaker;
   protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
 
   @Override
   public void start() throws Exception {
+    // init service discovery instance
     discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
     discovery.registerServiceImporter(new DockerLinksServiceImporter(), new JsonObject());
+    // init circuit breaker instance
+    circuitBreaker = CircuitBreaker.create(config().getString("circuit-breaker.name", "circuit-breaker"), vertx,
+      new CircuitBreakerOptions()
+        .setMaxFailures(config().getInteger("circuit-breaker.maxFailures", 5))
+        .setTimeout(config().getLong("circuit-breaker.timeout", 10000L))
+        .setFallbackOnFailure(true)
+        .setResetTimeout(config().getLong("circuit-breaker.resetTimeout", 30000L))
+    );
   }
 
   protected Future<Void> publishHttpEndpoint(String name, String host, int port) {

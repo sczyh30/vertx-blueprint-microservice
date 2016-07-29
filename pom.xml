@@ -13,12 +13,14 @@
     <module>microservice-blueprint-common</module>
     <module>user-service</module>
     <module>product-service</module>
-    <module>common-rest-api</module>
-    <module>recommendation-microservice</module>
     <module>shopping-microservice</module>
-    <module>shopping-ui</module>
+    <module>payment-microservice</module>
     <module>order-microservice</module>
-    <module>dashboard</module>
+    <module>recommendation-microservice</module>
+    <module>common-rest-api</module>
+    <module>cache-infrastructure</module>
+    <module>shopping-ui</module>
+    <module>monitor-dashboard</module>
   </modules>
 
   <properties>

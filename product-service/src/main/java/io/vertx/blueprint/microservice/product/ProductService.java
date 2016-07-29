@@ -73,6 +73,16 @@ public interface ProductService {
   ProductService retrieveProduct(String productId, Handler<AsyncResult<Product>> resultHandler);
 
   /**
+   * Retrieve the product price with certain `productId`.
+   *
+   * @param productId     product id
+   * @param resultHandler the result handler will be called as soon as the product has been retrieved. The async result indicates
+   *                      whether the operation was successful or not.
+   */
+  @Fluent
+  ProductService retrieveProductPrice(String productId, Handler<AsyncResult<JsonObject>> resultHandler);
+
+  /**
    * Retrieve all products.
    *
    * @param resultHandler the result handler will be called as soon as the products have been retrieved. The async result indicates

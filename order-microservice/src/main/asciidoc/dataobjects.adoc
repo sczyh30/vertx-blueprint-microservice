@@ -4,8 +4,7 @@
 == Order
 
 ++++
- Vert.x Blueprint - B2B Shopping Microservice
- Order data object
+ Order data object.
 ++++
 '''
 
@@ -13,11 +12,11 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
-|[[amount]]`amount`|`Number (Integer)`|-
 |[[buyerId]]`buyerId`|`String`|-
 |[[createTime]]`createTime`|`Number (Long)`|-
 |[[orderId]]`orderId`|`Number (Long)`|-
-|[[productId]]`productId`|`String`|-
+|[[payId]]`payId`|`String`|-
+|[[products]]`products`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
 |[[sellerId]]`sellerId`|`String`|-
 |[[totalPrice]]`totalPrice`|`Number (Double)`|-
 |===

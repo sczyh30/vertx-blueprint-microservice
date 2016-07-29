@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * A service interface managing users.
  * <p>
- * This service is an event bus service (aka. service proxy)
+ * This service is an event bus service (aka. service proxy).
  * </p>
  *
  * @author Eric Zhao
@@ -24,9 +24,14 @@ import java.util.List;
 public interface UserService {
 
   /**
+   * The name of the event bus service.
+   */
+  String SERVICE_NAME = "user-eb-service";
+
+  /**
    * The address on which the service is published.
    */
-  String ADDRESS = "service.user";
+  String SERVICE_ADDRESS = "service.user";
 
   /**
    * A static method that creates a user service.

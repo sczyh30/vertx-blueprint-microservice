@@ -27,9 +27,6 @@ import io.vertx.core.json.JsonArray;
 public class OrderConverter {
 
   public static void fromJson(JsonObject json, Order obj) {
-    if (json.getValue("amount") instanceof Number) {
-      obj.setAmount(((Number)json.getValue("amount")).intValue());
-    }
     if (json.getValue("buyerId") instanceof String) {
       obj.setBuyerId((String)json.getValue("buyerId"));
     }
@@ -39,8 +36,16 @@ public class OrderConverter {
     if (json.getValue("orderId") instanceof Number) {
       obj.setOrderId(((Number)json.getValue("orderId")).longValue());
     }
-    if (json.getValue("productId") instanceof String) {
-      obj.setProductId((String)json.getValue("productId"));
+    if (json.getValue("payId") instanceof String) {
+      obj.setPayId((String)json.getValue("payId"));
+    }
+    if (json.getValue("products") instanceof JsonArray) {
+      java.util.ArrayList<io.vertx.blueprint.microservice.common.entity.ProductTuple> list = new java.util.ArrayList<>();
+      json.getJsonArray("products").forEach( item -> {
+        if (item instanceof JsonObject)
+          list.add(new io.vertx.blueprint.microservice.common.entity.ProductTuple((JsonObject)item));
+      });
+      obj.setProducts(list);
     }
     if (json.getValue("sellerId") instanceof String) {
       obj.setSellerId((String)json.getValue("sellerId"));
@@ -51,9 +56,6 @@ public class OrderConverter {
   }
 
   public static void toJson(Order obj, JsonObject json) {
-    if (obj.getAmount() != null) {
-      json.put("amount", obj.getAmount());
-    }
     if (obj.getBuyerId() != null) {
       json.put("buyerId", obj.getBuyerId());
     }
@@ -63,8 +65,15 @@ public class OrderConverter {
     if (obj.getOrderId() != null) {
       json.put("orderId", obj.getOrderId());
     }
-    if (obj.getProductId() != null) {
-      json.put("productId", obj.getProductId());
+    if (obj.getPayId() != null) {
+      json.put("payId", obj.getPayId());
+    }
+    if (obj.getProducts() != null) {
+      json.put("products", new JsonArray(
+          obj.getProducts().
+              stream().
+              map(item -> item.toJson()).
+              collect(java.util.stream.Collectors.toList())));
     }
     if (obj.getSellerId() != null) {
       json.put("sellerId", obj.getSellerId());

@@ -91,6 +91,28 @@ public class ProductServiceImpl implements ProductService {
   }
 
   @Override
+  public ProductService retrieveProductPrice(String productId, Handler<AsyncResult<JsonObject>> resultHandler) {
+    jdbc.getConnection(connHandler(resultHandler, connection -> {
+      // query product price
+      connection.queryWithParams("SELECT price FROM product WHERE productId = ?",
+        new JsonArray().add(productId),
+        r -> {
+          if (r.succeeded()) {
+            List<JsonObject> resList = r.result().getRows();
+            if (resList == null || resList.isEmpty()) {
+              resultHandler.handle(Future.succeededFuture());
+            } else {
+              resultHandler.handle(Future.succeededFuture(resList.get(0)));
+            }
+          } else {
+            resultHandler.handle(Future.failedFuture(r.cause()));
+          }
+        });
+    }));
+    return this;
+  }
+
+  @Override
   public ProductService retrieveAllProducts(Handler<AsyncResult<List<Product>>> resultHandler) {
     jdbc.getConnection(connHandler(resultHandler, connection -> {
       connection.query(FETCH_ALL_STATEMENT, r -> {

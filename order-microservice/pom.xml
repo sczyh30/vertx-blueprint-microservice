@@ -12,4 +12,12 @@
 
   <artifactId>order-microservice</artifactId>
 
+  <dependencies>
+    <dependency>
+      <groupId>io.vertx.blueprint</groupId>
+      <artifactId>microservice-blueprint-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
 </project>

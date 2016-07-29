@@ -14,7 +14,13 @@ import java.util.stream.Collectors;
 public final class Functional {
 
   /**
-   * Transforms a `List[Future[R]]` into a `Future[List[R]]`.
+   * Sequence with a list of futures. Transforms a `List[Future[R]]` into a `Future[List[R]]`.
+   * <p>
+   * When all futures succeed, the result future completes with the list of each result of elements in {@code futures}.
+   * </p>
+   * The returned future fails as soon as one of the futures in {@code futures} fails.
+   * When the list is empty, the returned future will be already completed.
+   *
    * Useful for reducing many futures into a single @{link Future}.
    *
    * @param futures a list of {@link Future futures}
@@ -22,8 +28,7 @@ public final class Functional {
    */
   public static <R> Future<List<R>> sequenceFuture(List<Future<R>> futures) {
     return CompositeFutureImpl.all(futures.toArray(new Future[futures.size()]))
-      .map(v ->
-        futures.stream()
+      .map(v -> futures.stream()
           .map(Future::result)
           .collect(Collectors.toList())
       );

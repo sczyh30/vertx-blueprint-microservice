@@ -12,10 +12,19 @@
 
   <artifactId>user-service</artifactId>
 
+  <properties>
+    <main.verticle>io.vertx.blueprint.microservice.user.impl.UserVerticle</main.verticle>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-jdbc-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>6.0.3</version>
     </dependency>
     <dependency>
       <groupId>io.vertx.blueprint</groupId>

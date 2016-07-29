@@ -123,6 +123,28 @@ public class ProductService {
   }
 
   /**
+   * Retrieve the product price with certain `productId`.
+   * @param productId product id
+   * @param resultHandler the result handler will be called as soon as the product has been retrieved. The async result indicates whether the operation was successful or not.
+   * @return 
+   */
+  public ProductService retrieveProductPrice(String productId, Handler<AsyncResult<JsonObject>> resultHandler) { 
+    delegate.retrieveProductPrice(productId, resultHandler);
+    return this;
+  }
+
+  /**
+   * Retrieve the product price with certain `productId`.
+   * @param productId product id
+   * @return 
+   */
+  public Observable<JsonObject> retrieveProductPriceObservable(String productId) { 
+    io.vertx.rx.java.ObservableFuture<JsonObject> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
+    retrieveProductPrice(productId, resultHandler.toHandler());
+    return resultHandler;
+  }
+
+  /**
    * Retrieve all products.
    * @param resultHandler the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not.
    * @return 

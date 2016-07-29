@@ -22,7 +22,7 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
     // body handler
     router.route().handler(BodyHandler.create());
     // api route handler
-    router.put(API_BUY).handler(this::apiBuy);
+    router.post(API_BUY).handler(this::apiBuy);
 
     // create http server for the REST service
     vertx.createHttpServer()

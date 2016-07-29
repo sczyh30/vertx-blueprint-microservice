@@ -1,38 +1,41 @@
 package io.vertx.blueprint.microservice.order;
 
+import io.vertx.blueprint.microservice.common.entity.ProductTuple;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Vert.x Blueprint - B2B Shopping Microservice
- * Order data object
+ * Order data object.
  *
  * @author Eric Zhao
  */
 @DataObject(generateConverter = true)
 public class Order {
 
-  private Long orderId;
+  private Long orderId = -1L;
+  private String payId;
   private String buyerId;
-  private String productId;
   private String sellerId;
 
   private Long createTime;
 
-  private Integer amount;
+  private List<ProductTuple> products = new ArrayList<>();
   private Double totalPrice;
 
+
   public Order() {
-    // Empty constructor
   }
 
   public Order(Order other) {
     this.orderId = other.orderId;
+    this.payId = other.payId;
     this.buyerId = other.buyerId;
-    this.productId = other.productId;
+    this.products = new ArrayList<>(other.products);
     this.sellerId = other.sellerId;
     this.createTime = other.createTime;
-    this.amount = other.amount;
     this.totalPrice = other.totalPrice;
   }
 
@@ -55,21 +58,21 @@ public class Order {
     return this;
   }
 
+  public String getPayId() {
+    return payId;
+  }
+
+  public Order setPayId(String payId) {
+    this.payId = payId;
+    return this;
+  }
+
   public String getBuyerId() {
     return buyerId;
   }
 
   public Order setBuyerId(String buyerId) {
     this.buyerId = buyerId;
-    return this;
-  }
-
-  public String getProductId() {
-    return productId;
-  }
-
-  public Order setProductId(String productId) {
-    this.productId = productId;
     return this;
   }
 
@@ -82,21 +85,21 @@ public class Order {
     return this;
   }
 
+  public List<ProductTuple> getProducts() {
+    return products;
+  }
+
+  public Order setProducts(List<ProductTuple> products) {
+    this.products = products;
+    return this;
+  }
+
   public Long getCreateTime() {
     return createTime;
   }
 
   public Order setCreateTime(Long createTime) {
     this.createTime = createTime;
-    return this;
-  }
-
-  public Integer getAmount() {
-    return amount;
-  }
-
-  public Order setAmount(Integer amount) {
-    this.amount = amount;
     return this;
   }
 
@@ -107,5 +110,10 @@ public class Order {
   public Order setTotalPrice(Double totalPrice) {
     this.totalPrice = totalPrice;
     return this;
+  }
+
+  @Override
+  public String toString() {
+    return this.toJson().encodePrettily();
   }
 }
