@@ -4,15 +4,15 @@ import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
 import io.vertx.blueprint.microservice.payment.impl.PaymentQueryServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.servicediscovery.types.MessageSource;
 import io.vertx.serviceproxy.ProxyHelper;
 
 /**
  * A verticle that simulates payment processing.
  */
 public class SimulatePaymentProcessingVerticle extends BaseMicroserviceVerticle {
-
-  private static final String PAYMENT_TRANSACTION_ADDRESS = "events.service.payment.transactions";
 
   private PaymentQueryService pqs;
 
@@ -26,21 +26,27 @@ public class SimulatePaymentProcessingVerticle extends BaseMicroserviceVerticle 
     initPaymentPersistence(pqs)
       .compose(persistenceOkay -> publishEventBusService(PaymentQueryService.SERVICE_NAME,
         PaymentQueryService.SERVICE_ADDRESS, PaymentQueryService.class))
-      .setHandler(ar -> {
+      .compose(servicePublished -> receiveAndProcess())
+      .setHandler(future.completer());
+  }
+
+  private Future<Void> receiveAndProcess() {
+    Future<Void> future = Future.future();
+    MessageSource.<JsonObject>getConsumer(discovery,
+      new JsonObject().put("name", "shopping-payment-message-source"),
+      ar -> {
         if (ar.succeeded()) {
-          receiveAndProcess();
+          MessageConsumer<JsonObject> consumer = ar.result();
+          consumer.handler(message -> {
+            JsonObject transactionRequest = message.body();
+            simulatePaymentTransaction(transactionRequest, message);
+          });
           future.complete();
         } else {
           future.fail(ar.cause());
         }
       });
-  }
-
-  private void receiveAndProcess() {
-    vertx.eventBus().<JsonObject>consumer(PAYMENT_TRANSACTION_ADDRESS, message -> {
-      JsonObject transactionRequest = message.body();
-      simulatePaymentTransaction(transactionRequest, message);
-    });
+    return future;
   }
 
   private void simulatePaymentTransaction(JsonObject request, Message<JsonObject> sender) {
@@ -55,15 +61,21 @@ public class SimulatePaymentProcessingVerticle extends BaseMicroserviceVerticle 
     // do some transactions...
 
     // ThirdPaymentAPI.startTransactions(...);
+    // Note: In production we should get payment id and payment time here
 
     // write into persistence backend
     pqs.addPaymentRecord(payment, ar -> {
+      JsonObject replyMessage = new JsonObject().put("payId", paymentId)
+        .put("paymentTime", payment.getPaymentTime());
+
       if (ar.succeeded()) {
+        savePaymentLog(replyMessage, true);
         // reply to shopping endpoint
-        sender.reply(new JsonObject().put("payId", paymentId)
-          .put("paymentTime", payment.getPaymentTime()));
+        sender.reply(replyMessage);
       } else {
-        sender.fail(5011, "fail_to_record_payment");
+        savePaymentLog(new JsonObject().put("error", "payment_record_fail")
+          .mergeIn(replyMessage), false);
+        sender.fail(5011, "payment_record_fail");
       }
     });
   }
@@ -72,5 +84,9 @@ public class SimulatePaymentProcessingVerticle extends BaseMicroserviceVerticle 
     Future<Void> future = Future.future();
     pqs.initializePersistence(future.completer());
     return future;
+  }
+
+  private void savePaymentLog(JsonObject paymentData, boolean succeeded) {
+    publishLogEvent("payment", paymentData, succeeded);
   }
 }

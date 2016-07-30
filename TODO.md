@@ -24,6 +24,8 @@
 ## Metrics/Monitoring
 
 - [ ] Performance/Metrics monitoring and tuning
+- [ ] Real-time events log (reactive streaming)
+- [ ] Real-time backend transaction data demonstration
 
 ## Web/Auth
 

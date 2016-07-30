@@ -12,4 +12,16 @@
 
   <artifactId>monitor-dashboard</artifactId>
 
+  <properties>
+    <main.verticle></main.verticle>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.vertx.blueprint</groupId>
+      <artifactId>shopping-microservice</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
 </project>

@@ -7,17 +7,11 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.jdbc.JDBCClient;
-import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.servicediscovery.types.EventBusService;
-import io.vertx.servicediscovery.types.JDBCDataSource;
-
-import java.util.List;
 
 
 /**
@@ -159,7 +153,7 @@ class RestProductAPIVerticle extends RestAPIVerticle {
 
   private Future<Void> initProductDatabase() {
     Future<ProductService> serviceFuture = Future.future();
-    EventBusService.<ProductService>getProxy(discovery,
+    EventBusService.getProxy(discovery,
       new JsonObject().put("name", ProductService.SERVICE_NAME),
       serviceFuture.completer()
     );

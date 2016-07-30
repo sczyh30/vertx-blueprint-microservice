@@ -12,6 +12,10 @@
 
   <artifactId>payment-microservice</artifactId>
 
+  <properties>
+    <main.verticle>io.vertx.blueprint.microservice.payment.SimulatePaymentProcessingVerticle</main.verticle>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.vertx.blueprint</groupId>

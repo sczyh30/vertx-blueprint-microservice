@@ -47,9 +47,6 @@ public class OrderConverter {
       });
       obj.setProducts(list);
     }
-    if (json.getValue("sellerId") instanceof String) {
-      obj.setSellerId((String)json.getValue("sellerId"));
-    }
     if (json.getValue("totalPrice") instanceof Number) {
       obj.setTotalPrice(((Number)json.getValue("totalPrice")).doubleValue());
     }
@@ -74,9 +71,6 @@ public class OrderConverter {
               stream().
               map(item -> item.toJson()).
               collect(java.util.stream.Collectors.toList())));
-    }
-    if (obj.getSellerId() != null) {
-      json.put("sellerId", obj.getSellerId());
     }
     if (obj.getTotalPrice() != null) {
       json.put("totalPrice", obj.getTotalPrice());

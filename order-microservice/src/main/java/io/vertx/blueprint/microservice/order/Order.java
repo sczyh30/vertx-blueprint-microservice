@@ -18,7 +18,6 @@ public class Order {
   private Long orderId = -1L;
   private String payId;
   private String buyerId;
-  private String sellerId;
 
   private Long createTime;
 
@@ -29,12 +28,15 @@ public class Order {
   public Order() {
   }
 
+  public Order(Long orderId) {
+    this.orderId = orderId;
+  }
+
   public Order(Order other) {
     this.orderId = other.orderId;
     this.payId = other.payId;
     this.buyerId = other.buyerId;
     this.products = new ArrayList<>(other.products);
-    this.sellerId = other.sellerId;
     this.createTime = other.createTime;
     this.totalPrice = other.totalPrice;
   }
@@ -73,15 +75,6 @@ public class Order {
 
   public Order setBuyerId(String buyerId) {
     this.buyerId = buyerId;
-    return this;
-  }
-
-  public String getSellerId() {
-    return sellerId;
-  }
-
-  public Order setSellerId(String sellerId) {
-    this.sellerId = sellerId;
     return this;
   }
 

@@ -7,13 +7,13 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
 /**
- * This verticle exposes a HTTP endpoint to process shopping transactions with REST APIs.
+ * This verticle exposes a HTTP endpoint to process order settlement with REST APIs.
  *
  * @author Eric Zhao
  */
 public class RestShoppingAPIVerticle extends RestAPIVerticle {
 
-  public static final String API_BUY = "/shop/:productId";
+  private static final String API_BUY = "/od_submit";
 
   @Override
   public void start(Future<Void> future) throws Exception {
@@ -27,8 +27,8 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
     // create http server for the REST service
     vertx.createHttpServer()
       .requestHandler(router::accept)
-      .listen(config().getInteger("user.http.port", 8081),
-        config().getString("user.http.address", "0.0.0.0"), result -> {
+      .listen(config().getInteger("shopping.settlement.http.port", 8084),
+        config().getString("shopping.settlement.http.address", "0.0.0.0"), result -> {
           if (result.succeeded()) {
             future.complete();
           } else {

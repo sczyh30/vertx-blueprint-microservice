@@ -17,7 +17,6 @@
 |[[orderId]]`orderId`|`Number (Long)`|-
 |[[payId]]`payId`|`String`|-
 |[[products]]`products`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
-|[[sellerId]]`sellerId`|`String`|-
 |[[totalPrice]]`totalPrice`|`Number (Double)`|-
 |===
 

@@ -33,6 +33,9 @@ public class ProductTupleConverter {
     if (json.getValue("productId") instanceof String) {
       obj.setProductId((String)json.getValue("productId"));
     }
+    if (json.getValue("sellerId") instanceof String) {
+      obj.setSellerId((String)json.getValue("sellerId"));
+    }
   }
 
   public static void toJson(ProductTuple obj, JsonObject json) {
@@ -41,6 +44,9 @@ public class ProductTupleConverter {
     }
     if (obj.getProductId() != null) {
       json.put("productId", obj.getProductId());
+    }
+    if (obj.getSellerId() != null) {
+      json.put("sellerId", obj.getSellerId());
     }
   }
 }

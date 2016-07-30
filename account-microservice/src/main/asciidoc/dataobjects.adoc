@@ -1,0 +1,21 @@
+= Cheatsheets
+
+[[Account]]
+== Account
+
+++++
+ User account data object
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[birthDate]]`birthDate`|`Number (Long)`|-
+|[[email]]`email`|`String`|-
+|[[id]]`id`|`String`|-
+|[[phone]]`phone`|`String`|-
+|[[username]]`username`|`String`|-
+|===
+

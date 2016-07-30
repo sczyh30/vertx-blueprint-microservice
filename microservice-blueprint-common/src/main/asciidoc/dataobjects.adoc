@@ -14,5 +14,6 @@
 ^|Name | Type ^| Description
 |[[amount]]`amount`|`Number (Integer)`|-
 |[[productId]]`productId`|`String`|-
+|[[sellerId]]`sellerId`|`String`|-
 |===
 

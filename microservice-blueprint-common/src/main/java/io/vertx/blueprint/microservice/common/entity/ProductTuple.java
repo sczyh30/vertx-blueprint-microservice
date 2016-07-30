@@ -7,17 +7,19 @@ import io.vertx.core.json.JsonObject;
  * A product tuple represents the amount of a certain product in a shopping.
  */
 @DataObject(generateConverter = true)
-public class ProductTuple /*extends Tuple2<String, Integer>*/ {
+public class ProductTuple /*extends Tuple3<String, String, Integer>*/ {
 
   private String productId;
+  private String sellerId;
   private Integer amount;
 
   public ProductTuple() {
     // empty constructor
   }
 
-  public ProductTuple(String productId, Integer amount) {
+  public ProductTuple(String productId, String sellerId, Integer amount) {
     this.productId = productId;
+    this.sellerId = sellerId;
     this.amount = amount;
   }
 
@@ -27,6 +29,7 @@ public class ProductTuple /*extends Tuple2<String, Integer>*/ {
 
   public ProductTuple(ProductTuple other) {
     this.productId = other.productId;
+    this.sellerId = other.sellerId;
     this.amount = other.amount;
   }
 
@@ -45,6 +48,15 @@ public class ProductTuple /*extends Tuple2<String, Integer>*/ {
     return this;
   }
 
+  public String getSellerId() {
+    return sellerId;
+  }
+
+  public ProductTuple setSellerId(String sellerId) {
+    this.sellerId = sellerId;
+    return this;
+  }
+
   public Integer getAmount() {
     return amount;
   }
@@ -56,6 +68,6 @@ public class ProductTuple /*extends Tuple2<String, Integer>*/ {
 
   @Override
   public String toString() {
-    return "(" + productId + "," + amount + ")";
+    return "(" + productId + "," + sellerId + "," + amount + ")";
   }
 }

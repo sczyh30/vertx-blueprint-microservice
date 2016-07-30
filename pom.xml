@@ -11,9 +11,10 @@
 
   <modules>
     <module>microservice-blueprint-common</module>
-    <module>user-service</module>
-    <module>product-service</module>
-    <module>shopping-microservice</module>
+    <module>account-microservice</module>
+    <module>product-microservice</module>
+    <module>store-microservice</module>
+    <module>settlement-microservice</module>
     <module>payment-microservice</module>
     <module>order-microservice</module>
     <module>recommendation-microservice</module>

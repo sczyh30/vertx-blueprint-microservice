@@ -30,6 +30,8 @@ import java.util.Set;
  */
 public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
 
+  private static final String LOG_EVENT_ADDRESS = "events.log";
+
   private static final Logger logger = LoggerFactory.getLogger(BaseMicroserviceVerticle.class);
 
   protected ServiceDiscovery discovery;
@@ -99,6 +101,19 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
     });
 
     return future;
+  }
+
+  protected void publishLogEvent(String type, JsonObject data) {
+    JsonObject msg = new JsonObject().put("type", type)
+      .put("message", data);
+    vertx.eventBus().publish(LOG_EVENT_ADDRESS, msg);
+  }
+
+  protected void publishLogEvent(String type, JsonObject data, boolean succeeded) {
+    JsonObject msg = new JsonObject().put("type", type)
+      .put("status", succeeded ? 1 : 0)
+      .put("message", data);
+    vertx.eventBus().publish(LOG_EVENT_ADDRESS, msg);
   }
 
   @Override
