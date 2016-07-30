@@ -19,6 +19,11 @@
   <dependencies>
     <dependency>
       <groupId>io.vertx.blueprint</groupId>
+      <artifactId>microservice-blueprint-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx.blueprint</groupId>
       <artifactId>account-microservice</artifactId>
       <version>${project.version}</version>
     </dependency>

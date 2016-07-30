@@ -19,7 +19,7 @@
   <dependencies>
     <dependency>
       <groupId>io.vertx.blueprint</groupId>
-      <artifactId>shopping-microservice</artifactId>
+      <artifactId>microservice-blueprint-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
