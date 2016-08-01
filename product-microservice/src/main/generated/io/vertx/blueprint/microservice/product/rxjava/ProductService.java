@@ -165,6 +165,28 @@ public class ProductService {
   }
 
   /**
+   * Retrieve products by page.
+   * @param page 
+   * @param resultHandler the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not.
+   * @return 
+   */
+  public ProductService retrieveProductsByPage(int page, Handler<AsyncResult<List<Product>>> resultHandler) { 
+    delegate.retrieveProductsByPage(page, resultHandler);
+    return this;
+  }
+
+  /**
+   * Retrieve products by page.
+   * @param page 
+   * @return 
+   */
+  public Observable<List<Product>> retrieveProductsByPageObservable(int page) { 
+    io.vertx.rx.java.ObservableFuture<List<Product>> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
+    retrieveProductsByPage(page, resultHandler.toHandler());
+    return resultHandler;
+  }
+
+  /**
    * Delete a product from the persistence
    * @param productId product id
    * @param resultHandler the result handler will be called as soon as the product has been removed. The async result indicates whether the operation was successful or not.

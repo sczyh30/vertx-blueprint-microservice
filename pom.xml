@@ -14,11 +14,11 @@
     <module>account-microservice</module>
     <module>product-microservice</module>
     <module>store-microservice</module>
-    <module>settlement-microservice</module>
+    <module>checkout-microservice</module>
     <module>payment-microservice</module>
     <module>order-microservice</module>
     <module>recommendation-microservice</module>
-    <module>common-rest-api</module>
+    <module>api-gateway</module>
     <module>cache-infrastructure</module>
     <module>shopping-ui</module>
     <module>monitor-dashboard</module>

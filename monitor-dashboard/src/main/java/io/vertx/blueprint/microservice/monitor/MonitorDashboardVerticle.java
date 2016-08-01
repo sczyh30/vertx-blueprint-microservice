@@ -1,43 +1,39 @@
-package io.vertx.blueprint.microservice.shopping.ui;
+package io.vertx.blueprint.microservice.monitor;
 
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
-import io.vertx.core.Future;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.StaticHandler;
+import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
 
 /**
- * A simple SPA front-end for the online shopping microservice application.
+ * The monitor dashboard of the microservice application.
  *
  * @author Eric Zhao
  */
-public class ShoppingUIVerticle extends BaseMicroserviceVerticle {
+public class MonitorDashboardVerticle extends BaseMicroserviceVerticle {
 
   @Override
-  public void start(Future<Void> future) throws Exception {
+  public void start() throws Exception {
     super.start();
     Router router = Router.router(vertx);
 
-    // event bus bridge
+    // Event bus bridge
     SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
+    BridgeOptions options = new BridgeOptions();
+
+    sockJSHandler.bridge(options);
     router.route("/eventbus/*").handler(sockJSHandler);
 
-    // discovery endpoint
+    // Discovery endpoint
     ServiceDiscoveryRestEndpoint.create(router, discovery);
 
     // Static content
     router.route("/*").handler(StaticHandler.create());
 
-    // create HTTP server
     vertx.createHttpServer()
       .requestHandler(router::accept)
-      .listen(config().getInteger("shopping.ui.http.port", 8080), ar -> {
-        if (ar.succeeded()) {
-          future.complete();
-        } else {
-          future.fail(ar.cause());
-        }
-      });
+      .listen(9100);
   }
 }

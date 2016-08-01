@@ -3,34 +3,38 @@
 ## Polyglot persistence
 
 - [ ] Recommendation: **Neo4j**
-- [x] Common persistence: **MySQL/PostgreSQL**
+- [x] Common persistence: **MySQL** and **MongoDB**
 - [x] Cache: **Redis**
+
+## Web/Auth
+
+- [ ] **Introduce Vert.x-Auth and how to integrate it into the microservice**
+- [ ] **API Gateway with load balance**
+- [ ] **UI: SPA front-end**
 
 ## Order processing
 
-- [ ] Simulate processing procedure
-- [ ] High performance and resilience (Next blueprint)
+- [ ] High performance and resilience
 - [ ] Integrate with Kafka
 
 ## Recommendation
 
-- [ ] Simple recommendation (reference Spring Cloud)
+- [ ] Simple recommendation service (Neo4j)
 
 ## Failure
 
-- [ ] Heartbeat check (via TCP)
-- [ ] Introduce Circuit Breaker in order processing microservice
+- [ ] **Introduce Vert.x Circuit Breaker**
+- [ ] **Heartbeat check**
 
 ## Metrics/Monitoring
 
-- [ ] Performance/Metrics monitoring and tuning
+- [ ] Performance/metrics monitoring and tuning
 - [ ] Real-time events log (reactive streaming)
 - [ ] Real-time backend transaction data demonstration
 
-## Web/Auth
+## Search
 
-- [ ] Introduce Vert.x-Auth and how to integrate it into the microservice
-- [ ] UI: SPA with Angular 2 or Vue.js
+- [ ] Full-index search integration (e.g. with Solr or Elasticsearch)
 
 ## Integration
 
@@ -39,6 +43,6 @@
 
 ## Deployment
 
-- [ ] Docker compose
+- [ ] **Docker compose**
 - [ ] Kubernetes
 - [ ] Openshift

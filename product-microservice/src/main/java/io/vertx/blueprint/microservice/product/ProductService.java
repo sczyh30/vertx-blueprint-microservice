@@ -92,6 +92,15 @@ public interface ProductService {
   ProductService retrieveAllProducts(Handler<AsyncResult<List<Product>>> resultHandler);
 
   /**
+   * Retrieve products by page.
+   *
+   * @param resultHandler the result handler will be called as soon as the products have been retrieved. The async result indicates
+   *                      whether the operation was successful or not.
+   */
+  @Fluent
+  ProductService retrieveProductsByPage(int page, Handler<AsyncResult<List<Product>>> resultHandler);
+
+  /**
    * Delete a product from the persistence
    *
    * @param productId     product id

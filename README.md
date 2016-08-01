@@ -1,3 +1,3 @@
 # Vert.x Microservice Blueprint
 
-Vert.x blueprint application - A simple B2B shopping microservice application.
+Vert.x blueprint application - Online shopping microservice application.

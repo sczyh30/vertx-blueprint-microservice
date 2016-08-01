@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
  */
 public class ProductServiceImpl implements ProductService {
 
+  private static final int PAGE_LIMIT = 10;
+
   private static final String CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS `product` (\n" +
     "  `productId` varchar(30) NOT NULL,\n" +
     "  `sellerId` varchar(30) NOT NULL,\n" +
@@ -33,14 +35,13 @@ public class ProductServiceImpl implements ProductService {
   private static final String INSERT_STATEMENT = "INSERT INTO product (productId, name, price, illustration) VALUES (?, ?, ?, ?)";
   private static final String FETCH_STATEMENT = "SELECT * FROM product WHERE productId = ?";
   private static final String FETCH_ALL_STATEMENT = "SELECT * FROM product";
+  private static final String FETCH_WITH_PAGE_STATEMENT = "SELECT * FROM product LIMIT ?, ?";
   private static final String DELETE_STATEMENT = "DELETE FROM product WHERE productId = ?";
   private static final String DELETE_ALL_STATEMENT = "DELETE FROM product";
 
-  private final Vertx vertx;
   private final JDBCClient jdbc;
 
   public ProductServiceImpl(Vertx vertx, JsonObject config) {
-    this.vertx = vertx;
     this.jdbc = JDBCClient.createNonShared(vertx, config);
   }
 
@@ -110,6 +111,27 @@ public class ProductServiceImpl implements ProductService {
           } else {
             resultHandler.handle(Future.failedFuture(r.cause()));
           }
+          connection.close();
+        });
+    }));
+    return this;
+  }
+
+  @Override
+  public ProductService retrieveProductsByPage(int page, Handler<AsyncResult<List<Product>>> resultHandler) {
+    jdbc.getConnection(connHandler(resultHandler, connection -> {
+      connection.queryWithParams(FETCH_WITH_PAGE_STATEMENT,
+        new JsonArray().add(calcPage(page)).add(PAGE_LIMIT),
+        r -> {
+          if (r.succeeded()) {
+            List<Product> resList = r.result().getRows().stream()
+              .map(Product::new)
+              .collect(Collectors.toList());
+            resultHandler.handle(Future.succeededFuture(resList));
+          } else {
+            resultHandler.handle(Future.failedFuture(r.cause()));
+          }
+          connection.close();
         });
     }));
     return this;
@@ -162,6 +184,12 @@ public class ProductServiceImpl implements ProductService {
       });
     }));
     return this;
+  }
+
+  private int calcPage(int page) {
+    if (page <= 0)
+      return 0;
+    return PAGE_LIMIT * (page - 1);
   }
 
   /**
