@@ -44,12 +44,14 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
     discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
     discovery.registerServiceImporter(new DockerLinksServiceImporter(), new JsonObject());
     // init circuit breaker instance
-    circuitBreaker = CircuitBreaker.create(config().getString("circuit-breaker.name", "circuit-breaker"), vertx,
+    JsonObject cbOptions = config().getJsonObject("circuit-breaker") != null ?
+      config().getJsonObject("circuit-breaker") : new JsonObject();
+    circuitBreaker = CircuitBreaker.create(cbOptions.getString("name", "circuit-breaker"), vertx,
       new CircuitBreakerOptions()
-        .setMaxFailures(config().getInteger("circuit-breaker.maxFailures", 5))
-        .setTimeout(config().getLong("circuit-breaker.timeout", 10000L))
+        .setMaxFailures(cbOptions.getInteger("maxFailures", 5))
+        .setTimeout(cbOptions.getLong("timeout", 10000L))
         .setFallbackOnFailure(true)
-        .setResetTimeout(config().getLong("circuit-breaker.resetTimeout", 30000L))
+        .setResetTimeout(cbOptions.getLong("resetTimeout", 30000L))
     );
   }
 

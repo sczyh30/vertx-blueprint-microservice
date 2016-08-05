@@ -13,7 +13,7 @@
   <artifactId>product-microservice</artifactId>
 
   <properties>
-    <main.verticle>io.vertx.blueprint.microservice.product.impl.ProductVerticle</main.verticle>
+    <main.verticle>io.vertx.blueprint.microservice.product.ProductVerticle</main.verticle>
   </properties>
 
   <dependencies>

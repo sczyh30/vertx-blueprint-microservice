@@ -10,16 +10,21 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>shopping-ui</artifactId>
+  <artifactId>shopping-cart-microservice</artifactId>
 
   <properties>
-    <main.verticle>io.vertx.blueprint.microservice.shopping.ui.ShoppingUIVerticle</main.verticle>
+    <main.verticle>io.vertx.blueprint.microservice.cart.SimpleCheckoutVerticle</main.verticle>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>io.vertx.blueprint</groupId>
       <artifactId>microservice-blueprint-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx.blueprint</groupId>
+      <artifactId>cache-infrastructure</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

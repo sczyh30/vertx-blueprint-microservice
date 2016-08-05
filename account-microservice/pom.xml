@@ -13,7 +13,7 @@
   <artifactId>account-microservice</artifactId>
 
   <properties>
-    <main.verticle>io.vertx.blueprint.microservice.account.impl.UserAccountVerticle</main.verticle>
+    <main.verticle>io.vertx.blueprint.microservice.account.UserAccountVerticle</main.verticle>
   </properties>
 
   <dependencies>

@@ -1,5 +1,82 @@
 = Cheatsheets
 
+[[Account]]
+== Account
+
+++++
+ User account data object
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[birthDate]]`birthDate`|`Number (Long)`|-
+|[[email]]`email`|`String`|-
+|[[id]]`id`|`String`|-
+|[[phone]]`phone`|`String`|-
+|[[username]]`username`|`String`|-
+|===
+
+[[Order]]
+== Order
+
+++++
+ Order data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[buyerId]]`buyerId`|`String`|-
+|[[createTime]]`createTime`|`Number (Long)`|-
+|[[orderId]]`orderId`|`Number (Long)`|-
+|[[payId]]`payId`|`String`|-
+|[[products]]`products`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
+|[[totalPrice]]`totalPrice`|`Number (Double)`|-
+|===
+
+[[Payment]]
+== Payment
+
+++++
+ Payment data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[payAmount]]`payAmount`|`Number (Double)`|-
+|[[payId]]`payId`|`String`|-
+|[[paySource]]`paySource`|`Number (Short)`|-
+|[[paymentTime]]`paymentTime`|`Number (Long)`|-
+|===
+
+[[Product]]
+== Product
+
+++++
+ Product data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[illustration]]`illustration`|`String`|-
+|[[name]]`name`|`String`|-
+|[[price]]`price`|`Number (double)`|-
+|[[productId]]`productId`|`String`|-
+|[[sellerId]]`sellerId`|`String`|-
+|[[type]]`type`|`String`|-
+|===
+
 [[ProductTuple]]
 == ProductTuple
 
@@ -14,6 +91,24 @@
 ^|Name | Type ^| Description
 |[[amount]]`amount`|`Number (Integer)`|-
 |[[productId]]`productId`|`String`|-
+|[[sellerId]]`sellerId`|`String`|-
+|===
+
+[[Store]]
+== Store
+
+++++
+ Online store data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[description]]`description`|`String`|-
+|[[name]]`name`|`String`|-
+|[[openTime]]`openTime`|`Number (Long)`|-
 |[[sellerId]]`sellerId`|`String`|-
 |===
 

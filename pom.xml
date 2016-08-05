@@ -13,8 +13,9 @@
     <module>microservice-blueprint-common</module>
     <module>account-microservice</module>
     <module>product-microservice</module>
+    <module>inventory-microservice</module>
     <module>store-microservice</module>
-    <module>checkout-microservice</module>
+    <module>shopping-cart-microservice</module>
     <module>payment-microservice</module>
     <module>order-microservice</module>
     <module>recommendation-microservice</module>

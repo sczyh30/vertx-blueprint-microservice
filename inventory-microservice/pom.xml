@@ -10,11 +10,7 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>shopping-ui</artifactId>
-
-  <properties>
-    <main.verticle>io.vertx.blueprint.microservice.shopping.ui.ShoppingUIVerticle</main.verticle>
-  </properties>
+  <artifactId>inventory-microservice</artifactId>
 
   <dependencies>
     <dependency>
