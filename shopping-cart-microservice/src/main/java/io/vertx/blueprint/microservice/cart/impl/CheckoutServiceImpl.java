@@ -1,22 +1,17 @@
 package io.vertx.blueprint.microservice.cart.impl;
 
 import io.vertx.blueprint.microservice.cache.CounterService;
+import io.vertx.blueprint.microservice.cart.CheckoutResult;
 import io.vertx.blueprint.microservice.cart.CheckoutService;
-import io.vertx.blueprint.microservice.product.ProductTuple;
-import io.vertx.blueprint.microservice.common.functional.Functional;
+import io.vertx.blueprint.microservice.cart.ShoppingCart;
+import io.vertx.blueprint.microservice.order.Order;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
-import io.vertx.servicediscovery.types.HttpEndpoint;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /**
  * A simple implementation for {@link CheckoutService}.
@@ -32,22 +27,60 @@ public class CheckoutServiceImpl implements CheckoutService {
   }
 
   @Override
-  public CheckoutService buy(String userId, List<ProductTuple> products, Handler<AsyncResult<JsonObject>> resultHandler) {
+  public void checkout(String userId, ShoppingCart cart, Handler<AsyncResult<CheckoutResult>> resultHandler) {
     if (userId == null) {
       resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid user")));
-    } else if (products == null || products.isEmpty()) {
-      resultHandler.handle(Future.failedFuture(new IllegalStateException("Empty product in the shopping request")));
-    } else {
-      retrieveProductRestClient()
-        .compose(httpClient -> fetchProductsWithCurrentPrice(httpClient, products))
-        .compose(resultPrice -> prepareAndRequestPayment(userId, products, resultPrice))
-        .compose(this::sendRawOrder)
-        .setHandler(resultHandler);
+      return;
+    } else if (cart == null || cart.isEmpty()) {
+      resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid shopping cart")));
+      return;
     }
-    return this;
+    double totalPrice = calculateTotalPrice(cart);
+    Order order = new Order().setBuyerId(userId)
+      .setPayId("TEST")
+      .setProducts(cart.getProductItems())
+      .setTotalPrice(totalPrice);
+
+    retrieveCounter("order")
+      .compose(id -> sendOrderAwaitResult(order.setOrderId(id)))
+      .setHandler(resultHandler);
+
   }
 
-  private Future<HttpClient> retrieveProductRestClient() {
+  private Future<Long> retrieveCounter(String key) {
+    Future<Long> future = Future.future();
+    EventBusService.<CounterService>getProxy(discovery,
+      new JsonObject().put("name", "counter-eb-service"),
+      ar -> {
+        if (ar.succeeded()) {
+          CounterService service = ar.result();
+          service.addThenRetrieve(key, future.completer());
+        } else {
+          future.fail(ar.cause());
+        }
+      });
+    return future;
+  }
+
+  private Future<CheckoutResult> sendOrderAwaitResult(Order order) {
+    Future<CheckoutResult> future = Future.future();
+    vertx.eventBus().send(ORDER_EVENT_ADDRESS, order, reply -> {
+      if (reply.succeeded()) {
+        future.complete(new CheckoutResult((JsonObject) reply.result().body()));
+      } else {
+        future.fail(reply.cause());
+      }
+    });
+    return future;
+  }
+
+  private double calculateTotalPrice(ShoppingCart cart) {
+    return cart.getProductItems().stream()
+      .map(p -> p.getAmount() * cart.getPriceMap().get(p.getProductId())) // join by product id
+      .reduce(0.0d, (a, b) -> a + b);
+  }
+
+  /*private Future<HttpClient> retrieveProductRestClient() {
     Future<HttpClient> clientFuture = Future.future();
     HttpEndpoint.getClient(discovery,
       new JsonObject().put("name", "product-rest-api"),
@@ -125,21 +158,6 @@ public class CheckoutServiceImpl implements CheckoutService {
     });
   }
 
-  private Future<Long> retrieveCounter(String key) {
-    Future<Long> future = Future.future();
-    EventBusService.<CounterService>getProxy(discovery,
-      new JsonObject().put("name", "counter-eb-service"),
-      ar -> {
-        if (ar.succeeded()) {
-          CounterService service = ar.result();
-          service.addThenRetrieve(key, future.completer());
-        } else {
-          future.fail(ar.cause());
-        }
-      });
-    return future;
-  }
-
   private double calculateTotalPrice(List<JsonObject> products) {
     return products.stream()
       .map(e -> e.getDouble("price") * e.getInteger("amount"))
@@ -152,6 +170,6 @@ public class CheckoutServiceImpl implements CheckoutService {
     } else {
       return 2; // Credit card payment
     }
-  }
+  }*/
 
 }

@@ -1,17 +1,13 @@
 package io.vertx.blueprint.microservice.cart;
 
-import io.vertx.blueprint.microservice.product.ProductTuple;
 import io.vertx.blueprint.microservice.cart.impl.CheckoutServiceImpl;
-import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.ProxyGen;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
 
-import java.util.List;
 
 /**
  * A service interface for shopping cart checkout logic.
@@ -49,13 +45,12 @@ public interface CheckoutService {
   }
 
   /**
-   * Buy some things :-)
+   * Shopping cart checkout.
    *
-   * @param userId   User id
-   * @param products The products the user wants to buy
-   * @param handler  Async result handler
+   * @param userId  user id
+   * @param cart    shopping cart of the user
+   * @param handler async result handler
    */
-  @Fluent
-  CheckoutService buy(String userId, List<ProductTuple> products, Handler<AsyncResult<JsonObject>> handler);
+  void checkout(String userId, ShoppingCart cart, Handler<AsyncResult<CheckoutResult>> handler);
 
 }

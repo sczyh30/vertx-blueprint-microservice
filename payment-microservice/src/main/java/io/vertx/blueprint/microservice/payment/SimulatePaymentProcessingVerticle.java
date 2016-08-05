@@ -12,6 +12,7 @@ import io.vertx.serviceproxy.ProxyHelper;
 /**
  * A verticle that simulates payment processing.
  */
+@Deprecated // NOT IMPLEMENTED
 public class SimulatePaymentProcessingVerticle extends BaseMicroserviceVerticle {
 
   private PaymentQueryService pqs;

@@ -19,6 +19,42 @@
 |[[username]]`username`|`String`|-
 |===
 
+[[CartEvent]]
+== CartEvent
+
+++++
+ Cart event data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[amount]]`amount`|`Number (Integer)`|-
+|[[cartEventType]]`cartEventType`|`link:enums.html#CartEventType[CartEventType]`|-
+|[[createdAt]]`createdAt`|`Number (Long)`|-
+|[[id]]`id`|`Number (Long)`|-
+|[[productId]]`productId`|`String`|-
+|[[userId]]`userId`|`String`|-
+|===
+
+[[CheckoutResult]]
+== CheckoutResult
+
+++++
+ Checkout result data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[message]]`message`|`String`|-
+|[[order]]`order`|`link:dataobjects.html#Order[Order]`|-
+|===
+
 [[Order]]
 == Order
 
@@ -92,6 +128,23 @@
 |[[amount]]`amount`|`Number (Integer)`|-
 |[[productId]]`productId`|`String`|-
 |[[sellerId]]`sellerId`|`String`|-
+|===
+
+[[ShoppingCart]]
+== ShoppingCart
+
+++++
+ Shopping cart state object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[empty]]`empty`|`Boolean`|-
+|[[priceMap]]`priceMap`|`Number (Double)`|-
+|[[productItems]]`productItems`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
 |===
 
 [[Store]]
