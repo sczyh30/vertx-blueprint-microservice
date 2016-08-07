@@ -25,10 +25,16 @@ public class ProductVerticle extends BaseMicroserviceVerticle {
     // register the service proxy on event bus
     ProxyHelper.registerService(ProductService.class, vertx, productService, SERVICE_ADDRESS);
     // publish the service in the discovery infrastructure
-    publishEventBusService(ProductService.SERVICE_NAME, SERVICE_ADDRESS, ProductService.class)
-      .compose(servicePublished -> publishJDBCDataSource("product-jdbc-data-source", config()))
-      .compose(sourcePublished -> deployRestService(productService))
+    initProductDatabase(productService)
+      .compose(databaseOkay -> publishEventBusService(ProductService.SERVICE_NAME, SERVICE_ADDRESS, ProductService.class))
+      .compose(servicePublished -> deployRestService(productService))
       .setHandler(future.completer());
+  }
+
+  private Future<Void> initProductDatabase(ProductService service) {
+    Future<Void> initFuture = Future.future();
+    service.initializePersistence(initFuture.completer());
+    return initFuture;
   }
 
   private Future<Void> deployRestService(ProductService service) {

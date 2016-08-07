@@ -13,7 +13,7 @@
   <artifactId>monitor-dashboard</artifactId>
 
   <properties>
-    <main.verticle></main.verticle>
+    <main.verticle>io.vertx.blueprint.microservice.monitor.MonitorDashboardVerticle</main.verticle>
   </properties>
 
   <dependencies>
@@ -23,5 +23,19 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- plugin to create a `fat-jar` -->
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <!-- plugin to create a docker image -->
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

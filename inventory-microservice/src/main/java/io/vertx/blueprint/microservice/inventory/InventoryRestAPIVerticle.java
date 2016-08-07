@@ -39,8 +39,8 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
     enableHeartbeatCheck(router, config());
 
     // get HTTP host and port from configuration, or use default value
-    String host = config().getString("product.http.address", "0.0.0.0");
-    int port = config().getInteger("product.http.port", 8086);
+    String host = config().getString("inventory.http.address", "0.0.0.0");
+    int port = config().getInteger("inventory.http.port", 8086);
 
     createHttpServer(router, host, port)
       .compose(serverCreated -> publishHttpEndpoint(SERVICE_NAME, host, port))

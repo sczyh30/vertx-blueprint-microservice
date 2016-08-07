@@ -9,6 +9,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * An abstract base verticle that provides several helper methods for REST API.
@@ -49,19 +50,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
       if (res.succeeded()) {
         handler.handle(res.result());
       } else {
-        serviceUnavailable(context, res.cause());
-      }
-    };
-  }
-
-  protected <T> Handler<AsyncResult<T>> rawResultHandler(RoutingContext context) {
-    return ar -> {
-      if (ar.succeeded()) {
-        T res = ar.result();
-        context.response()
-          .end(res == null ? "" : res.toString());
-      } else {
-        serviceUnavailable(context, ar.cause());
+        internalError(context, res.cause());
       }
     };
   }
@@ -74,7 +63,70 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
           .putHeader("content-type", "application/json")
           .end(res == null ? "{}" : res.toString());
       } else {
-        serviceUnavailable(context, ar.cause());
+        internalError(context, ar.cause());
+      }
+    };
+  }
+
+  protected <T> Handler<AsyncResult<T>> resultHandler(RoutingContext context, Function<T, String> converter) {
+    return ar -> {
+      if (ar.succeeded()) {
+        T res = ar.result();
+        if (res == null) {
+          serviceUnavailable(context, "invalid_result");
+        } else {
+          context.response()
+            .putHeader("content-type", "application/json")
+            .end(converter.apply(res));
+        }
+      } else {
+        internalError(context, ar.cause());
+      }
+    };
+  }
+
+  protected <T> Handler<AsyncResult<T>> resultHandlerNonEmpty(RoutingContext context) {
+    return ar -> {
+      if (ar.succeeded()) {
+        T res = ar.result();
+        if (res == null) {
+          notFound(context);
+        } else {
+          context.response()
+            .putHeader("content-type", "application/json")
+            .end(res.toString());
+        }
+      } else {
+        internalError(context, ar.cause());
+      }
+    };
+  }
+
+  protected <T> Handler<AsyncResult<T>> rawResultHandler(RoutingContext context) {
+    return ar -> {
+      if (ar.succeeded()) {
+        T res = ar.result();
+        context.response()
+          .end(res == null ? "" : res.toString());
+      } else {
+        internalError(context, ar.cause());
+      }
+    };
+  }
+
+  protected Handler<AsyncResult<Void>> resultVoidHandler(RoutingContext context, JsonObject result) {
+    return resultVoidHandler(context, result, 200);
+  }
+
+  protected Handler<AsyncResult<Void>> resultVoidHandler(RoutingContext context, JsonObject result, int status) {
+    return ar -> {
+      if (ar.succeeded()) {
+        context.response()
+          .setStatusCode(status == 0 ? 200 : status)
+          .putHeader("content-type", "application/json")
+          .end(result.encodePrettily());
+      } else {
+        internalError(context, ar.cause());
       }
     };
   }
@@ -86,7 +138,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
           .putHeader("content-type", "application/json")
           .end(new JsonObject().put("message", "delete_success").encodePrettily());
       } else {
-        serviceUnavailable(context);
+        internalError(context, res.cause());
       }
     };
   }
@@ -103,6 +155,12 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
       .end(new JsonObject().put("message", "not_found").encodePrettily());
   }
 
+  protected void internalError(RoutingContext context, Throwable ex) {
+    context.response().setStatusCode(500)
+      .putHeader("content-type", "application/json")
+      .end(new JsonObject().put("error", ex.getMessage()).encodePrettily());
+  }
+
   protected void notImplemented(RoutingContext context) {
     context.response().setStatusCode(501)
       .putHeader("content-type", "application/json")
@@ -117,6 +175,12 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
     context.response().setStatusCode(503)
       .putHeader("content-type", "application/json")
       .end(new JsonObject().put("error", ex.getMessage()).encodePrettily());
+  }
+
+  protected void serviceUnavailable(RoutingContext context, String cause) {
+    context.response().setStatusCode(503)
+      .putHeader("content-type", "application/json")
+      .end(new JsonObject().put("error", cause).encodePrettily());
   }
 
 }

@@ -53,13 +53,14 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
     router.delete(API_DELETE).handler(this::apiDelete);
     router.delete(API_DELETE_ALL).handler(this::apiDeleteAll);
 
+    enableHeartbeatCheck(router, config());
+
     // get HTTP host and port from configuration, or use default value
     String host = config().getString("product.http.address", "0.0.0.0");
     int port = config().getInteger("product.http.port", 8082);
 
     // create HTTP server and publish REST service
-    initProductDatabase()
-      .compose(databaseOkay -> createHttpServer(router, host, port))
+    createHttpServer(router, host, port)
       .compose(serverCreated -> publishHttpEndpoint(SERVICE_NAME, host, port))
       .setHandler(future.completer());
   }
@@ -82,61 +83,26 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
 
   private void apiRetrieve(RoutingContext context) {
     String productId = context.request().getParam("productId");
-    service.retrieveProduct(productId, resultHandler(context, product -> {
-      if (product == null) {
-        notFound(context);
-      } else {
-        context.response()
-          .putHeader("content-type", "application/json")
-          .end(product.toString());
-      }
-    }));
+    service.retrieveProduct(productId, resultHandlerNonEmpty(context));
   }
 
   private void apiRetrievePrice(RoutingContext context) {
     String productId = context.request().getParam("productId");
-    service.retrieveProductPrice(productId, resultHandler(context, price -> {
-      if (price == null) {
-        notFound(context);
-      } else {
-        context.response()
-          .putHeader("content-type", "application/json")
-          .end(price.encode());
-      }
-    }));
+    service.retrieveProductPrice(productId, resultHandlerNonEmpty(context));
   }
 
   private void apiRetrieveByPage(RoutingContext context) {
     try {
       String p = context.request().getParam("p");
       int page = p == null ? 1 : Integer.parseInt(p);
-      service.retrieveProductsByPage(page, resultHandler(context, result -> {
-        if (result == null) {
-          serviceUnavailable(context);
-        } else {
-          final String encoded = Json.encodePrettily(result);
-          context.response()
-            .putHeader("content-type", "application/json")
-            .end(encoded);
-        }
-      }));
+      service.retrieveProductsByPage(page, resultHandler(context, Json::encodePrettily));
     } catch (Exception ex) {
       badRequest(context, ex);
     }
-
   }
 
   private void apiRetrieveAll(RoutingContext context) {
-    service.retrieveAllProducts(resultHandler(context, result -> {
-      if (result == null) {
-        serviceUnavailable(context);
-      } else {
-        final String encoded = Json.encodePrettily(result);
-        context.response()
-          .putHeader("content-type", "application/json")
-          .end(encoded);
-      }
-    }));
+    service.retrieveAllProducts(resultHandler(context, Json::encodePrettily));
   }
 
   private void apiUpdate(RoutingContext context) {
@@ -150,21 +116,6 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
 
   private void apiDeleteAll(RoutingContext context) {
     service.deleteAllProducts(deleteResultHandler(context));
-  }
-
-  // Helper methods
-
-  private Future<Void> initProductDatabase() {
-    Future<ProductService> serviceFuture = Future.future();
-    EventBusService.getProxy(discovery,
-      new JsonObject().put("name", ProductService.SERVICE_NAME),
-      serviceFuture.completer()
-    );
-    return serviceFuture.compose(service -> {
-      Future<Void> initFuture = Future.future();
-      service.initializePersistence(initFuture.completer());
-      return initFuture;
-    });
   }
 
 }

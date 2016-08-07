@@ -10,7 +10,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
 
 /**
- * Implementation of {@link StoreCRUDService}.
+ * Implementation of {@link StoreCRUDService}. Use MongoDB as the persistence.
  */
 public class StoreCRUDServiceImpl implements StoreCRUDService {
 
