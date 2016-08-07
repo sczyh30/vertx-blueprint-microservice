@@ -44,30 +44,64 @@ public class StoreCRUDService {
     return delegate;
   }
 
+  /**
+   * Save an online store to the persistence layer. This is a so called `upsert` operation.
+   * This is used to update store info, or just apply for a new store.
+   * @param store store object
+   * @param resultHandler async result handler
+   */
   public void saveStore(Store store, Handler<AsyncResult<Void>> resultHandler) { 
     delegate.saveStore(store, resultHandler);
   }
 
+  /**
+   * Save an online store to the persistence layer. This is a so called `upsert` operation.
+   * This is used to update store info, or just apply for a new store.
+   * @param store store object
+   * @return 
+   */
   public Observable<Void> saveStoreObservable(Store store) { 
     io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
     saveStore(store, resultHandler.toHandler());
     return resultHandler;
   }
 
+  /**
+   * Retrieve an online store by seller id.
+   * @param sellerId seller id, refers to an independent online store
+   * @param resultHandler async result handler
+   */
   public void retrieveStore(String sellerId, Handler<AsyncResult<Store>> resultHandler) { 
     delegate.retrieveStore(sellerId, resultHandler);
   }
 
+  /**
+   * Retrieve an online store by seller id.
+   * @param sellerId seller id, refers to an independent online store
+   * @return 
+   */
   public Observable<Store> retrieveStoreObservable(String sellerId) { 
     io.vertx.rx.java.ObservableFuture<Store> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
     retrieveStore(sellerId, resultHandler.toHandler());
     return resultHandler;
   }
 
+  /**
+   * Remove an online store whose seller is <code>sellerId</code>.
+   * This is used to close an online store.
+   * @param sellerId seller id, refers to an independent online store
+   * @param resultHandler async result handler
+   */
   public void removeStore(String sellerId, Handler<AsyncResult<Void>> resultHandler) { 
     delegate.removeStore(sellerId, resultHandler);
   }
 
+  /**
+   * Remove an online store whose seller is <code>sellerId</code>.
+   * This is used to close an online store.
+   * @param sellerId seller id, refers to an independent online store
+   * @return 
+   */
   public Observable<Void> removeStoreObservable(String sellerId) { 
     io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
     removeStore(sellerId, resultHandler.toHandler());

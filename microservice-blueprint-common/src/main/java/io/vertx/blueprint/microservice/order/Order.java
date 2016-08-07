@@ -2,10 +2,12 @@ package io.vertx.blueprint.microservice.order;
 
 import io.vertx.blueprint.microservice.product.ProductTuple;
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Order data object.
@@ -43,6 +45,13 @@ public class Order {
 
   public Order(JsonObject json) {
     OrderConverter.fromJson(json, this);
+    if (json.getValue("products") instanceof String) {
+      this.products = new JsonArray(json.getString("products"))
+        .stream()
+        .map(e -> (JsonObject) e)
+        .map(ProductTuple::new)
+        .collect(Collectors.toList());
+    }
   }
 
   public JsonObject toJson() {

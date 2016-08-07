@@ -1,5 +1,6 @@
 package io.vertx.blueprint.microservice.order;
 
+import io.vertx.blueprint.microservice.cart.CheckoutResult;
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.Message;
@@ -14,19 +15,15 @@ import io.vertx.servicediscovery.types.MessageSource;
  */
 public class RawOrderDispatcher extends BaseMicroserviceVerticle {
 
+  private final OrderService orderService;
+
+  public RawOrderDispatcher(OrderService orderService) {
+    this.orderService = orderService;
+  }
+
   @Override
   public void start(Future<Void> future) throws Exception {
     super.start();
-    receiveAndDispatch().setHandler(future.completer());
-  }
-
-  /**
-   * Receive raw order data from the message source and then dispatch the order.
-   *
-   * @return async result of the procedure
-   */
-  private Future<Void> receiveAndDispatch() {
-    Future<Void> future = Future.future();
     MessageSource.<JsonObject>getConsumer(discovery,
       new JsonObject().put("name", "shopping-order-message-source"),
       ar -> {
@@ -41,15 +38,35 @@ public class RawOrderDispatcher extends BaseMicroserviceVerticle {
           future.fail(ar.cause());
         }
       });
-    return future;
   }
 
+  /**
+   * Wrap raw order and generate new order.
+   *
+   * @return the new order.
+   */
   private Order wrapRawOrder(JsonObject rawOrder) {
     return new Order(rawOrder)
       .setCreateTime(System.currentTimeMillis());
   }
 
+  /**
+   * Dispatch the order to the infrastructure layer.
+   * Here we simply save the order to the persistence.
+   *
+   * @param order  order data object
+   * @param sender message sender
+   */
   private void dispatchOrder(Order order, Message<JsonObject> sender) {
-
+    orderService.createOrder(order, ar -> {
+      if (ar.succeeded()) {
+        CheckoutResult result = new CheckoutResult("checkout_success", order);
+        sender.reply(result.toJson());
+        publishLogEvent("checkout", result.toJson(), true);
+      } else {
+        sender.fail(5000, ar.cause().getMessage());
+        ar.cause().printStackTrace();
+      }
+    });
   }
 }
