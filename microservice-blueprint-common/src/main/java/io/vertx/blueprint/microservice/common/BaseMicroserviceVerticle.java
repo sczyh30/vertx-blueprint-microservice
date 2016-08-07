@@ -38,11 +38,15 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
   protected CircuitBreaker circuitBreaker;
   protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
 
+  // Metrics field
+  protected long deployedAt;
+
   @Override
   public void start() throws Exception {
     // init service discovery instance
     discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
     discovery.registerServiceImporter(new DockerLinksServiceImporter(), new JsonObject());
+
     // init circuit breaker instance
     JsonObject cbOptions = config().getJsonObject("circuit-breaker") != null ?
       config().getJsonObject("circuit-breaker") : new JsonObject();
@@ -53,6 +57,8 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
         .setFallbackOnFailure(true)
         .setResetTimeout(cbOptions.getLong("resetTimeout", 30000L))
     );
+
+    this.deployedAt = System.currentTimeMillis();
   }
 
   protected Future<Void> publishHttpEndpoint(String name, String host, int port) {
@@ -105,6 +111,12 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
     return future;
   }
 
+  /**
+   * A helper method that simply publish logs on the event bus
+   *
+   * @param type log type
+   * @param data log message data
+   */
   protected void publishLogEvent(String type, JsonObject data) {
     JsonObject msg = new JsonObject().put("type", type)
       .put("message", data);

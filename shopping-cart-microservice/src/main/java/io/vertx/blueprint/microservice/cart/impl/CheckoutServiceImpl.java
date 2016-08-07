@@ -44,7 +44,6 @@ public class CheckoutServiceImpl implements CheckoutService {
     retrieveCounter("order")
       .compose(id -> sendOrderAwaitResult(order.setOrderId(id)))
       .setHandler(resultHandler);
-
   }
 
   private Future<Long> retrieveCounter(String key) {

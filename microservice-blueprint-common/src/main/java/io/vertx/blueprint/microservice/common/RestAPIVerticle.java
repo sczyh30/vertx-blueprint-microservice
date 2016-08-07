@@ -8,6 +8,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
+import java.util.Optional;
+
 /**
  * An abstract base verticle that provides several helper methods for REST API.
  */
@@ -21,12 +23,22 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
    * @param port http port
    * @return async result of the procedure
    */
-  protected Future<HttpServer> createHttpServer(Router router, String host, int port) {
+  protected Future<Void> createHttpServer(Router router, String host, int port) {
     Future<HttpServer> httpServerFuture = Future.future();
     vertx.createHttpServer()
       .requestHandler(router::accept)
       .listen(port, host, httpServerFuture.completer());
-    return httpServerFuture;
+    return httpServerFuture.map(r -> null);
+  }
+
+  /**
+   * Enable simple heartbeat check mechanism via HTTP.
+   *
+   * @param router router instance
+   * @param config configuration object
+   */
+  protected void enableHeartbeatCheck(Router router, JsonObject config) {
+    // TODO
   }
 
   /**
@@ -38,6 +50,31 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
         handler.handle(res.result());
       } else {
         serviceUnavailable(context, res.cause());
+      }
+    };
+  }
+
+  protected <T> Handler<AsyncResult<T>> rawResultHandler(RoutingContext context) {
+    return ar -> {
+      if (ar.succeeded()) {
+        T res = ar.result();
+        context.response()
+          .end(res == null ? "" : res.toString());
+      } else {
+        serviceUnavailable(context, ar.cause());
+      }
+    };
+  }
+
+  protected <T> Handler<AsyncResult<T>> resultHandler(RoutingContext context) {
+    return ar -> {
+      if (ar.succeeded()) {
+        T res = ar.result();
+        context.response()
+          .putHeader("content-type", "application/json")
+          .end(res == null ? "{}" : res.toString());
+      } else {
+        serviceUnavailable(context, ar.cause());
       }
     };
   }
