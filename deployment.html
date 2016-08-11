@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <title>Vert.x Blueprint - Online Shopping Microservice (Deployment)</title>
+  <meta charset=utf-8>
+  <meta http-equiv=X-UA-Compatible content="IE=edge">
+  <meta content="width=device-width,initial-scale=1" name=viewport>
+  <meta content="Vert.x is a tool-kit for building reactive applications on the JVM." name=description>
+  <link href=http://vertx.io/stylesheets/main.css media=screen rel=stylesheet>
+  <link href=http://vertx.io/stylesheets/font-awesome.min.css media=screen rel=stylesheet>
+  <link href=http://vertx.io/javascripts/styles/rainbow.min.css media=screen rel=stylesheet>
+  <!--[if lt IE 9]><script src="http://static.jboss.org/theme/js/libs/html5/pre3.6/html5.min.js"></script><![endif]-->
+  <link rel=apple-touch-icon sizes=57x57 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-57x57.png>
+  <link rel=apple-touch-icon sizes=60x60 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-60x60.png>
+  <link rel=apple-touch-icon sizes=72x72 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-72x72.png>
+  <link rel=apple-touch-icon sizes=76x76 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-76x76.png>
+  <link rel=apple-touch-icon sizes=114x114 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-114x114.png>
+  <link rel=apple-touch-icon sizes=120x120 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-120x120.png>
+  <link rel=apple-touch-icon sizes=144x144 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-144x144.png>
+  <link rel=apple-touch-icon sizes=152x152 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-152x152.png>
+  <link rel=apple-touch-icon sizes=180x180 href=http://vertx.io/assets/favicons/vertx-favicon-7/apple-touch-icon-180x180.png>
+  <link rel=icon type=image/png href=http://vertx.io/assets/favicons/vertx-favicon-7/favicon-32x32.png sizes=32x32>
+  <link rel=icon type=image/png href=http://vertx.io/assets/favicons/vertx-favicon-7/android-chrome-192x192.png sizes=192x192>
+  <link rel=icon type=image/png href=http://vertx.io/assets/favicons/vertx-favicon-7/favicon-96x96.png sizes=96x96>
+  <link rel=icon type=image/png href=http://vertx.io/assets/favicons/vertx-favicon-7/favicon-16x16.png sizes=16x16>
+  <link rel=manifest href=http://vertx.io/assets/favicons/vertx-favicon-7/manifest.json>
+  <link rel=mask-icon href=http://vertx.io/assets/favicons/vertx-favicon-7/safari-pinned-tab.svg color=#5bbad5>
+  <meta name=msapplication-TileColor content=#7d3194>
+  <meta name=msapplication-TileImage content=http://vertx.io/assets/favicons/vertx-favicon-7/mstile-144x144.png>
+  <meta name=theme-color content=#ffffff>
+  <link href="http://fonts.googleapis.com/css?family=Ubuntu:400,500,700,400italic" rel=stylesheet type=text/css>
+  <script src=http://static.jboss.org/theme/js/libs/jquery/jquery-1.9.1.min.js></script>
+  <script src=http://vertx.io/javascripts/bootstrap.min.js></script>
+  <script src=http://vertx.io/javascripts/highlight.pack.js></script>
+  <script src="marked.min.js"></script>
+</head>
+<body>
+  <a href="http://www.reactivemanifesto.org/" id=reactive-manifesto-banner>
+    <img style="border: 0; position: fixed; right: 0; top:0; z-index: 9000" src=http://d379ifj7s9wntv.cloudfront.net/reactivemanifesto/images/ribbons/we-are-reactive-black-right.png>
+  </a>
+  <a id=skippy class="sr-only sr-only-focusable" href=#content>
+    <div class=container><span class=skiplink-text>Skip to main content</span></div>
+  </a>
+<header class="navbar navbar-default navbar-static-top" id="top" role="banner">
+  <div class="container">
+    <div class="navbar-header">
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#vertx-navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="http://vertx.io/" class="navbar-brand"><img alt="Brand" src="http://vertx.io/assets/logo-sm.png"></a>
+    </div>
+    <nav class="collapse navbar-collapse" id="vertx-navbar-collapse">
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="http://vertx.io/download/">Download</a></li>
+        <li><a href="http://vertx.io/docs/">Documentation</a></li>
+        <li><a href="https://github.com/vert-x3/wiki/wiki">Wiki</a></li>
+        <li><a href="http://vertx.io/community/">Community</a></li>
+        <li><a href="http://vertx.io/materials/">Materials</a></li>
+        <li><a href="http://vertx.io/blog/">Blog</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<div class=page-header id=content>
+  <div class=container>
+    <div class=row>
+      <div class=col-sm-12><h1>Vert.x Blueprint - Online Shopping Microservice (Deployment)</h1></div>
+    </div>
+  </div>
+</div>
+<div class="container docs-content">
+  <div class=row>
+    <div class="col-sm-12 col-md-push-9 col-md-3 hidden-xs hidden-sm">
+      <div id=sidebar data-spy=affix class="affix-top sidebar-no-level2">
+      </div>
+    </div>
+    <div id=readme class="col-sm-12 col-md-pull-3 col-md-9">
+    </div>
+  </div>
+</div>
+<footer>
+  <div class=container>
+    <div class=row>
+      <div class="col-xs-6 col-sm-3 col-md-3 col-lg-2"><h2>Vert.x</h2>
+        <ul class=list-unstyled>
+          <li><a href="http://vertx.io/">Home</a></li>
+          <li><a href="http://vertx.io/download/">Download</a></li>
+          <li><a href="http://vertx.io/docs/">Documentation</a></li>
+          <li><a href=https://github.com/vert-x3/wiki/wiki>Wiki</a></li>
+          <li><a href="http://vertx.io/blog/">Blog</a></li>
+          <li><a href="http://vertx.io/vertx2/" class=vertx-2-link>Vert.x 2</a></li>
+        </ul>
+      </div>
+      <div class="col-xs-6 col-sm-3 col-md-3 col-lg-2"><h2>Community</h2>
+        <ul class=list-unstyled>
+          <li><a href="http://vertx.io/community/">Help &amp; Contributors</a></li>
+          <li><a href="http://vertx.io/materials/">Learning materials</a></li>
+          <li><a href=https://groups.google.com/forum/?fromgroups#!forum/vertx>User Group</a></li>
+          <li><a href=https://groups.google.com/forum/?fromgroups#!forum/vertx-dev>Developer Group</a></li>
+        </ul>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-lg-offset-2 col-md-6 copyright"><p>Vert.x is open source and dual licensed
+        under the <a href=https://www.eclipse.org/org/documents/epl-v10.php>Eclipse Public License 1.0</a> and <a
+          href=https://www.apache.org/licenses/LICENSE-2.0.html>Apache License 2.0</a>.</p>
+        <p>This website is licensed under the <a href="http://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0
+          License</a>.<br>Design by <a href=http://www.michel-kraemer.com>Michel Kr&auml;mer</a>. <a
+          href=http://www.entypo.com>Entypo pictograms</a> by Daniel Bruce.</p>
+        <div class=row>
+          <div class="col-xs-12 col-lg-offset-1 col-md-5"><a href=http://eclipse.org>
+            <img class="logo eclipse-logo" src=http://vertx.io/assets/eclipse_logo_grey_small.png width=204 height=48></a></div>
+          <div class="col-xs-12 col-md-offset-2 col-lg-offset-0 col-md-5"><a href=http://cloudbees.com><img
+            class="logo cloudbees-logo" src=http://vertx.io/assets/Button-Built-on-CB-1-grey.png width=180
+            height=48></a></div>
+          <div class="col-xs-12 col-md-offset-2 col-lg-offset-1 col-md-5 jprofiler"><a
+            href=http://www.ej-technologies.com/products/jprofiler/overview.html style=text-decoration:none><img
+            class="logo jprofiler-logo" src=http://vertx.io/assets/jprofiler-logo.png width=48 height=48><span
+            class=jprofiler-logo>&nbsp; JPROFILER</span></a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+<script>
+  $.get("https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/en/tutorial-deployment.md", function (readme) {
+    marked.setOptions({
+      highlight: function (code) {
+        return hljs.highlightAuto(code).value;
+      }
+    });
+
+    $("#readme").html(marked(readme));
+
+    $.get("https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/en/tutorial-deployment.toc.md", function (toc) {
+      $("#sidebar").html(marked(toc));
+      // make sidebar sticky when it hits the top of the viewport
+      var $sidebar = $("#sidebar");
+      $sidebar.affix({
+        offset: {
+          top: $sidebar.offset().top - 20,
+          bottom: $("footer").outerHeight(true) + 20
+        }
+      });
+
+      $(window).resize(function () {
+        $sidebar.affix("checkPosition");
+      });
+
+      // add .nav class to all lists in the sidebar (necessary for scrollspy)
+      $sidebar.find("ul").addClass("nav");
+
+      // enable scrollspy
+      $("body").scrollspy({target: "#sidebar"});
+
+      // *************** START BUGFIX
+      // Fix position of the sidebar in Safari. See https://github.com/twbs/bootstrap/issues/12126
+      // Safari does not position the sidebar correctly because we use col-md-pull-x on it. We
+      // need to set the position here. There's no clean and direct CSS solution yet.
+      var explicitlySetAffixPosition = function () {
+        $sidebar.css("left", $sidebar.offset().left + "px");
+      };
+      var resetLeftPosition = function () {
+        $sidebar.css("left", "auto");
+      };
+
+      // Before the element becomes affixed, add left CSS that is equal to the
+      // distance of the element from the left of the screen
+      $sidebar.on("affix.bs.affix", function () {
+        explicitlySetAffixPosition();
+      });
+      // Before the element becomes affix-bottom, reset the CSS left property to as it was before
+      $sidebar.on("affix-bottom.bs.affix", function () {
+        resetLeftPosition();
+      });
+      // Do the same for affix-top
+      $sidebar.on("affix-top.bs.affix", function () {
+        resetLeftPosition();
+      });
+
+      // On resize of window, un-affix affixed widget to measure where it
+      // should be located, set the left CSS accordingly, re-affix it
+      $(window).resize(function () {
+        if ($sidebar.hasClass("affix")) {
+          $sidebar.removeClass("affix");
+          explicitlySetAffixPosition();
+          $sidebar.addClass("affix");
+        }
+      });
+      // *************** END BUGFIX
+    });
+  });
+</script>
+</body>
+</html>
