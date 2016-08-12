@@ -1,0 +1,16 @@
+version: "2"
+services:
+  redis:
+    image: redis:latest
+    ports:
+     - "6379:6379"
+  mongo:
+    image: mongo:latest
+    ports:
+     - 27017:27017
+  api-gateway:
+    image: sczyh30/api-gateway
+  inventory-microservice:
+    image: sczyh30/inventory-microservice
+    links:
+      - redis

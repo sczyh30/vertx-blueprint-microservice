@@ -24,7 +24,7 @@ public class ProductServiceImpl implements ProductService {
   private static final int PAGE_LIMIT = 10;
 
   private static final String CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS `product` (\n" +
-    "  `productId` varchar(30) NOT NULL,\n" +
+    "  `productId` VARCHAR(60) NOT NULL,\n" +
     "  `sellerId` varchar(30) NOT NULL,\n" +
     "  `name` varchar(255) NOT NULL,\n" +
     "  `price` double NOT NULL,\n" +
@@ -32,7 +32,7 @@ public class ProductServiceImpl implements ProductService {
     "  `type` varchar(45) NOT NULL,\n" +
     "  PRIMARY KEY (`productId`),\n" +
     "  KEY `index_seller` (`sellerId`) )";
-  private static final String INSERT_STATEMENT = "INSERT INTO product (productId, name, price, illustration) VALUES (?, ?, ?, ?)";
+  private static final String INSERT_STATEMENT = "INSERT INTO product (productId, sellerId, name, price, illustration, type) VALUES (?, ?, ?, ?, ?, ?)";
   private static final String FETCH_STATEMENT = "SELECT * FROM product WHERE productId = ?";
   private static final String FETCH_ALL_STATEMENT = "SELECT * FROM product";
   private static final String FETCH_WITH_PAGE_STATEMENT = "SELECT * FROM product LIMIT ?, ?";
@@ -50,6 +50,8 @@ public class ProductServiceImpl implements ProductService {
     jdbc.getConnection(connHandler(resultHandler, connection -> {
       connection.execute(CREATE_STATEMENT, r -> {
         resultHandler.handle(r);
+        if (r.failed())
+          r.cause().printStackTrace();
         connection.close();
       });
     }));
@@ -60,9 +62,11 @@ public class ProductServiceImpl implements ProductService {
   public ProductService addProduct(Product product, Handler<AsyncResult<Void>> resultHandler) {
     jdbc.getConnection(connHandler(resultHandler, connection -> {
       connection.updateWithParams(INSERT_STATEMENT, new JsonArray().add(product.getProductId())
+        .add(product.getSellerId())
         .add(product.getName())
         .add(product.getPrice())
-        .add(product.getIllustration()), r -> {
+        .add(product.getIllustration())
+        .add(product.getType()), r -> {
         if (r.succeeded()) {
           resultHandler.handle(Future.succeededFuture());
         } else {
@@ -96,24 +100,7 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public ProductService retrieveProductPrice(String productId, Handler<AsyncResult<JsonObject>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
-      // query product price
-      connection.queryWithParams("SELECT price FROM product WHERE productId = ?",
-        new JsonArray().add(productId),
-        r -> {
-          if (r.succeeded()) {
-            List<JsonObject> resList = r.result().getRows();
-            if (resList == null || resList.isEmpty()) {
-              resultHandler.handle(Future.succeededFuture());
-            } else {
-              resultHandler.handle(Future.succeededFuture(resList.get(0)));
-            }
-          } else {
-            resultHandler.handle(Future.failedFuture(r.cause()));
-          }
-          connection.close();
-        });
-    }));
+    retrieveOneNonModify("SELECT price FROM product WHERE productId = ?", productId, resultHandler);
     return this;
   }
 
@@ -206,5 +193,25 @@ public class ProductServiceImpl implements ProductService {
         h1.handle(Future.failedFuture(conn.cause()));
       }
     };
+  }
+
+  private void retrieveOneNonModify(String sql, String productId, Handler<AsyncResult<JsonObject>> resultHandler) {
+    jdbc.getConnection(connHandler(resultHandler, connection -> {
+      // query product price
+      connection.queryWithParams(sql, new JsonArray().add(productId),
+        r -> {
+          if (r.succeeded()) {
+            List<JsonObject> resList = r.result().getRows();
+            if (resList == null || resList.isEmpty()) {
+              resultHandler.handle(Future.succeededFuture());
+            } else {
+              resultHandler.handle(Future.succeededFuture(resList.get(0)));
+            }
+          } else {
+            resultHandler.handle(Future.failedFuture(r.cause()));
+          }
+          connection.close();
+        });
+    }));
   }
 }

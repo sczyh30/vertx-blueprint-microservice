@@ -2,10 +2,11 @@ package io.vertx.blueprint.microservice.shopping.ui;
 
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
-import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
 
 /**
  * A simple SPA front-end for the online shopping microservice application.
@@ -13,6 +14,8 @@ import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
  * @author Eric Zhao
  */
 public class ShoppingUIVerticle extends BaseMicroserviceVerticle {
+
+  private static final Logger logger = LoggerFactory.getLogger(ShoppingUIVerticle.class);
 
   @Override
   public void start(Future<Void> future) throws Exception {
@@ -23,18 +26,18 @@ public class ShoppingUIVerticle extends BaseMicroserviceVerticle {
     SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
     router.route("/eventbus/*").handler(sockJSHandler);
 
-    // discovery endpoint
-    ServiceDiscoveryRestEndpoint.create(router, discovery);
-
-    // Static content
+    // static content
     router.route("/*").handler(StaticHandler.create());
+
+    int port = config().getInteger("shopping.ui.http.port", 8080);
 
     // create HTTP server
     vertx.createHttpServer()
       .requestHandler(router::accept)
-      .listen(config().getInteger("shopping.ui.http.port", 8080), ar -> {
+      .listen(port, ar -> {
         if (ar.succeeded()) {
           future.complete();
+          logger.info(String.format("Shopping UI service is running at %d", port));
         } else {
           future.fail(ar.cause());
         }

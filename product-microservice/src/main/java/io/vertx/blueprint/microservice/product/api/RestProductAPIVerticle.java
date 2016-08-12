@@ -20,7 +20,7 @@ import io.vertx.servicediscovery.types.EventBusService;
  */
 public class RestProductAPIVerticle extends RestAPIVerticle {
 
-  private static final String SERVICE_NAME = "product-rest-api";
+  public static final String SERVICE_NAME = "product-rest-api";
 
   private static final String API_ADD = "/product";
   private static final String API_RETRIEVE = "/product/:productId";

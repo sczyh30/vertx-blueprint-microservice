@@ -1,9 +1,12 @@
 package io.vertx.blueprint.microservice.monitor;
 
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.dropwizard.MetricsService;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
+import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
 
@@ -19,21 +22,34 @@ public class MonitorDashboardVerticle extends BaseMicroserviceVerticle {
     super.start();
     Router router = Router.router(vertx);
 
-    // Event bus bridge
+    // create Dropwizard metrics service
+    MetricsService service = MetricsService.create(vertx);
+
+    // event bus bridge
     SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
-    BridgeOptions options = new BridgeOptions();
+    BridgeOptions options = new BridgeOptions()
+      .addOutboundPermitted(new PermittedOptions().setAddress("microservice.monitor.metrics"));
 
     sockJSHandler.bridge(options);
     router.route("/eventbus/*").handler(sockJSHandler);
 
-    // Discovery endpoint
+    // discovery endpoint
     ServiceDiscoveryRestEndpoint.create(router, discovery);
 
-    // Static content
+    // static content
     router.route("/*").handler(StaticHandler.create());
+
+    int port = config().getInteger("monitor.http.port", 9100);
+    int metricsInterval = config().getInteger("monitor.metrics.interval", 1000);
 
     vertx.createHttpServer()
       .requestHandler(router::accept)
-      .listen(9100);
+      .listen(port);
+
+    // send metrics message to the event bus
+    vertx.setPeriodic(metricsInterval, t -> {
+      JsonObject metrics = service.getMetricsSnapshot(vertx.eventBus());
+      vertx.eventBus().publish("microservice.monitor.metrics", metrics);
+    });
   }
 }

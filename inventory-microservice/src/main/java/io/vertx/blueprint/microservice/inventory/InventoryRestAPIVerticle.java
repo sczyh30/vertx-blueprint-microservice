@@ -72,8 +72,8 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
         inventoryService.decrease(productId, decrease)
           .setHandler(resultHandler(context));
       }
-    } catch (Exception ex) {
-      badRequest(context, ex);
+    } catch (NumberFormatException ex) {
+      notFound(context);
     }
   }
 
