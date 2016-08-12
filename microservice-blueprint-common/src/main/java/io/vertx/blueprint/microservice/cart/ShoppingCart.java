@@ -2,12 +2,15 @@ package io.vertx.blueprint.microservice.cart;
 
 import io.vertx.blueprint.microservice.product.ProductTuple;
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Shopping cart state object.
@@ -16,7 +19,7 @@ import java.util.Map;
 public class ShoppingCart {
 
   private List<ProductTuple> productItems = new ArrayList<>();
-  private Map<String, Double> priceMap = new HashMap<>();
+  private Map<String, Integer> amountMap = new HashMap<>();
 
   public ShoppingCart() {
     // Empty constructor
@@ -24,7 +27,6 @@ public class ShoppingCart {
 
   public ShoppingCart(ShoppingCart other) {
     this.productItems = new ArrayList<>(other.productItems);
-    this.priceMap = new HashMap<>(other.priceMap);
   }
 
   public ShoppingCart(JsonObject json) {
@@ -46,17 +48,38 @@ public class ShoppingCart {
     return this;
   }
 
-  public Map<String, Double> getPriceMap() {
-    return priceMap;
-  }
-
-  public ShoppingCart setPriceMap(Map<String, Double> priceMap) {
-    this.priceMap = priceMap;
-    return this;
+  @GenIgnore
+  public Map<String, Integer> getAmountMap() {
+    return amountMap;
   }
 
   public boolean isEmpty() {
     return productItems.isEmpty();
+  }
+
+  public ShoppingCart incorporate(CartEvent cartEvent) {
+    // the cart event must be a add or remove command event
+    boolean ifValid = Stream.of(CartEventType.ADD_ITEM, CartEventType.REMOVE_ITEM)
+      .anyMatch(cartEventType ->
+        cartEvent.getCartEventType().equals(cartEventType));
+
+    if (ifValid) {
+      amountMap.put(cartEvent.getProductId(),
+        amountMap.getOrDefault(cartEvent.getProductId(), 0) +
+          (cartEvent.getAmount() * (cartEvent.getCartEventType()
+            .equals(CartEventType.ADD_ITEM) ? 1 : -1)));
+    }
+
+    return this;
+  }
+
+  private ShoppingCart generateProductItems(Map<String, Integer> productMap) {
+    this.productItems = productMap.entrySet()
+      .stream()
+      .map(item -> new ProductTuple())
+      .filter(item -> item.getAmount() > 0)
+      .collect(Collectors.toList());
+    return this;
   }
 
   @Override

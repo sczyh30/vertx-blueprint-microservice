@@ -23,7 +23,7 @@
 == CartEvent
 
 ++++
- Cart event data object.
+ Cart event state object.
 ++++
 '''
 
@@ -126,6 +126,7 @@
 |===
 ^|Name | Type ^| Description
 |[[amount]]`amount`|`Number (Integer)`|-
+|[[price]]`price`|`Number (Double)`|-
 |[[productId]]`productId`|`String`|-
 |[[sellerId]]`sellerId`|`String`|-
 |===
@@ -143,7 +144,6 @@
 |===
 ^|Name | Type ^| Description
 |[[empty]]`empty`|`Boolean`|-
-|[[priceMap]]`priceMap`|`Number (Double)`|-
 |[[productItems]]`productItems`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
 |===
 

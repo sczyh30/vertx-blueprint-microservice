@@ -39,7 +39,13 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
    * @param config configuration object
    */
   protected void enableHeartbeatCheck(Router router, JsonObject config) {
-    // TODO
+    router.get(config.getString("heartbeat.path", "/health"))
+      .handler(context -> {
+        JsonObject checkResult = new JsonObject()
+          .put("status", "UP");
+        context.response()
+          .end(checkResult.encode());
+      });
   }
 
   /**

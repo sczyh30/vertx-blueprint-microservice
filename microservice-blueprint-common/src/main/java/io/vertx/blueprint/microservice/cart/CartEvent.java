@@ -4,7 +4,7 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
 /**
- * Cart event data object.
+ * Cart event state object.
  *
  * @author Eric Zhao
  */
@@ -107,5 +107,9 @@ public class CartEvent {
   @Override
   public String toString() {
     return this.toJson().encode();
+  }
+
+  public static boolean isTerminal(CartEventType eventType) {
+    return eventType == CartEventType.CLEAR_CART || eventType == CartEventType.CHECKOUT;
   }
 }

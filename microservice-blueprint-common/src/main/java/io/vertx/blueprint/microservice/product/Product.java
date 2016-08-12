@@ -96,6 +96,23 @@ public class Product {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Product product = (Product) o;
+
+    return productId.equals(product.productId) && sellerId.equals(product.sellerId);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = productId.hashCode();
+    result = 31 * result + sellerId.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return this.toJson().encodePrettily();
   }

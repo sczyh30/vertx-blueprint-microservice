@@ -27,14 +27,6 @@ import io.vertx.core.json.JsonArray;
 public class ShoppingCartConverter {
 
   public static void fromJson(JsonObject json, ShoppingCart obj) {
-    if (json.getValue("priceMap") instanceof JsonObject) {
-      java.util.Map<String, java.lang.Double> map = new java.util.LinkedHashMap<>();
-      json.getJsonObject("priceMap").forEach(entry -> {
-        if (entry.getValue() instanceof Number)
-          map.put(entry.getKey(), ((Number)entry.getValue()).doubleValue());
-      });
-      obj.setPriceMap(map);
-    }
     if (json.getValue("productItems") instanceof JsonArray) {
       java.util.ArrayList<io.vertx.blueprint.microservice.product.ProductTuple> list = new java.util.ArrayList<>();
       json.getJsonArray("productItems").forEach( item -> {
@@ -47,11 +39,6 @@ public class ShoppingCartConverter {
 
   public static void toJson(ShoppingCart obj, JsonObject json) {
     json.put("empty", obj.isEmpty());
-    if (obj.getPriceMap() != null) {
-      JsonObject map = new JsonObject();
-      obj.getPriceMap().forEach((key,value) -> map.put(key, value));
-      json.put("priceMap", map);
-    }
     if (obj.getProductItems() != null) {
       json.put("productItems", new JsonArray(
           obj.getProductItems().
