@@ -37,7 +37,6 @@
 |===
 ^|Name | Type ^| Description
 |[[empty]]`empty`|`Boolean`|-
-|[[priceMap]]`priceMap`|`Number (Double)`|-
 |[[productItems]]`productItems`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
 |===
 

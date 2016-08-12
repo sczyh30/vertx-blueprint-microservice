@@ -29,7 +29,7 @@ public interface CheckoutService {
   /**
    * The address on which the service is published.
    */
-  String SERVICE_ADDRESS = "service.shopping.checkout";
+  String SERVICE_ADDRESS = "service.shopping.cart.checkout";
 
   /**
    * Payment and order event address.
@@ -48,9 +48,8 @@ public interface CheckoutService {
    * Shopping cart checkout.
    *
    * @param userId  user id
-   * @param cart    shopping cart of the user
    * @param handler async result handler
    */
-  void checkout(String userId, ShoppingCart cart, Handler<AsyncResult<CheckoutResult>> handler);
+  void checkout(String userId, Handler<AsyncResult<CheckoutResult>> handler);
 
 }

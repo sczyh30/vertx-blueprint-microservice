@@ -4,17 +4,28 @@ import io.vertx.blueprint.microservice.cache.CounterService;
 import io.vertx.blueprint.microservice.cart.CheckoutResult;
 import io.vertx.blueprint.microservice.cart.CheckoutService;
 import io.vertx.blueprint.microservice.cart.ShoppingCart;
+import io.vertx.blueprint.microservice.cart.ShoppingCartService;
+import io.vertx.blueprint.microservice.common.functional.Functional;
 import io.vertx.blueprint.microservice.order.Order;
+import io.vertx.blueprint.microservice.product.ProductTuple;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
+import io.vertx.servicediscovery.types.HttpEndpoint;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A simple implementation for {@link CheckoutService}.
+ *
+ * @author Eric Zhao
  */
 public class CheckoutServiceImpl implements CheckoutService {
 
@@ -27,25 +38,42 @@ public class CheckoutServiceImpl implements CheckoutService {
   }
 
   @Override
-  public void checkout(String userId, ShoppingCart cart, Handler<AsyncResult<CheckoutResult>> resultHandler) {
+  public void checkout(String userId, Handler<AsyncResult<CheckoutResult>> resultHandler) {
+    // TODO: NEED AUTH
     if (userId == null) {
       resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid user")));
       return;
-    } else if (cart == null || cart.isEmpty()) {
-      resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid shopping cart")));
-      return;
     }
-    double totalPrice = calculateTotalPrice(cart);
-    Order order = new Order().setBuyerId(userId)
-      .setPayId("TEST")
-      .setProducts(cart.getProductItems())
-      .setTotalPrice(totalPrice);
+    Future<ShoppingCart> cartFuture = getCurrentCart(userId);
+    Future<CheckoutResult> orderFuture = cartFuture.compose(cart ->
+      checkAvailableInventory(cart).compose(checkResult -> {
+        if (checkResult.getBoolean("res")) {
+          double totalPrice = calculateTotalPrice(cart);
+          // create order instance
+          Order order = new Order().setBuyerId(userId)
+            .setPayId("TEST") // reserved field
+            .setProducts(cart.getProductItems())
+            .setTotalPrice(totalPrice);
+          // set id and then send order, wait for reply
+          return retrieveCounter("order")
+            .compose(id -> sendOrderAwaitResult(order.setOrderId(id)));
+        } else {
+          // has insufficient inventory, fail
+          return Future.succeededFuture(new CheckoutResult()
+            .setMessage(checkResult.getString("message")));
+        }
+      })
+    );
 
-    retrieveCounter("order")
-      .compose(id -> sendOrderAwaitResult(order.setOrderId(id)))
-      .setHandler(resultHandler);
+    orderFuture.setHandler(resultHandler);
   }
 
+  /**
+   * Fetch global counter of order from the cache infrastructure.
+   *
+   * @param key counter key (type)
+   * @return async result of the counter
+   */
   private Future<Long> retrieveCounter(String key) {
     Future<Long> future = Future.future();
     EventBusService.<CounterService>getProxy(discovery,
@@ -61,9 +89,15 @@ public class CheckoutServiceImpl implements CheckoutService {
     return future;
   }
 
+  /**
+   * Send the order to the order microservice and wait for reply.
+   *
+   * @param order order data object
+   * @return async result
+   */
   private Future<CheckoutResult> sendOrderAwaitResult(Order order) {
     Future<CheckoutResult> future = Future.future();
-    vertx.eventBus().send(ORDER_EVENT_ADDRESS, order, reply -> {
+    vertx.eventBus().send(CheckoutService.ORDER_EVENT_ADDRESS, order, reply -> {
       if (reply.succeeded()) {
         future.complete(new CheckoutResult((JsonObject) reply.result().body()));
       } else {
@@ -73,102 +107,93 @@ public class CheckoutServiceImpl implements CheckoutService {
     return future;
   }
 
+  private Future<ShoppingCart> getCurrentCart(String userId) {
+    Future<ShoppingCartService> future = Future.future();
+    EventBusService.getProxy(discovery,
+      new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
+      future.completer());
+    return future.compose(service -> {
+      Future<ShoppingCart> cartFuture = Future.future();
+      service.getShoppingCart(userId, cartFuture.completer());
+      return cartFuture.compose(c -> {
+        if (c == null || c.isEmpty())
+          return Future.failedFuture(new IllegalStateException("Invalid shopping cart"));
+        else
+          return Future.succeededFuture(c);
+      });
+    });
+  }
+
   private double calculateTotalPrice(ShoppingCart cart) {
     return cart.getProductItems().stream()
-      .map(p -> p.getAmount() * cart.getPriceMap().get(p.getProductId())) // join by product id
+      .map(p -> p.getAmount() * p.getPrice()) // join by product id
       .reduce(0.0d, (a, b) -> a + b);
   }
 
-  /*private Future<HttpClient> retrieveProductRestClient() {
-    Future<HttpClient> clientFuture = Future.future();
+  private Future<HttpClient> getInventoryEndpoint() {
+    Future<HttpClient> future = Future.future();
     HttpEndpoint.getClient(discovery,
-      new JsonObject().put("name", "product-rest-api"),
-      clientFuture.completer());
-    return clientFuture;
+      new JsonObject().put("name", "inventory-rest-api"),
+      future.completer());
+    return future;
   }
 
-  private Future<Double> fetchProductsWithCurrentPrice(HttpClient client, List<ProductTuple> products) {
-    List<Future<JsonObject>> futures = new ArrayList<>();
-    for (ProductTuple product : products) {
-      Future<JsonObject> future = Future.future();
-      client.get("/product/" + product.getProductId() + "/price", response -> {
-        if (response.statusCode() == 200) {
-          response.bodyHandler(buffer -> {
-            JsonObject price = buffer.toJsonObject();
-            future.complete(product.toJson().mergeIn(price));
-          });
-        } else {
-          future.fail("not_found:" + product.getProductId());
-        }
-      })
-        .exceptionHandler(future::fail)
-        .end();
-      futures.add(future);
-    }
-    return Functional.sequenceFuture(futures)
-      .map(this::calculateTotalPrice); // calculate the total price of the products
+  private Future<JsonObject> getInventory(ProductTuple product, HttpClient client) {
+    Future<Integer> future = Future.future();
+    client.get("/inventory/" + product.getProductId(), response -> {
+      if (response.statusCode() == 200) {
+        response.bodyHandler(buffer -> {
+          try {
+            int inventory = Integer.valueOf(buffer.toString());
+            future.complete(inventory);
+          } catch (NumberFormatException ex) {
+            future.fail(ex);
+          }
+        });
+      } else {
+        future.fail("not_found:" + product.getProductId());
+      }
+    })
+      .exceptionHandler(future::fail)
+      .end();
+    return future.map(inv -> new JsonObject()
+      .put("id", product.getProductId())
+      .put("inventory", inv)
+      .put("amount", product.getAmount()));
   }
 
-  private Future<JsonObject> prepareAndRequestPayment(String userId, List<ProductTuple> products, double totalPrice) {
-    // get payment id counter
-    return this.retrieveCounter("payment").compose(counter -> {
-      Future<JsonObject> future = Future.future();
-
-      // prepare necessary transaction request data
-      JsonObject paymentRequest = new JsonObject().put("userId", userId)
-        .put("payRawCounter", counter)
-        .put("payAmount", totalPrice)
-        .put("paySource", generatePaymentSource());
-      // issue payment transaction request
-      vertx.eventBus().send(PAYMENT_EVENT_ADDRESS, paymentRequest, ar -> { // TODO: SHOULD CHANGE
-        if (ar.succeeded()) {
-          // we need the payment data from the reply message
-          JsonObject reply = ((JsonObject) ar.result().body())
-            .put("buyerId", userId)
-            .put("products", products)
-            .put("totalPrice", totalPrice);
-          future.complete(reply);
-        } else {
-          future.fail(ar.cause());
-        }
-      });
-      return future;
+  /**
+   * Check inventory for the current cart.
+   *
+   * @param cart shopping cart data object
+   * @return async result
+   */
+  private Future<JsonObject> checkAvailableInventory(ShoppingCart cart) {
+    Future<List<JsonObject>> allInventories = getInventoryEndpoint().compose(client -> {
+      List<Future<JsonObject>> futures = cart.getProductItems()
+        .stream()
+        .map(product -> getInventory(product, client))
+        .collect(Collectors.toList());
+      return Functional.sequenceFuture(futures);
+    });
+    return allInventories.map(inventories -> {
+      JsonObject result = new JsonObject();
+      // get the list of products whose inventory is lower than the demand amount
+      List<JsonObject> insufficient = inventories.stream()
+        .filter(item -> item.getInteger("inventory") - item.getInteger("amount") < 0)
+        .collect(Collectors.toList());
+      // insufficient inventory exists
+      if (insufficient.size() > 0) {
+        String insufficientList = insufficient.stream()
+          .map(item -> item.getString("id"))
+          .collect(Collectors.joining(", "));
+        result.put("message", String.format("Insufficient inventory available for product %s.", insufficientList))
+          .put("res", false);
+      } else {
+        result.put("res", true);
+      }
+      return result;
     });
   }
-
-  private Future<JsonObject> sendRawOrder(JsonObject rawOrder) {
-    // get order id counter
-    return this.retrieveCounter("order").compose(orderId -> {
-      Future<JsonObject> future = Future.future();
-
-      // set retrieved order id
-      rawOrder.put("orderId", orderId);
-      // submit order request
-      vertx.eventBus().send(ORDER_EVENT_ADDRESS, rawOrder, ar -> { // TODO: SHOULD CHANGE
-        if (ar.succeeded()) {
-          // we need the order data from the reply message
-          JsonObject reply = (JsonObject) ar.result().body();
-          future.complete(reply);
-        } else {
-          future.fail(ar.cause());
-        }
-      });
-      return future;
-    });
-  }
-
-  private double calculateTotalPrice(List<JsonObject> products) {
-    return products.stream()
-      .map(e -> e.getDouble("price") * e.getInteger("amount"))
-      .reduce(0.0, (x, y) -> x + y);
-  }
-
-  private short generatePaymentSource() {
-    if (new Random().nextBoolean()) {
-      return 1; // ZFB Payment
-    } else {
-      return 2; // Credit card payment
-    }
-  }*/
 
 }
