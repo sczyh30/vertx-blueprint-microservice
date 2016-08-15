@@ -29,6 +29,10 @@ Detailed tutorials are available here!
     - [Vert.x 蓝图 - Online Shopping 微服务实战(开发篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/index.html)
     - [Vert.x 蓝图 - Online Shopping 微服务实战(部署篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/deployment.html)
 
+## Architecture
+
+![Microservice Architecture](docs/images/entire-architecture.png)
+
 ## Build/Run
 
 To build the code:

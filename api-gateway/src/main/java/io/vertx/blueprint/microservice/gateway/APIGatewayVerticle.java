@@ -69,11 +69,11 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     router.route().handler(UserSessionHandler.create(oauth2));
 
     String hostURI = String.format("https://%s:%d", host, port);
-    OAuth2AuthHandler authHandler = OAuth2AuthHandler.create(oauth2, hostURI); // TODO
-    authHandler.setupCallback(router.route("/callback")).addAuthority("user"); // TODO
+    OAuth2AuthHandler authHandler = OAuth2AuthHandler.create(oauth2, hostURI);
+    authHandler.setupCallback(router.route("/callback"));
 
     // set auth handler
-    // router.route("/api/*").handler(authHandler); // TODO
+    router.route("/api/*").handler(authHandler);
 
     // api dispatcher
     router.route("/api/*").handler(this::dispatchRequests);
@@ -163,6 +163,9 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
           response.headers().forEach(header -> {
             toRsp.putHeader(header.getKey(), header.getValue());
           });
+          if (context.user() != null) {
+            toRsp.putHeader("user-principle", context.user().principal().encode());
+          }
           // send response
           toRsp.end(body);
           cbFuture.complete();
