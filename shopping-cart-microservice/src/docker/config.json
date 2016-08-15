@@ -1,4 +1,5 @@
 {
+  "api.name": "cart",
   "url": "jdbc:mysql://localhost/vertx_blueprint?characterEncoding=UTF-8&useSSL=false",
   "driver_class": "com.mysql.cj.jdbc.Driver",
   "user": "vbpdb1",

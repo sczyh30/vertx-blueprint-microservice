@@ -23,11 +23,11 @@ Vert.x blueprint application - An online shopping microservice application.
 Detailed tutorials are available here!
 
 - English Version
-    - [Vert.x Blueprint - Online shopping microservice practice (Development)](#)
-    - [Vert.x Blueprint - Online shopping microservice practice (Deployment)](#)
+    - [Vert.x Blueprint - Online shopping microservice practice (Development)](http://sczyh30.github.io/vertx-blueprint-microservice/index.html)
+    - [Vert.x Blueprint - Online shopping microservice practice (Deployment)](http://sczyh30.github.io/vertx-blueprint-microservice/deployment.html)
 - 中文版本
-    - [Vert.x 蓝图 - Online Shopping 微服务实战(开发篇)](#)
-    - [Vert.x 蓝图 - Online Shopping 微服务实战(部署篇)](#)
+    - [Vert.x 蓝图 - Online Shopping 微服务实战(开发篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/index.html)
+    - [Vert.x 蓝图 - Online Shopping 微服务实战(部署篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/deployment.html)
 
 ## Build/Run
 

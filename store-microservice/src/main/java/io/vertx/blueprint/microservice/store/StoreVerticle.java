@@ -3,6 +3,7 @@ package io.vertx.blueprint.microservice.store;
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
 import io.vertx.blueprint.microservice.store.api.RestStoreAPIVerticle;
 import io.vertx.blueprint.microservice.store.impl.StoreCRUDServiceImpl;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.serviceproxy.ProxyHelper;
 
@@ -32,7 +33,9 @@ public class StoreVerticle extends BaseMicroserviceVerticle {
 
   private Future<Void> deployRestVerticle(StoreCRUDService service) {
     Future<String> future = Future.future();
-    vertx.deployVerticle(new RestStoreAPIVerticle(service), future.completer());
+    vertx.deployVerticle(new RestStoreAPIVerticle(service),
+      new DeploymentOptions().setConfig(config()),
+      future.completer());
     return future.map(r -> null);
   }
 }

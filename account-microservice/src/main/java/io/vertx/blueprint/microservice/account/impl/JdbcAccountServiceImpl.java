@@ -21,20 +21,6 @@ import java.util.stream.Collectors;
  */
 public class JdbcAccountServiceImpl implements AccountService {
 
-  private static final String CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS `user_account` (\n" +
-    "  `id` varchar(30) NOT NULL,\n" +
-    "  `username` varchar(20) NOT NULL,\n" +
-    "  `phone` varchar(20) NOT NULL,\n" +
-    "  `email` varchar(45) NOT NULL,\n" +
-    "  `birthDate` date NOT NULL,\n" +
-    "  PRIMARY KEY (`id`),\n" +
-    "  UNIQUE KEY `username_UNIQUE` (`username`) )";
-  private static final String INSERT_STATEMENT = "INSERT INTO user_account (id, username, phone, email, birthDate) VALUES (?, ?, ?, ?, ?)";
-  private static final String FETCH_STATEMENT = "SELECT * FROM user_account WHERE id = ?";
-  private static final String FETCH_ALL_STATEMENT = "SELECT * FROM user_account";
-  private static final String DELETE_STATEMENT = "DELETE FROM user_account WHERE id = ?";
-  private static final String DELETE_ALL_STATEMENT = "DELETE FROM user_account";
-
   private final JDBCClient jdbc;
 
   public JdbcAccountServiceImpl(Vertx vertx, JsonObject config) {
@@ -110,6 +96,27 @@ public class JdbcAccountServiceImpl implements AccountService {
   }
 
   @Override
+  public AccountService updateAccount(Account account, Handler<AsyncResult<Account>> resultHandler) {
+    jdbc.getConnection(connHandler(resultHandler, connection -> {
+      JsonArray params = new JsonArray()
+        .add(account.getUsername())
+        .add(account.getPhone())
+        .add(account.getEmail())
+        .add(account.getBirthDate())
+        .add(account.getId());
+      connection.updateWithParams(UPDATE_STATEMENT, params, ar -> {
+        if (ar.succeeded()) {
+          resultHandler.handle(Future.succeededFuture(account));
+        } else {
+          resultHandler.handle(Future.failedFuture(ar.cause()));
+        }
+        connection.close();
+      });
+    }));
+    return this;
+  }
+
+  @Override
   public AccountService deleteAccount(String id, Handler<AsyncResult<Void>> resultHandler) {
     jdbc.getConnection(connHandler(resultHandler, connection -> {
       JsonArray params = new JsonArray().add(id);
@@ -150,5 +157,27 @@ public class JdbcAccountServiceImpl implements AccountService {
       }
     };
   }
+
+  // SQL statement
+
+  private static final String CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS `user_account` (\n" +
+    "  `id` varchar(30) NOT NULL,\n" +
+    "  `username` varchar(20) NOT NULL,\n" +
+    "  `phone` varchar(20) NOT NULL,\n" +
+    "  `email` varchar(45) NOT NULL,\n" +
+    "  `birthDate` bigint(20) NOT NULL,\n" +
+    "  PRIMARY KEY (`id`),\n" +
+    "  UNIQUE KEY `username_UNIQUE` (`username`) )";
+  private static final String INSERT_STATEMENT = "INSERT INTO user_account (id, username, phone, email, birthDate) VALUES (?, ?, ?, ?, ?)";
+  private static final String FETCH_STATEMENT = "SELECT * FROM user_account WHERE id = ?";
+  private static final String FETCH_ALL_STATEMENT = "SELECT * FROM user_account";
+  private static final String UPDATE_STATEMENT = "UPDATE `user_account`\n" +
+    "SET `username` = ?,\n" +
+    "`phone` = ?,\n" +
+    "`email` = ?,\n" +
+    "`birthDate` = ? \n" +
+    "WHERE `id` = ?";
+  private static final String DELETE_STATEMENT = "DELETE FROM user_account WHERE id = ?";
+  private static final String DELETE_ALL_STATEMENT = "DELETE FROM user_account";
 
 }

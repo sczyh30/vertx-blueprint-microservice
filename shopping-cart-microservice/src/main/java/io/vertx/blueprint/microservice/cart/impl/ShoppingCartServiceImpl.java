@@ -19,7 +19,6 @@ import io.vertx.servicediscovery.types.EventBusService;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Implementation of {@link ShoppingCartService}.
@@ -70,8 +69,9 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
       .subscribe(future::complete, future::fail);
 
     return future.compose(cart ->
-      getProductService().compose(service -> prepareProduct(service, cart)) // prepare product data
-        .compose(productStream -> generateCurrentCartFromStream(cart, productStream)) // prepare product items
+      getProductService()
+        .compose(service -> prepareProduct(service, cart)) // prepare product data
+        .compose(productList -> generateCurrentCartFromStream(cart, productList)) // prepare product items
     );
   }
 
@@ -82,7 +82,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
    * @param cart    raw shopping cart instance
    * @return async result
    */
-  private Future<Stream<Product>> prepareProduct(ProductService service, ShoppingCart cart) {
+  private Future<List<Product>> prepareProduct(ProductService service, ShoppingCart cart) {
     List<Future<Product>> futures = cart.getAmountMap().keySet()
       .stream()
       .map(productId -> {
@@ -91,8 +91,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         return future;
       })
       .collect(Collectors.toList());
-    return Functional.sequenceFuture(futures)
-      .map(List::stream);
+    return Functional.sequenceFuture(futures);
   }
 
   /**
@@ -100,20 +99,20 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
    * Note: this is not an asynchronous method. `Future` only marks whether the process is successful.
    *
    * @param rawCart       raw shopping cart
-   * @param productStream product data stream
+   * @param productList product data stream
    * @return async result
    */
-  private Future<ShoppingCart> generateCurrentCartFromStream(ShoppingCart rawCart, Stream<Product> productStream) {
+  private Future<ShoppingCart> generateCurrentCartFromStream(ShoppingCart rawCart, List<Product> productList) {
     Future<ShoppingCart> future = Future.future();
     // check if any of the product is invalid
-    if (productStream.anyMatch(e -> e == null)) {
+    if (productList.stream().anyMatch(e -> e == null)) {
       future.fail("Error when retrieve products: empty");
       return future;
     }
     // construct the product items
     List<ProductTuple> currentItems = rawCart.getAmountMap().entrySet()
       .stream()
-      .map(item -> new ProductTuple(getProductFromStream(productStream, item.getKey()),
+      .map(item -> new ProductTuple(getProductFromStream(productList, item.getKey()),
         item.getValue()))
       .filter(item -> item.getAmount() > 0)
       .collect(Collectors.toList());
@@ -125,12 +124,12 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
   /**
    * Get meta product data (seller and unit price) from a data stream of products.
    *
-   * @param productStream a data stream of products.
+   * @param productList a data stream of products.
    * @param productId     product id
    * @return corresponding product
    */
-  private Product getProductFromStream(Stream<Product> productStream, String productId) {
-    return productStream
+  private Product getProductFromStream(List<Product> productList, String productId) {
+    return productList.stream()
       .filter(product -> product.getProductId().equals(productId))
       .findFirst()
       .get();

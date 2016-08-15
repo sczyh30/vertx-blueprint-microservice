@@ -1,6 +1,7 @@
 package io.vertx.blueprint.microservice.cart.repository.impl;
 
 import io.vertx.blueprint.microservice.cart.CartEvent;
+import io.vertx.blueprint.microservice.cart.CartEventType;
 import io.vertx.blueprint.microservice.cart.repository.CartEventDataSource;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -14,6 +15,8 @@ import java.util.Optional;
 
 /**
  * Implementation of {@link CartEventDataSource}.
+ *
+ * @author Eric Zhao
  */
 public class CartEventDataSourceImpl implements CartEventDataSource {
 
@@ -28,17 +31,17 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
     return client.getConnectionObservable()
       .flatMap(conn -> conn.queryWithParamsObservable(STREAM_STATEMENT, new JsonArray().add(userId)))
       .map(ResultSet::getRows)
-      .flatMap(Observable::from)
-      .map(CartEvent::new);
+      .flatMapIterable(item -> item) // list merge into observable
+      .map(this::wrapCartEvent);
   }
 
   @Override
   public Observable<Void> save(CartEvent cartEvent) {
-    JsonArray params = new JsonArray().add(cartEvent.getCartEventType().ordinal())
+    JsonArray params = new JsonArray().add(cartEvent.getCartEventType().name())
       .add(cartEvent.getUserId())
       .add(cartEvent.getProductId())
       .add(cartEvent.getAmount())
-      .add(cartEvent.getCreatedAt());
+      .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
     return client.getConnectionObservable()
       .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params))
       .map(r -> null);
@@ -51,7 +54,7 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
       .map(ResultSet::getRows)
       .filter(list -> !list.isEmpty())
       .map(res -> res.get(0))
-      .map(CartEvent::new);
+      .map(this::wrapCartEvent);
   }
 
   @Override
@@ -60,11 +63,25 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
     return Observable.error(new RuntimeException("Delete is not allowed"));
   }
 
+  /**
+   * Wrap raw cart event object from the event source.
+   *
+   * @param raw raw event object
+   * @return wrapped cart event
+   */
+  private CartEvent wrapCartEvent(JsonObject raw) {
+    return new CartEvent(raw)
+      .setUserId(raw.getString("user_id"))
+      .setProductId(raw.getString("product_id"))
+      .setCreatedAt(raw.getLong("created_at"))
+      .setCartEventType(CartEventType.valueOf(raw.getString("type")));
+  }
+
   // SQL Statement
 
   private static final String INIT_STATEMENT = "CREATE TABLE `cart_event` (\n" +
     "  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n" +
-    "  `type` tinyint(2) NOT NULL,\n" +
+    "  `type` VARCHAR(20) NOT NULL,\n" +
     "  `user_id` varchar(45) NOT NULL,\n" +
     "  `product_id` varchar(45) NOT NULL,\n" +
     "  `amount` int(11) NOT NULL,\n" +
@@ -77,5 +94,12 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
 
   private static final String RETRIEVE_STATEMENT = "SELECT * FROM `cart_event` WHERE id = ?";
 
-  private static final String STREAM_STATEMENT = "";
+  private static final String STREAM_STATEMENT = "SELECT c.* FROM (\n" +
+    "\tSELECT * FROM cart_event\n" +
+    "\tWHERE user_id = ? AND (`type` = \"CHECKOUT\" OR `type` = \"CLEAR_CART\")\n" +
+    "    ORDER BY cart_event.created_at DESC\n" +
+    "    LIMIT 1) t \n" +
+    "RIGHT JOIN cart_event c ON c.user_id = t.user_id\n" +
+    "WHERE c.created_at BETWEEN coalesce(t.created_at, 0) AND coalesce(t.id, -1) != c.id\n" +
+    "ORDER BY c.created_at ASC;";
 }

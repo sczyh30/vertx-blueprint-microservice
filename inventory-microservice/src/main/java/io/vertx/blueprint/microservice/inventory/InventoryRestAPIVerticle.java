@@ -15,9 +15,9 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
 
   private static final String SERVICE_NAME = "inventory-rest-api";
 
-  private static final String API_INCREASE = "/inventory/:productId/increase";
-  private static final String API_DECREASE = "/inventory/:productId/decrease";
-  private static final String API_RETRIEVE = "/inventory/:productId";
+  private static final String API_INCREASE = "/:productId/increase";
+  private static final String API_DECREASE = "/:productId/decrease";
+  private static final String API_RETRIEVE = "/:productId";
 
   private InventoryService inventoryService;
 

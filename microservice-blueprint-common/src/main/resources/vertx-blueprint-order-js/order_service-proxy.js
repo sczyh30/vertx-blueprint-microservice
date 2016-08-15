@@ -53,7 +53,7 @@
      Initialize the persistence.
 
      @public
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      @return {OrderService}
      */
     this.initializePersistence = function (resultHandler) {
@@ -74,7 +74,7 @@
 
      @public
      @param accountId {string} account id
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      @return {OrderService}
      */
     this.retrieveOrdersForAccount = function (accountId, resultHandler) {
@@ -95,7 +95,7 @@
 
      @public
      @param order {Object} order data object
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      @return {OrderService}
      */
     this.createOrder = function (order, resultHandler) {
@@ -116,7 +116,7 @@
 
      @public
      @param orderId {number} order id
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      @return {OrderService}
      */
     this.retrieveOrder = function (orderId, resultHandler) {

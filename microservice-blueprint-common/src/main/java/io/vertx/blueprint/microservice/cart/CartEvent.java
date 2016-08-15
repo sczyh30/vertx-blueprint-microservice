@@ -17,7 +17,7 @@ public class CartEvent {
   private String productId;
   private Integer amount;
 
-  private Long createdAt;
+  private long createdAt;
 
   public CartEvent() {
     this.createdAt = System.currentTimeMillis();

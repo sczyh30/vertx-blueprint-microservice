@@ -1,31 +1,19 @@
-# TODO
+# TODO (WANTED)
 
-## Polyglot persistence
+## Architecture
 
-- [x] Common persistence: **MySQL** and **MongoDB**
-- [x] Cache: **Redis**
-- [ ] Recommendation: **Neo4j**
-
-## Web/Auth
-
-- [x] **Vert.x-Auth integration (OAuth 2 + Keycloak)**
-- [x] **API Gateway with load balance**
-- [x] **UI: SPA front-end**
+- [ ] Event sourcing with CQRS
 
 ## Recommendation
 
-- [ ] Simple recommendation service (Neo4j)
-
-## Failure
-
-- [x] **Introduce Vert.x Circuit Breaker**
-- [x] **Heartbeat check**
+- [ ] Recommendation persistence: **Neo4j** (Graph Database)
+- [ ] Simple recommendation service
+- [ ] Data analysis integration (Apache Spark + HDFS)
 
 ## Metrics/Monitoring
 
 - [ ] Performance/metrics monitoring and tuning
-- [x] Real-time events log
-- [ ] Real-time backend transaction data demonstration
+- [ ] Log integration with ELK stack
 
 ## Search
 
@@ -35,10 +23,10 @@
 
 - [ ] With Consul (Discovery, heartbeat check)
 - [ ] With Netflix Hystrix
+- [ ] API gateway with Netflix Eureka and Zuul
 - [ ] Integrate with MQ (Kafka or RabbitMQ)
 
-## Deployment
+## Container/Deployment
 
-- [x] **Docker compose**
 - [ ] Kubernetes
 - [ ] Openshift

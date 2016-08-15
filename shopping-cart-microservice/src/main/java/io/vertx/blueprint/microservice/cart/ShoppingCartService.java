@@ -28,11 +28,22 @@ public interface ShoppingCartService {
    */
   String SERVICE_ADDRESS = "service.shopping.cart";
 
+  /**
+   * Add cart event to the event source.
+   *
+   * @param event         cart event
+   * @param resultHandler async result handler
+   */
   @Fluent
   ShoppingCartService addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler);
 
+  /**
+   * Get shopping cart of a user.
+   *
+   * @param userId user id
+   * @param resultHandler async result handler
+   */
   @Fluent
   ShoppingCartService getShoppingCart(String userId, Handler<AsyncResult<ShoppingCart>> resultHandler);
-
 
 }

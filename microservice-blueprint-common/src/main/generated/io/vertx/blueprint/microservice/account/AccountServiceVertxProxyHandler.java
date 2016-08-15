@@ -157,6 +157,20 @@ public class AccountServiceVertxProxyHandler extends ProxyHandler {
          });
           break;
         }
+        case "updateAccount": {
+          service.updateAccount(json.getJsonObject("account") == null ? null : new io.vertx.blueprint.microservice.account.Account(json.getJsonObject("account")), res -> {
+            if (res.failed()) {
+              if (res.cause() instanceof ServiceException) {
+                msg.reply(res.cause());
+              } else {
+                msg.reply(new ServiceException(-1, res.cause().getMessage()));
+              }
+            } else {
+              msg.reply(res.result() == null ? null : res.result().toJson());
+            }
+         });
+          break;
+        }
         case "deleteAccount": {
           service.deleteAccount((java.lang.String)json.getValue("id"), createHandler(msg));
           break;

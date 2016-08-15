@@ -97,7 +97,7 @@ public class CheckoutServiceImpl implements CheckoutService {
    */
   private Future<CheckoutResult> sendOrderAwaitResult(Order order) {
     Future<CheckoutResult> future = Future.future();
-    vertx.eventBus().send(CheckoutService.ORDER_EVENT_ADDRESS, order, reply -> {
+    vertx.eventBus().send(CheckoutService.ORDER_EVENT_ADDRESS, order.toJson(), reply -> {
       if (reply.succeeded()) {
         future.complete(new CheckoutResult((JsonObject) reply.result().body()));
       } else {
@@ -140,7 +140,7 @@ public class CheckoutServiceImpl implements CheckoutService {
 
   private Future<JsonObject> getInventory(ProductTuple product, HttpClient client) {
     Future<Integer> future = Future.future();
-    client.get("/inventory/" + product.getProductId(), response -> {
+    client.get("/" + product.getProductId(), response -> {
       if (response.statusCode() == 200) {
         response.bodyHandler(buffer -> {
           try {

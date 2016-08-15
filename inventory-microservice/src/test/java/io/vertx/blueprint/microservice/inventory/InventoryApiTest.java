@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.restassured.RestAssured.*;
 import static org.assertj.core.api.Assertions.*;
-import static org.hamcrest.Matchers.*;
 import static com.jayway.awaitility.Awaitility.await;
 import static org.hamcrest.core.Is.is;
 
@@ -59,17 +58,17 @@ public class InventoryApiTest {
   @Test
   public void testGetAndAdd() throws Exception {
     int productId = ThreadLocalRandom.current().nextInt();
-    Response response = given().port(8086).get("/inventory/" + productId);
+    Response response = given().port(8086).get("/" + productId);
     assertThat(response.getStatusCode()).isEqualTo(200);
     assertThat(response.asString()).isEqualTo("0");
 
     int inc = 10;
-    response = given().port(8086).put("/inventory/" + productId + "/increase?n=" + inc);
+    response = given().port(8086).put("/" + productId + "/increase?n=" + inc);
     assertThat(response.getStatusCode()).isEqualTo(200);
     assertThat(response.asString()).isEqualTo(String.valueOf(inc));
 
     int dec = 8;
-    response = given().port(8086).put("/inventory/" + productId + "/decrease?n=" + dec);
+    response = given().port(8086).put("/" + productId + "/decrease?n=" + dec);
     assertThat(response.getStatusCode()).isEqualTo(200);
     assertThat(response.asString()).isEqualTo(String.valueOf(inc - dec));
   }

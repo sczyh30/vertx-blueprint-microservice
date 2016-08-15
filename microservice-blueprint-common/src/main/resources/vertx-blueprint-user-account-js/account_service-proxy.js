@@ -53,7 +53,7 @@
      Initialize the persistence.
 
      @public
-     @param resultHandler {function} the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
     this.initializePersistence = function (resultHandler) {
@@ -74,7 +74,7 @@
 
      @public
      @param account {Object} a account entity that we want to add
-     @param resultHandler {function} the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
     this.addAccount = function (account, resultHandler) {
@@ -95,7 +95,7 @@
 
      @public
      @param id {string} user account id
-     @param resultHandler {function} the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
     this.retrieveAccount = function (id, resultHandler) {
@@ -115,7 +115,7 @@
      Retrieve all user accounts.
 
      @public
-     @param resultHandler {function} the result handler will be called as soon as the users have been retrieved. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the users have been retrieved. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
     this.retrieveAllAccounts = function (resultHandler) {
@@ -132,11 +132,32 @@
     };
 
     /**
+     Update user account info.
+
+     @public
+     @param account {Object} a account entity that we want to update
+     @param resultHandler {function} the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not.
+     @return {AccountService}
+     */
+    this.updateAccount = function (account, resultHandler) {
+      var __args = arguments;
+      if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
+        if (closed) {
+          throw new Error('Proxy is closed');
+        }
+        j_eb.send(j_address, {"account": __args[0]}, {"action": "updateAccount"}, function (err, result) {
+          __args[1](err, result && result.body);
+        });
+        return that;
+      } else throw new TypeError('function invoked with invalid arguments');
+    };
+
+    /**
      Delete a user account from the persistence
 
      @public
      @param id {string} user account id
-     @param resultHandler {function} the result handler will be called as soon as the user has been removed. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the user has been removed. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
     this.deleteAccount = function (id, resultHandler) {
@@ -156,7 +177,7 @@
      Delete all user accounts from the persistence
 
      @public
-     @param resultHandler {function} the result handler will be called as soon as the users have been removed. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the users have been removed. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
     this.deleteAllAccounts = function (resultHandler) {

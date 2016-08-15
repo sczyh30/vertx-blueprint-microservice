@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 /**
  * A verticle supplies REST endpoint for order service.
@@ -30,6 +31,8 @@ public class RestOrderAPIVerticle extends RestAPIVerticle {
     super.start();
 
     Router router = Router.router(vertx);
+    // body handler
+    router.route().handler(BodyHandler.create());
     // API route
     router.get(API_RETRIEVE).handler(this::apiRetrieve);
     router.get(API_RETRIEVE_FOR_ACCOUNT).handler(this::apiRetrieveForAccount);

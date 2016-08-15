@@ -24,7 +24,8 @@ import java.util.Set;
 
 
 /**
- * This verticle provides support for service discovery.
+ * This verticle provides support for various microservice functionality
+ * like service discovery, circuit breaker and simple log publisher.
  *
  * @author Eric Zhao
  */
@@ -62,7 +63,9 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
   }
 
   protected Future<Void> publishHttpEndpoint(String name, String host, int port) {
-    Record record = HttpEndpoint.createRecord(name, host, port, "/");
+    Record record = HttpEndpoint.createRecord(name, host, port, "/",
+      new JsonObject().put("api.name", config().getString("api.name", ""))
+    );
     return publish(record);
   }
 
@@ -112,7 +115,7 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
   }
 
   /**
-   * A helper method that simply publish logs on the event bus
+   * A helper method that simply publish logs on the event bus.
    *
    * @param type log type
    * @param data log message data

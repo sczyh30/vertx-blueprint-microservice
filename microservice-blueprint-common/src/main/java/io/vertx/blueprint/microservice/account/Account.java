@@ -84,4 +84,9 @@ public class Account {
     this.birthDate = birthDate;
     return this;
   }
+
+  @Override
+  public String toString() {
+    return toJson().encodePrettily();
+  }
 }

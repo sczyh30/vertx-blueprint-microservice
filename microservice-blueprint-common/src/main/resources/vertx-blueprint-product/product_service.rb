@@ -11,13 +11,11 @@ module VertxBlueprintProduct
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintProduct::ProductService] the underlying java delegate
     def j_del
       @j_del
     end
-
     #  Initialize the persistence.
     # @yield the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
     # @return [self]
@@ -28,7 +26,6 @@ module VertxBlueprintProduct
       end
       raise ArgumentError, "Invalid arguments when calling initialize_persistence()"
     end
-
     #  Add a product to the persistence.
     # @param [Hash] product a product entity that we want to add
     # @yield the result handler will be called as soon as the product has been added. The async result indicates whether the operation was successful or not.
@@ -40,7 +37,6 @@ module VertxBlueprintProduct
       end
       raise ArgumentError, "Invalid arguments when calling add_product(product)"
     end
-
     #  Retrieve the product with certain `productId`.
     # @param [String] productId product id
     # @yield the result handler will be called as soon as the product has been retrieved. The async result indicates whether the operation was successful or not.
@@ -52,7 +48,6 @@ module VertxBlueprintProduct
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_product(productId)"
     end
-
     #  Retrieve the product price with certain `productId`.
     # @param [String] productId product id
     # @yield the result handler will be called as soon as the product has been retrieved. The async result indicates whether the operation was successful or not.
@@ -64,7 +59,6 @@ module VertxBlueprintProduct
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_product_price(productId)"
     end
-
     #  Retrieve all products.
     # @yield the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not.
     # @return [self]
@@ -75,7 +69,6 @@ module VertxBlueprintProduct
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_all_products()"
     end
-
     #  Retrieve products by page.
     # @param [Fixnum] page 
     # @yield the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not.
@@ -87,7 +80,6 @@ module VertxBlueprintProduct
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_products_by_page(page)"
     end
-
     #  Delete a product from the persistence
     # @param [String] productId product id
     # @yield the result handler will be called as soon as the product has been removed. The async result indicates whether the operation was successful or not.
@@ -99,7 +91,6 @@ module VertxBlueprintProduct
       end
       raise ArgumentError, "Invalid arguments when calling delete_product(productId)"
     end
-
     #  Delete all products from the persistence
     # @yield the result handler will be called as soon as the products have been removed. The async result indicates whether the operation was successful or not.
     # @return [self]

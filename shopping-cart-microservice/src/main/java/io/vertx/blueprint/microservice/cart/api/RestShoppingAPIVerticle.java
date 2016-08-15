@@ -1,5 +1,6 @@
 package io.vertx.blueprint.microservice.cart.api;
 
+import io.vertx.blueprint.microservice.cart.CartEvent;
 import io.vertx.blueprint.microservice.cart.CheckoutService;
 import io.vertx.blueprint.microservice.cart.ShoppingCartService;
 import io.vertx.blueprint.microservice.common.RestAPIVerticle;
@@ -15,10 +16,14 @@ import io.vertx.ext.web.handler.BodyHandler;
  */
 public class RestShoppingAPIVerticle extends RestAPIVerticle {
 
+  private static final String SERVICE_NAME = "shopping-cart-rest-api";
+
   private final ShoppingCartService shoppingCartService;
   private final CheckoutService checkoutService;
 
-  private static final String API_BUY = "/cart/submit";
+  private static final String API_CHECKOUT = "/checkout";
+  private static final String API_ADD_CART_EVENT = "/events";
+  private static final String API_GET_CART = "/cart";
 
   public RestShoppingAPIVerticle(ShoppingCartService shoppingCartService, CheckoutService checkoutService) {
     this.shoppingCartService = shoppingCartService;
@@ -32,7 +37,11 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
     // body handler
     router.route().handler(BodyHandler.create());
     // api route handler
-    router.post(API_BUY).handler(this::apiBuy);
+    router.post(API_CHECKOUT).handler(this::apiCheckout);
+    router.post(API_ADD_CART_EVENT).handler(this::apiAddCartEvent);
+    router.get(API_GET_CART).handler(this::apiGetCart);
+
+    enableLocalSession(router);
 
     enableHeartbeatCheck(router, config());
 
@@ -42,11 +51,34 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
 
     // create http server for the REST service
     createHttpServer(router, host, port)
+      .compose(serverCreated -> publishHttpEndpoint(SERVICE_NAME, host, port))
       .setHandler(future.completer());
   }
 
-  private void apiBuy(RoutingContext context) {
-    notImplemented(context);
+  private void apiCheckout(RoutingContext context) {
+    // TODO: validate user auth
+    String userId = "TEST666";
+    checkoutService.checkout(userId, resultHandler(context));
+  }
+
+  private void apiAddCartEvent(RoutingContext context) {
+    CartEvent cartEvent = new CartEvent(context.getBodyAsJson());
+    System.out.println(cartEvent.toString());
+    if (validateEvent(cartEvent)) {
+      shoppingCartService.addCartEvent(cartEvent, resultVoidHandler(context, 201));
+    } else {
+      context.fail(400);
+    }
+  }
+
+  private void apiGetCart(RoutingContext context) {
+    // TODO: validate user auth
+    String userId = "TEST666";
+    shoppingCartService.getShoppingCart(userId, resultHandler(context));
+  }
+
+  private boolean validateEvent(CartEvent event) {
+    return event.getUserId() != null;
   }
 
 }

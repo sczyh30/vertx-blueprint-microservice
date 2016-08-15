@@ -53,7 +53,7 @@
      Initialize the persistence.
 
      @public
-     @param resultHandler {function} the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not. 
      */
     this.initializePersistence = function (resultHandler) {
       var __args = arguments;
@@ -73,7 +73,7 @@
 
      @public
      @param payment {Object} payment entity
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      */
     this.addPaymentRecord = function (payment, resultHandler) {
       var __args = arguments;
@@ -93,7 +93,7 @@
 
      @public
      @param payId {string} payment id
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      */
     this.retrievePaymentRecord = function (payId, resultHandler) {
       var __args = arguments;

@@ -69,6 +69,16 @@ public interface AccountService {
   AccountService retrieveAllAccounts(Handler<AsyncResult<List<Account>>> resultHandler);
 
   /**
+   * Update user account info.
+   *
+   * @param account          a account entity that we want to update
+   * @param resultHandler the result handler will be called as soon as the account has been added. The async result indicates
+   *                      whether the operation was successful or not.
+   */
+  @Fluent
+  AccountService updateAccount(Account account, Handler<AsyncResult<Account>> resultHandler);
+
+  /**
    * Delete a user account from the persistence
    *
    * @param id            user account id

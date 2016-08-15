@@ -10,7 +10,6 @@ module VertxBlueprintCommon
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintCommon::OAuth2Service] the underlying java delegate
     def j_del

@@ -2,11 +2,17 @@ package io.vertx.blueprint.microservice.order;
 
 import io.vertx.blueprint.microservice.cart.CheckoutResult;
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
+import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.types.MessageSource;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A verticle for raw order wrapping and dispatching.
@@ -52,21 +58,69 @@ public class RawOrderDispatcher extends BaseMicroserviceVerticle {
 
   /**
    * Dispatch the order to the infrastructure layer.
-   * Here we simply save the order to the persistence.
+   * Here we simply save the order to the persistence and modify inventory changes.
    *
    * @param order  order data object
    * @param sender message sender
    */
   private void dispatchOrder(Order order, Message<JsonObject> sender) {
-    orderService.createOrder(order, ar -> {
-      if (ar.succeeded()) {
-        CheckoutResult result = new CheckoutResult("checkout_success", order);
-        sender.reply(result.toJson());
-        publishLogEvent("checkout", result.toJson(), true);
-      } else {
-        sender.fail(5000, ar.cause().getMessage());
-        ar.cause().printStackTrace();
-      }
+    Future<Void> orderCreateFuture = Future.future();
+    orderService.createOrder(order, orderCreateFuture.completer());
+    orderCreateFuture
+      .compose(orderCreated -> applyInventoryChanges(order))
+      .setHandler(ar -> {
+        if (ar.succeeded()) {
+          CheckoutResult result = new CheckoutResult("checkout_success", order);
+          sender.reply(result.toJson());
+          publishLogEvent("checkout", result.toJson(), true);
+        } else {
+          sender.fail(5000, ar.cause().getMessage());
+          ar.cause().printStackTrace();
+        }
+      });
+  }
+
+  /**
+   * Apply inventory decrease changes according to the order.
+   *
+   * @param order order data object
+   * @return async result
+   */
+  private Future<Void> applyInventoryChanges(Order order) {
+    Future<Void> future = Future.future();
+    // get REST endpoint
+    Future<HttpClient> clientFuture = Future.future();
+    HttpEndpoint.getClient(discovery,
+      new JsonObject().put("name", "inventory-rest-api"),
+      clientFuture.completer());
+    // modify the inventory changes via REST API
+    return clientFuture.compose(client -> {
+      List<Future> futures = order.getProducts()
+        .stream()
+        .map(item -> {
+          Future<Void> resultFuture = Future.future();
+          String url = String.format("/%s/decrease?n=%d", item.getProductId(), item.getAmount());
+          client.put(url, response -> {
+            if (response.statusCode() == 200) {
+              resultFuture.complete(); // need to check result?
+            } else {
+              resultFuture.fail(response.statusMessage());
+            }
+          })
+            .exceptionHandler(resultFuture::fail)
+            .end();
+          return resultFuture;
+        })
+        .collect(Collectors.toList());
+      // composite async results, all must be complete
+      CompositeFuture.all(futures).setHandler(ar -> {
+        if (ar.succeeded()) {
+          future.complete();
+        } else {
+          future.fail(ar.cause());
+        }
+      });
+      return future;
     });
   }
 }

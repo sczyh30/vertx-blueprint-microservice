@@ -130,6 +130,28 @@ public class AccountService {
   }
 
   /**
+   * Update user account info.
+   * @param account a account entity that we want to update
+   * @param resultHandler the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not.
+   * @return 
+   */
+  public AccountService updateAccount(Account account, Handler<AsyncResult<Account>> resultHandler) { 
+    delegate.updateAccount(account, resultHandler);
+    return this;
+  }
+
+  /**
+   * Update user account info.
+   * @param account a account entity that we want to update
+   * @return 
+   */
+  public Observable<Account> updateAccountObservable(Account account) { 
+    io.vertx.rx.java.ObservableFuture<Account> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
+    updateAccount(account, resultHandler.toHandler());
+    return resultHandler;
+  }
+
+  /**
    * Delete a user account from the persistence
    * @param id user account id
    * @param resultHandler the result handler will be called as soon as the user has been removed. The async result indicates whether the operation was successful or not.

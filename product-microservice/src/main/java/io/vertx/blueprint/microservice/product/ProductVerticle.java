@@ -3,6 +3,7 @@ package io.vertx.blueprint.microservice.product;
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
 import io.vertx.blueprint.microservice.product.api.RestProductAPIVerticle;
 import io.vertx.blueprint.microservice.product.impl.ProductServiceImpl;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.serviceproxy.ProxyHelper;
 
@@ -39,7 +40,9 @@ public class ProductVerticle extends BaseMicroserviceVerticle {
 
   private Future<Void> deployRestService(ProductService service) {
     Future<Void> future = Future.future();
-    vertx.deployVerticle(new RestProductAPIVerticle(service), ar -> {
+    vertx.deployVerticle(new RestProductAPIVerticle(service),
+      new DeploymentOptions().setConfig(config()),
+      ar -> {
       if (ar.succeeded()) {
         future.complete();
       } else {

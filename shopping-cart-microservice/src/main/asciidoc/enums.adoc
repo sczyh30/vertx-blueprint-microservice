@@ -1,0 +1,16 @@
+= Enums
+
+[[CartEventType]]
+== CartEventType
+
+
+[cols=">25%,75%"]
+[frame="topbot"]
+|===
+^|Name | Description
+|[[ADD_ITEM]]`ADD_ITEM`|-
+|[[REMOVE_ITEM]]`REMOVE_ITEM`|-
+|[[CHECKOUT]]`CHECKOUT`|-
+|[[CLEAR_CART]]`CLEAR_CART`|-
+|===
+

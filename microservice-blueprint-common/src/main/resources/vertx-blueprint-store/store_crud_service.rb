@@ -11,13 +11,11 @@ module VertxBlueprintStore
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintStore::StoreCRUDService] the underlying java delegate
     def j_del
       @j_del
     end
-
     #  Save an online store to the persistence layer. This is a so called `upsert` operation.
     #  This is used to update store info, or just apply for a new store.
     # @param [Hash] store store object
@@ -29,7 +27,6 @@ module VertxBlueprintStore
       end
       raise ArgumentError, "Invalid arguments when calling save_store(store)"
     end
-
     #  Retrieve an online store by seller id.
     # @param [String] sellerId seller id, refers to an independent online store
     # @yield async result handler
@@ -40,7 +37,6 @@ module VertxBlueprintStore
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_store(sellerId)"
     end
-
     #  Remove an online store whose seller is <code>sellerId</code>.
     #  This is used to close an online store.
     # @param [String] sellerId seller id, refers to an independent online store

@@ -39,7 +39,7 @@ var ProductService = function (j_val) {
    Initialize the persistence.
 
    @public
-   @param resultHandler {function} the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.initializePersistence = function (resultHandler) {
@@ -61,7 +61,7 @@ var ProductService = function (j_val) {
 
    @public
    @param product {Object} a product entity that we want to add
-   @param resultHandler {function} the result handler will be called as soon as the product has been added. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the product has been added. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.addProduct = function (product, resultHandler) {
@@ -83,7 +83,7 @@ var ProductService = function (j_val) {
 
    @public
    @param productId {string} product id
-   @param resultHandler {function} the result handler will be called as soon as the product has been retrieved. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the product has been retrieved. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.retrieveProduct = function (productId, resultHandler) {
@@ -105,7 +105,7 @@ var ProductService = function (j_val) {
 
    @public
    @param productId {string} product id
-   @param resultHandler {function} the result handler will be called as soon as the product has been retrieved. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the product has been retrieved. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.retrieveProductPrice = function (productId, resultHandler) {
@@ -126,7 +126,7 @@ var ProductService = function (j_val) {
    Retrieve all products.
 
    @public
-   @param resultHandler {function} the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.retrieveAllProducts = function (resultHandler) {
@@ -148,7 +148,7 @@ var ProductService = function (j_val) {
 
    @public
    @param page {number}
-   @param resultHandler {function} the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.retrieveProductsByPage = function (page, resultHandler) {
@@ -170,7 +170,7 @@ var ProductService = function (j_val) {
 
    @public
    @param productId {string} product id
-   @param resultHandler {function} the result handler will be called as soon as the product has been removed. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the product has been removed. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.deleteProduct = function (productId, resultHandler) {
@@ -191,7 +191,7 @@ var ProductService = function (j_val) {
    Delete all products from the persistence
 
    @public
-   @param resultHandler {function} the result handler will be called as soon as the products have been removed. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the products have been removed. The async result indicates whether the operation was successful or not. 
    @return {ProductService}
    */
   this.deleteAllProducts = function (resultHandler) {

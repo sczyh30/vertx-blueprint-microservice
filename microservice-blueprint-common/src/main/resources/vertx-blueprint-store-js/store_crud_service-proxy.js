@@ -55,7 +55,7 @@
 
      @public
      @param store {Object} store object
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      */
     this.saveStore = function (store, resultHandler) {
       var __args = arguments;
@@ -75,7 +75,7 @@
 
      @public
      @param sellerId {string} seller id, refers to an independent online store
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      */
     this.retrieveStore = function (sellerId, resultHandler) {
       var __args = arguments;
@@ -96,7 +96,7 @@
 
      @public
      @param sellerId {string} seller id, refers to an independent online store
-     @param resultHandler {function} async result handler
+     @param resultHandler {function} async result handler 
      */
     this.removeStore = function (sellerId, resultHandler) {
       var __args = arguments;

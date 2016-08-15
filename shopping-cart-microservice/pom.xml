@@ -13,7 +13,7 @@
   <artifactId>shopping-cart-microservice</artifactId>
 
   <properties>
-    <main.verticle>io.vertx.blueprint.microservice.cart.SimpleCheckoutVerticle</main.verticle>
+    <main.verticle>io.vertx.blueprint.microservice.cart.CartVerticle</main.verticle>
   </properties>
 
   <dependencies>

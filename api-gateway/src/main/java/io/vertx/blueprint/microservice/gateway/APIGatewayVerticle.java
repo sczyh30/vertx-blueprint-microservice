@@ -15,18 +15,17 @@ import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2FlowType;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.OAuth2AuthHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
-import io.vertx.ext.web.sstore.ClusteredSessionStore;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -57,11 +56,11 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     router.route().handler(SessionHandler.create(
       LocalSessionStore.create(vertx, "shopping.user.session")));
 
+    // body handler
+    router.route().handler(BodyHandler.create());
+
     // version handler
     router.get("/api/v").handler(this::apiVersion);
-
-    // api dispatcher
-    router.route("/api/*").handler(this::dispatchRequests);
 
     // create OAuth 2 instance for Keycloak
     OAuth2Auth oauth2 = OAuth2Auth
@@ -69,10 +68,15 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
 
     router.route().handler(UserSessionHandler.create(oauth2));
 
-    OAuth2AuthHandler authHandler = OAuth2AuthHandler.create(oauth2, "/"); // TODO
+    String hostURI = String.format("https://%s:%d", host, port);
+    OAuth2AuthHandler authHandler = OAuth2AuthHandler.create(oauth2, hostURI); // TODO
+    authHandler.setupCallback(router.route("/callback")).addAuthority("user"); // TODO
 
-    authHandler.setupCallback(router.route("/callback")); // TODO
-    // router.route("/api/*").handler(authHandler);
+    // set auth handler
+    // router.route("/api/*").handler(authHandler); // TODO
+
+    // api dispatcher
+    router.route("/api/*").handler(this::dispatchRequests);
 
     // discovery endpoint
     ServiceDiscoveryRestEndpoint.create(router, discovery);
@@ -109,7 +113,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
         if (ar.succeeded()) {
           List<Record> recordList = ar.result();
           // get relative path and retrieve prefix to dispatch client
-          String path = context.request().path();
+          String path = context.request().uri();
 
           if (path.length() <= initialOffset) {
             notFound(context);
@@ -124,7 +128,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
           Optional<HttpClient> client = recordList.stream()
             .filter(record -> record.getMetadata().getString("api.name").equals(prefix))
             .map(record -> (HttpClient) discovery.getReference(record).get())
-            .findFirst(); // TODO: implement load balance (e.g. round robin)
+            .findAny(); // simple load balance
 
           if (client.isPresent()) {
             doDispatch(context, newPath, client.get(), future);

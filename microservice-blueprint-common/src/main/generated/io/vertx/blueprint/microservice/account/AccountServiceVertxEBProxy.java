@@ -137,6 +137,25 @@ public class AccountServiceVertxEBProxy implements AccountService {
     return this;
   }
 
+  public AccountService updateAccount(Account account, Handler<AsyncResult<Account>> resultHandler) {
+    if (closed) {
+      resultHandler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
+      return this;
+    }
+    JsonObject _json = new JsonObject();
+    _json.put("account", account == null ? null : account.toJson());
+    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
+    _deliveryOptions.addHeader("action", "updateAccount");
+    _vertx.eventBus().<JsonObject>send(_address, _json, _deliveryOptions, res -> {
+      if (res.failed()) {
+        resultHandler.handle(Future.failedFuture(res.cause()));
+      } else {
+        resultHandler.handle(Future.succeededFuture(res.result().body() == null ? null : new Account(res.result().body())));
+                      }
+    });
+    return this;
+  }
+
   public AccountService deleteAccount(String id, Handler<AsyncResult<Void>> resultHandler) {
     if (closed) {
       resultHandler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));

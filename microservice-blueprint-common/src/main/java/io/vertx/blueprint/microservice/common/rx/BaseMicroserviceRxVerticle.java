@@ -50,7 +50,9 @@ public class BaseMicroserviceRxVerticle extends AbstractVerticle {
   }
 
   protected Observable<Void> publishHttpEndpoint(String name, String host, int port) {
-    Record record = HttpEndpoint.createRecord(name, host, port, "/");
+    Record record = HttpEndpoint.createRecord(name, host, port, "/",
+      new JsonObject().put("api.name", config().getString("api.name", ""))
+    );
     return publish(record);
   }
 

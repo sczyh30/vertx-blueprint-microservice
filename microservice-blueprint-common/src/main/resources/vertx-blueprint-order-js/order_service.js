@@ -39,7 +39,7 @@ var OrderService = function (j_val) {
    Initialize the persistence.
 
    @public
-   @param resultHandler {function} async result handler
+   @param resultHandler {function} async result handler 
    @return {OrderService}
    */
   this.initializePersistence = function (resultHandler) {
@@ -61,7 +61,7 @@ var OrderService = function (j_val) {
 
    @public
    @param accountId {string} account id
-   @param resultHandler {function} async result handler
+   @param resultHandler {function} async result handler 
    @return {OrderService}
    */
   this.retrieveOrdersForAccount = function (accountId, resultHandler) {
@@ -83,7 +83,7 @@ var OrderService = function (j_val) {
 
    @public
    @param order {Object} order data object
-   @param resultHandler {function} async result handler
+   @param resultHandler {function} async result handler 
    @return {OrderService}
    */
   this.createOrder = function (order, resultHandler) {
@@ -105,7 +105,7 @@ var OrderService = function (j_val) {
 
    @public
    @param orderId {number} order id
-   @param resultHandler {function} async result handler
+   @param resultHandler {function} async result handler 
    @return {OrderService}
    */
   this.retrieveOrder = function (orderId, resultHandler) {

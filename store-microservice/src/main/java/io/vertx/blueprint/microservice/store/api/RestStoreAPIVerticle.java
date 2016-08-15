@@ -14,11 +14,11 @@ import io.vertx.ext.web.handler.BodyHandler;
  */
 public class RestStoreAPIVerticle extends RestAPIVerticle {
 
-  private static final String SERVICE_NAME = "store-rest-api";
+  private static final String SERVICE_NAME = "shop-rest-api";
 
-  private static final String API_SAVE = "/store";
-  private static final String API_RETRIEVE = "/store/:sellerId";
-  private static final String API_CLOSE = "/store/:sellerId";
+  private static final String API_SAVE = "/save";
+  private static final String API_RETRIEVE = "/:sellerId";
+  private static final String API_CLOSE = "/:sellerId";
 
   private final StoreCRUDService service;
 

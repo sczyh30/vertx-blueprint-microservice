@@ -3,6 +3,7 @@ package io.vertx.blueprint.microservice.order;
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
 import io.vertx.blueprint.microservice.order.api.RestOrderAPIVerticle;
 import io.vertx.blueprint.microservice.order.impl.OrderServiceImpl;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.serviceproxy.ProxyHelper;
 
@@ -38,13 +39,17 @@ public class OrderVerticle extends BaseMicroserviceVerticle {
 
   private Future<Void> prepareDispatcher() {
     Future<String> future = Future.future();
-    vertx.deployVerticle(new RawOrderDispatcher(orderService), future.completer());
+    vertx.deployVerticle(new RawOrderDispatcher(orderService),
+      new DeploymentOptions().setConfig(config()),
+      future.completer());
     return future.map(r -> null);
   }
 
   private Future<Void> deployRestVerticle() {
     Future<String> future = Future.future();
-    vertx.deployVerticle(new RestOrderAPIVerticle(orderService), future.completer());
+    vertx.deployVerticle(new RestOrderAPIVerticle(orderService),
+      new DeploymentOptions().setConfig(config()),
+      future.completer());
     return future.map(r -> null);
   }
 }

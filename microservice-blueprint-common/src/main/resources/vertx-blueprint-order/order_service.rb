@@ -11,13 +11,11 @@ module VertxBlueprintOrder
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintOrder::OrderService] the underlying java delegate
     def j_del
       @j_del
     end
-
     #  Initialize the persistence.
     # @yield async result handler
     # @return [self]
@@ -28,7 +26,6 @@ module VertxBlueprintOrder
       end
       raise ArgumentError, "Invalid arguments when calling initialize_persistence()"
     end
-
     #  Retrieve orders belonging to a certain account.
     # @param [String] accountId account id
     # @yield async result handler
@@ -40,7 +37,6 @@ module VertxBlueprintOrder
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_orders_for_account(accountId)"
     end
-
     #  Save an order into the persistence.
     # @param [Hash] order order data object
     # @yield async result handler
@@ -52,7 +48,6 @@ module VertxBlueprintOrder
       end
       raise ArgumentError, "Invalid arguments when calling create_order(order)"
     end
-
     #  Retrieve the order with a certain <code>orderId</code>.
     # @param [Fixnum] orderId order id
     # @yield async result handler

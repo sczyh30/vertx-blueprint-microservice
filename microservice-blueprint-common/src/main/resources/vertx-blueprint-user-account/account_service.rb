@@ -11,13 +11,11 @@ module VertxBlueprintUserAccount
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintUserAccount::AccountService] the underlying java delegate
     def j_del
       @j_del
     end
-
     #  Initialize the persistence.
     # @yield the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
     # @return [self]
@@ -28,7 +26,6 @@ module VertxBlueprintUserAccount
       end
       raise ArgumentError, "Invalid arguments when calling initialize_persistence()"
     end
-
     #  Add a account to the persistence.
     # @param [Hash] account a account entity that we want to add
     # @yield the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not.
@@ -40,7 +37,6 @@ module VertxBlueprintUserAccount
       end
       raise ArgumentError, "Invalid arguments when calling add_account(account)"
     end
-
     #  Retrieve the user account with certain `id`.
     # @param [String] id user account id
     # @yield the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not.
@@ -52,7 +48,6 @@ module VertxBlueprintUserAccount
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_account(id)"
     end
-
     #  Retrieve all user accounts.
     # @yield the result handler will be called as soon as the users have been retrieved. The async result indicates whether the operation was successful or not.
     # @return [self]
@@ -64,6 +59,17 @@ module VertxBlueprintUserAccount
       raise ArgumentError, "Invalid arguments when calling retrieve_all_accounts()"
     end
 
+    #  Update user account info.
+    # @param [Hash] account a account entity that we want to update
+    # @yield the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not.
+    # @return [self]
+    def update_account(account=nil)
+      if account.class == Hash && block_given?
+        @j_del.java_method(:updateAccount, [Java::IoVertxBlueprintMicroserviceAccount::Account.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceAccount::Account.new(::Vertx::Util::Utils.to_json_object(account)), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        return self
+      end
+      raise ArgumentError, "Invalid arguments when calling update_account(account)"
+    end
     #  Delete a user account from the persistence
     # @param [String] id user account id
     # @yield the result handler will be called as soon as the user has been removed. The async result indicates whether the operation was successful or not.
@@ -75,7 +81,6 @@ module VertxBlueprintUserAccount
       end
       raise ArgumentError, "Invalid arguments when calling delete_account(id)"
     end
-
     #  Delete all user accounts from the persistence
     # @yield the result handler will be called as soon as the users have been removed. The async result indicates whether the operation was successful or not.
     # @return [self]

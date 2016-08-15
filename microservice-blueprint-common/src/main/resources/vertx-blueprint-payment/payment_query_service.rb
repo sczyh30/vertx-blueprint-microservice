@@ -11,13 +11,11 @@ module VertxBlueprintPayment
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintPayment::PaymentQueryService] the underlying java delegate
     def j_del
       @j_del
     end
-
     #  Initialize the persistence.
     # @yield the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
     # @return [void]
@@ -27,7 +25,6 @@ module VertxBlueprintPayment
       end
       raise ArgumentError, "Invalid arguments when calling initialize_persistence()"
     end
-
     #  Add a payment record into the backend persistence.
     # @param [Hash] payment payment entity
     # @yield async result handler
@@ -38,7 +35,6 @@ module VertxBlueprintPayment
       end
       raise ArgumentError, "Invalid arguments when calling add_payment_record(payment)"
     end
-
     #  Retrieve payment record from backend by payment id.
     # @param [String] payId payment id
     # @yield async result handler
