@@ -12,6 +12,10 @@
 
   <artifactId>api-gateway</artifactId>
 
+  <properties>
+    <main.verticle>io.vertx.blueprint.microservice.gateway.APIGatewayVerticle</main.verticle>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.vertx.blueprint</groupId>
@@ -19,5 +23,19 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- plugin to create a `fat-jar` -->
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <!-- plugin to create a docker image -->
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
