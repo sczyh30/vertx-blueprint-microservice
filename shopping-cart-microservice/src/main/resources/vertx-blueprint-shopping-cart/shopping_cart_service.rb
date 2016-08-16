@@ -13,7 +13,6 @@ module VertxBlueprintShoppingCart
       end
       raise ArgumentError, "Invalid arguments when calling add_cart_event(event)"
     end
-
     #  Get shopping cart of a user.
     # @param [String] userId user id
     # @yield async result handler
@@ -33,7 +32,6 @@ module VertxBlueprintShoppingCart
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintShoppingCart::ShoppingCartService] the underlying java delegate
     def j_del

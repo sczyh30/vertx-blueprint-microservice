@@ -13,13 +13,11 @@ module VertxBlueprintShoppingCart
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxBlueprintShoppingCart::CheckoutService] the underlying java delegate
     def j_del
       @j_del
     end
-
     #  Create a shopping checkout service instance
     # @param [::Vertx::Vertx] vertx 
     # @param [::VertxServiceDiscovery::ServiceDiscovery] discovery 
@@ -30,7 +28,6 @@ module VertxBlueprintShoppingCart
       end
       raise ArgumentError, "Invalid arguments when calling create_service(vertx,discovery)"
     end
-
     #  Shopping cart checkout.
     # @param [String] userId user id
     # @yield async result handler

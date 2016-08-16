@@ -1,6 +1,8 @@
 package io.vertx.blueprint.microservice.cart.impl;
 
 import io.vertx.blueprint.microservice.cache.CounterService;
+import io.vertx.blueprint.microservice.cart.CartEvent;
+import io.vertx.blueprint.microservice.cart.CartEventType;
 import io.vertx.blueprint.microservice.cart.CheckoutResult;
 import io.vertx.blueprint.microservice.cart.CheckoutService;
 import io.vertx.blueprint.microservice.cart.ShoppingCart;
@@ -18,7 +20,6 @@ import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,7 +56,8 @@ public class CheckoutServiceImpl implements CheckoutService {
             .setProducts(cart.getProductItems())
             .setTotalPrice(totalPrice);
           // set id and then send order, wait for reply
-          return retrieveCounter("order")
+          return saveCheckoutEvent(userId)
+            .compose(eventSaved -> retrieveCounter("order"))
             .compose(id -> sendOrderAwaitResult(order.setOrderId(id)));
         } else {
           // has insufficient inventory, fail
@@ -193,6 +195,25 @@ public class CheckoutServiceImpl implements CheckoutService {
         result.put("res", true);
       }
       return result;
+    });
+  }
+
+  /**
+   * Save checkout cart event for current user.
+   *
+   * @param userId user id
+   * @return async result
+   */
+  private Future<Void> saveCheckoutEvent(String userId) {
+    Future<ShoppingCartService> future = Future.future();
+    EventBusService.getProxy(discovery,
+      new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
+      future.completer());
+    return future.compose(service -> {
+      Future<Void> resFuture = Future.future();
+      CartEvent event = new CartEvent(CartEventType.CHECKOUT, userId, "all", 0);
+      service.addCartEvent(event, resFuture.completer());
+      return resFuture;
     });
   }
 

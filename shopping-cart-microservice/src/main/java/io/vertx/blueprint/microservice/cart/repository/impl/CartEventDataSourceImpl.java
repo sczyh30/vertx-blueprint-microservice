@@ -10,8 +10,6 @@ import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.jdbc.JDBCClient;
 import rx.Observable;
 
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Implementation of {@link CartEventDataSource}.
@@ -28,8 +26,9 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
 
   @Override
   public Observable<CartEvent> streamByUser(String userId) {
+    JsonArray params = new JsonArray().add(userId).add(userId);
     return client.getConnectionObservable()
-      .flatMap(conn -> conn.queryWithParamsObservable(STREAM_STATEMENT, new JsonArray().add(userId)))
+      .flatMap(conn -> conn.queryWithParamsObservable(STREAM_STATEMENT, params))
       .map(ResultSet::getRows)
       .flatMapIterable(item -> item) // list merge into observable
       .map(this::wrapCartEvent);
@@ -94,12 +93,12 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
 
   private static final String RETRIEVE_STATEMENT = "SELECT * FROM `cart_event` WHERE id = ?";
 
-  private static final String STREAM_STATEMENT = "SELECT c.* FROM (\n" +
-    "\tSELECT * FROM cart_event\n" +
-    "\tWHERE user_id = ? AND (`type` = \"CHECKOUT\" OR `type` = \"CLEAR_CART\")\n" +
-    "    ORDER BY cart_event.created_at DESC\n" +
-    "    LIMIT 1) t \n" +
-    "RIGHT JOIN cart_event c ON c.user_id = t.user_id\n" +
-    "WHERE c.created_at BETWEEN coalesce(t.created_at, 0) AND coalesce(t.id, -1) != c.id\n" +
+  private static final String STREAM_STATEMENT = "SELECT * FROM cart_event c\n" +
+    "WHERE c.user_id = ? AND c.created_at > coalesce(\n" +
+    "    (SELECT created_at FROM cart_event\n" +
+    "\t WHERE user_id = ? AND (`type` = \"CHECKOUT\" OR `type` = \"CLEAR_CART\")\n" +
+    "     ORDER BY cart_event.created_at DESC\n" +
+    "     LIMIT 1\n" +
+    "     ), 0)\n" +
     "ORDER BY c.created_at ASC;";
 }
