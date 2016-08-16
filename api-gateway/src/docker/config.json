@@ -1,5 +1,10 @@
 {
   "api.gateway.http.port": 8787,
+  "circuit-breaker": {
+    "name": "api-gateway-cb",
+    "timeout": 10000,
+    "max-failures": 5
+  },
   "realm": "Vert.x Microservice Blueprint",
   "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxhVB12hU+iMXnLY3l+O1ON7pouX7B+XvMYYCtGfoCagFSkcuFCGPHf8XjNn7Lny0fxHmUUsaLTU0TM3MxywyT3YIkRkjMgp1LGIm3FeCmkp/zzjYCVyVCcyoM8Lp2cbUPxove+yuW9R285+7wdcUmPh2Z0oib1b16MKtQgPcM2rHgmxQx51b1Ywo8YWT59Q08xBPAb3KJQk3BTKKib1ab0EBmTxguindNRUoj2FPHmwP7XhvNcWv4ZdNyau2uAUtCvE+N2wrYntCLMs+7xOyvH7bR6CZ4d6HSMScBCeSyd16OipEtvYGyE6/88fFsoHiWECQLvXtJnkwF07q2UdYdQIDAQAB",
   "auth-server-url": "http://127.0.0.1:8180/auth",

@@ -39,9 +39,6 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
   protected CircuitBreaker circuitBreaker;
   protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
 
-  // Metrics field
-  protected long deployedAt;
-
   @Override
   public void start() throws Exception {
     // init service discovery instance
@@ -53,19 +50,23 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
       config().getJsonObject("circuit-breaker") : new JsonObject();
     circuitBreaker = CircuitBreaker.create(cbOptions.getString("name", "circuit-breaker"), vertx,
       new CircuitBreakerOptions()
-        .setMaxFailures(cbOptions.getInteger("maxFailures", 5))
+        .setMaxFailures(cbOptions.getInteger("max-failures", 5))
         .setTimeout(cbOptions.getLong("timeout", 10000L))
         .setFallbackOnFailure(true)
-        .setResetTimeout(cbOptions.getLong("resetTimeout", 30000L))
+        .setResetTimeout(cbOptions.getLong("reset-timeout", 30000L))
     );
-
-    this.deployedAt = System.currentTimeMillis();
   }
 
   protected Future<Void> publishHttpEndpoint(String name, String host, int port) {
     Record record = HttpEndpoint.createRecord(name, host, port, "/",
       new JsonObject().put("api.name", config().getString("api.name", ""))
     );
+    return publish(record);
+  }
+
+  protected Future<Void> publishApiGateway(String host, int port) {
+    Record record = HttpEndpoint.createRecord("api-gateway", true, host, port, "/", null)
+      .setType("api-gateway");
     return publish(record);
   }
 
@@ -128,7 +129,7 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
 
   protected void publishLogEvent(String type, JsonObject data, boolean succeeded) {
     JsonObject msg = new JsonObject().put("type", type)
-      .put("status", succeeded ? 1 : 0)
+      .put("status", succeeded)
       .put("message", data);
     vertx.eventBus().publish(LOG_EVENT_ADDRESS, msg);
   }

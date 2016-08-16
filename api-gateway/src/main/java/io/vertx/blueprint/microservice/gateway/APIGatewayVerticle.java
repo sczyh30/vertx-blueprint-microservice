@@ -94,6 +94,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
       .requestHandler(router::accept)
       .listen(port, host, ar -> {
         if (ar.succeeded()) {
+          publishApiGateway(host, port);
           future.complete();
           logger.info("API Gateway is running on port " + port);
           // publish log
