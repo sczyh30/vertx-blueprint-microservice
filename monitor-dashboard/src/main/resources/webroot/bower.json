@@ -1,0 +1,15 @@
+{
+  "name": "monitor-dashboard-spa",
+  "version": "1.0.0",
+  "dependencies": {
+    "angular": "1.5.8",
+    "angular-route": "1.5.8",
+    "angular-resource": "1.5.8",
+    "jquery": "3.1.0",
+    "bootstrap": "3.3.7",
+    "flat-ui": "2.3.0",
+    "sockjs": "0.3.4",
+    "vertx3-eventbus-client": "3.3.2",
+    "Chart.js": "2.2.1"
+  }
+}

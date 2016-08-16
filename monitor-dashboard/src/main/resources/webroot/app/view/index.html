@@ -1,0 +1,34 @@
+<div class="container">
+  <div class="row clearfix">
+    <div class="col-md-12">
+      <table class="table table-striped">
+        <caption>Registered services</caption>
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Endpoint</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="record in records">
+          <td><span data-toggle="tooltip" data-placement="top" title="{{record.location}}">{{record.name}}</span></td>
+          <td>{{record.type}}</td>
+          <td ng-switch="record.status">
+            <span ng-switch-when="UP" class='label label-success'>UP</span>
+            <span ng-switch-when="DOWN" class='label label-danger'>DOWN</span>
+            <span ng-switch-when="OUT OF SERVICE" class='label label-warning'>OUT OF SERVICE</span>
+          </td>
+          <td>{{record.location.endpoint}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>

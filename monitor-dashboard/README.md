@@ -2,6 +2,8 @@
 
 This component provides a monitor dashboard web UI to inspect the status of the entire microservice.
 
+![Monitor Dashboard](../docs/images/monitor-dashboard.png)
+
 ## Configuration
 
 - `monitor.http.address`: host of the monitor dashboard, by default **0.0.0.0**
@@ -10,5 +12,9 @@ This component provides a monitor dashboard web UI to inspect the status of the 
 
 ## Build
 
-    mvn clean install
+First enter the `src/main/resources/webroot` directory
+and execute `bower install` command to prepare frontend resources.
 
+Then build the code:
+
+    mvn clean install

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="monitorApp">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor Dashboard</title>
+  <link rel="shortcut icon" type="image/png" href="http://vertx.io/assets/favicons/vertx-favicon-7/favicon-32x32.png">
+
+  <link href="assets/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+  <link href="assets/lib/flat-ui/dist/css/flat-ui.css" rel="stylesheet">
+  <link href="assets/css/main.css" rel="stylesheet">
+  <script src="assets/lib/angular/angular.js"></script>
+  <script src="assets/lib/angular-route/angular-route.js"></script>
+  <script src="app/app.js"></script>
+  <script src="app/controller.js"></script>
+</head>
+<body>
+<!-- navbar on the top -->
+<nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">
+        <div class="brand"><span class="glyphicon glyphicon-cloud"></span>&nbsp;&nbsp;Monitor Dashboard</div>
+      </a>
+    </div>
+    <div class="navbar-collapse collapse">
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="/#/">Index</a></li>
+        <li><a href="/#/metrics">Metrics</a></li>
+        <li><a href="/#/logs">Log</a></li>
+        <li><a href="/#/orders">Order Metrics</a></li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div>
+</nav>
+
+<div ng-view></div>
+
+<script src="assets/lib/jquery/dist/jquery.js"></script>
+<script src="assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/4.1.7/highcharts.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts-ng/0.0.12/highcharts-ng.js"></script>
+<script src="assets/lib/sockjs/sockjs.min.js"></script>
+<script src="assets/lib/vertx3-eventbus-client/vertx-eventbus.js"></script>
+</body>
+</html>

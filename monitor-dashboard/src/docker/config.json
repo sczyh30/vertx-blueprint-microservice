@@ -1,4 +1,4 @@
 {
   "monitor.http.port": 9100,
-  "monitor.metrics.interval": 1000
+  "monitor.metrics.interval": 5000
 }

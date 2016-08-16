@@ -40,7 +40,7 @@ public class MonitorDashboardVerticle extends BaseMicroserviceVerticle {
     router.route("/*").handler(StaticHandler.create());
 
     int port = config().getInteger("monitor.http.port", 9100);
-    int metricsInterval = config().getInteger("monitor.metrics.interval", 1000);
+    int metricsInterval = config().getInteger("monitor.metrics.interval", 5000);
 
     vertx.createHttpServer()
       .requestHandler(router::accept)
@@ -48,7 +48,7 @@ public class MonitorDashboardVerticle extends BaseMicroserviceVerticle {
 
     // send metrics message to the event bus
     vertx.setPeriodic(metricsInterval, t -> {
-      JsonObject metrics = service.getMetricsSnapshot(vertx.eventBus());
+      JsonObject metrics = service.getMetricsSnapshot(vertx);
       vertx.eventBus().publish("microservice.monitor.metrics", metrics);
     });
   }
