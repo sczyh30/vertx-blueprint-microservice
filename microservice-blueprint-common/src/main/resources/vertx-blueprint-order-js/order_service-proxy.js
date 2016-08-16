@@ -73,7 +73,7 @@
      Retrieve orders belonging to a certain account.
 
      @public
-     @param accountId {string} account id
+     @param accountId {string} account id 
      @param resultHandler {function} async result handler 
      @return {OrderService}
      */
@@ -94,7 +94,7 @@
      Save an order into the persistence.
 
      @public
-     @param order {Object} order data object
+     @param order {Object} order data object 
      @param resultHandler {function} async result handler 
      @return {OrderService}
      */
@@ -115,7 +115,7 @@
      Retrieve the order with a certain <code>orderId</code>.
 
      @public
-     @param orderId {number} order id
+     @param orderId {number} order id 
      @param resultHandler {function} async result handler 
      @return {OrderService}
      */

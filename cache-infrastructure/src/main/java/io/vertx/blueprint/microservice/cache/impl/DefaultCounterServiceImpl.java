@@ -19,7 +19,10 @@ public class DefaultCounterServiceImpl implements CounterService {
   private RedisClient client;
 
   public DefaultCounterServiceImpl(Vertx vertx, JsonObject config) {
-    client = RedisClient.create(vertx, new RedisOptions(config));
+    RedisOptions redisOptions = new RedisOptions()
+      .setHost(config.getString("redis.host", "localhost"))
+      .setPort(config.getInteger("redis.port", 6379));
+    this.client = RedisClient.create(vertx, redisOptions);
   }
 
   @Override

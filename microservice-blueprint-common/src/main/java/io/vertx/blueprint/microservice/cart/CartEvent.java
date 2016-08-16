@@ -44,6 +44,26 @@ public class CartEvent {
     this.createdAt = System.currentTimeMillis();
   }
 
+  /**
+   * Helper method to create checkout event for a user.
+   *
+   * @param userId user id
+   * @return created checkout cart event
+   */
+  public static CartEvent createCheckoutEvent(String userId) {
+    return new CartEvent(CartEventType.CHECKOUT, userId, "all", 0);
+  }
+
+  /**
+   * Helper method to create clear cart event for a user.
+   *
+   * @param userId user id
+   * @return created clear cart event
+   */
+  public static CartEvent createClearEvent(String userId) {
+    return new CartEvent(CartEventType.CLEAR_CART, userId, "all", 0);
+  }
+
   public JsonObject toJson() {
     JsonObject json = new JsonObject();
     CartEventConverter.toJson(this, json);

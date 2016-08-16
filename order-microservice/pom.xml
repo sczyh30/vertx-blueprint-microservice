@@ -39,11 +39,6 @@
         <!-- plugin to create a `fat-jar` -->
         <artifactId>maven-shade-plugin</artifactId>
       </plugin>
-      <plugin>
-        <!-- plugin to create a docker image -->
-        <groupId>io.fabric8</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
-      </plugin>
     </plugins>
   </build>
 

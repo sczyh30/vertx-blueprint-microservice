@@ -1,0 +1,15 @@
+FROM java:8-jre
+
+ENV VERTICLE_FILE target/monitor-dashboard-fat.jar
+
+# Set the location of the verticles
+ENV VERTICLE_HOME /opt/verticles
+
+EXPOSE 9100
+
+COPY $VERTICLE_FILE $VERTICLE_HOME/
+COPY src/docker/config.json $VERTICLE_HOME/
+
+WORKDIR $VERTICLE_HOME
+ENTRYPOINT ["sh", "-c"]
+CMD ["java -jar monitor-dashboard-fat.jar -Dvertx.metrics.options.enabled=true -cluster -conf config.json"]

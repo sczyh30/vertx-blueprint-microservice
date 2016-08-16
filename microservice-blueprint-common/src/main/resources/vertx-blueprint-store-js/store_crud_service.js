@@ -40,7 +40,7 @@ var StoreCRUDService = function (j_val) {
    This is used to update store info, or just apply for a new store.
 
    @public
-   @param store {Object} store object
+   @param store {Object} store object 
    @param resultHandler {function} async result handler 
    */
   this.saveStore = function (store, resultHandler) {
@@ -60,7 +60,7 @@ var StoreCRUDService = function (j_val) {
    Retrieve an online store by seller id.
 
    @public
-   @param sellerId {string} seller id, refers to an independent online store
+   @param sellerId {string} seller id, refers to an independent online store 
    @param resultHandler {function} async result handler 
    */
   this.retrieveStore = function (sellerId, resultHandler) {
@@ -81,7 +81,7 @@ var StoreCRUDService = function (j_val) {
    This is used to close an online store.
 
    @public
-   @param sellerId {string} seller id, refers to an independent online store
+   @param sellerId {string} seller id, refers to an independent online store 
    @param resultHandler {function} async result handler 
    */
   this.removeStore = function (sellerId, resultHandler) {

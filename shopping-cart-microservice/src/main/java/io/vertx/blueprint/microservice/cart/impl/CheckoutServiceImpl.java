@@ -2,7 +2,6 @@ package io.vertx.blueprint.microservice.cart.impl;
 
 import io.vertx.blueprint.microservice.cache.CounterService;
 import io.vertx.blueprint.microservice.cart.CartEvent;
-import io.vertx.blueprint.microservice.cart.CartEventType;
 import io.vertx.blueprint.microservice.cart.CheckoutResult;
 import io.vertx.blueprint.microservice.cart.CheckoutService;
 import io.vertx.blueprint.microservice.cart.ShoppingCart;
@@ -211,7 +210,7 @@ public class CheckoutServiceImpl implements CheckoutService {
       future.completer());
     return future.compose(service -> {
       Future<Void> resFuture = Future.future();
-      CartEvent event = new CartEvent(CartEventType.CHECKOUT, userId, "all", 0);
+      CartEvent event = CartEvent.createCheckoutEvent(userId);
       service.addCartEvent(event, resFuture.completer());
       return resFuture;
     });

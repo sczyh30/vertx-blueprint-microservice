@@ -72,7 +72,7 @@
      Add a payment record into the backend persistence.
 
      @public
-     @param payment {Object} payment entity
+     @param payment {Object} payment entity 
      @param resultHandler {function} async result handler 
      */
     this.addPaymentRecord = function (payment, resultHandler) {
@@ -92,7 +92,7 @@
      Retrieve payment record from backend by payment id.
 
      @public
-     @param payId {string} payment id
+     @param payId {string} payment id 
      @param resultHandler {function} async result handler 
      */
     this.retrievePaymentRecord = function (payId, resultHandler) {

@@ -1,3 +1,4 @@
 {
-  "api.name": "shop"
+  "api.name": "shop",
+  "store.http.address": "store-microservice"
 }

@@ -58,7 +58,6 @@ module VertxBlueprintUserAccount
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_all_accounts()"
     end
-
     #  Update user account info.
     # @param [Hash] account a account entity that we want to update
     # @yield the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not.

@@ -73,7 +73,7 @@
      Add a account to the persistence.
 
      @public
-     @param account {Object} a account entity that we want to add
+     @param account {Object} a account entity that we want to add 
      @param resultHandler {function} the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
@@ -94,7 +94,7 @@
      Retrieve the user account with certain `id`.
 
      @public
-     @param id {string} user account id
+     @param id {string} user account id 
      @param resultHandler {function} the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
@@ -136,7 +136,7 @@
 
      @public
      @param account {Object} a account entity that we want to update
-     @param resultHandler {function} the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not.
+     @param resultHandler {function} the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */
     this.updateAccount = function (account, resultHandler) {
@@ -156,7 +156,7 @@
      Delete a user account from the persistence
 
      @public
-     @param id {string} user account id
+     @param id {string} user account id 
      @param resultHandler {function} the result handler will be called as soon as the user has been removed. The async result indicates whether the operation was successful or not. 
      @return {AccountService}
      */

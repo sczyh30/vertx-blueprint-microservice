@@ -1,7 +1,5 @@
 {
-  "user.account.http.address": "0.0.0.0",
-  "user.account.http.port": 8081,
-  "api.name": "account",
+  "api.name": "product",
   "url": "jdbc:mysql://localhost/vertx_blueprint?characterEncoding=UTF-8&useSSL=false",
   "driver_class": "com.mysql.cj.jdbc.Driver",
   "user": "vbpdb1",

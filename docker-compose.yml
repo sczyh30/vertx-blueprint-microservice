@@ -1,16 +1,57 @@
 version: "2"
 services:
+  mysql:
+    image: mysql:5.7
+    expose:
+      - "3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=666666
+      - MYSQL_DATABASE=vertx_blueprint
   redis:
     image: redis:latest
-    ports:
-     - "6379:6379"
-  mongo:
-    image: mongo:latest
-    ports:
-     - 27017:27017
+    expose:
+      - "6379"
   api-gateway:
-    image: sczyh30/api-gateway
+    image: vertx-blueprint/api-gateway
+    ports:
+      - "8787:8787"
+    links:
+      - inventory-microservice
   inventory-microservice:
-    image: sczyh30/inventory-microservice
+    image: vertx-blueprint/inventory-microservice
     links:
       - redis
+    expose:
+      - "8086"
+  product-microservice:
+    image: vertx-blueprint/product-microservice
+    links:
+      - mysql
+    depends_on:
+      - mysql
+    expose:
+      - "8082"
+  shopping-cart-microservice:
+    image: vertx-blueprint/shopping-cart-microservice
+    links:
+      - mysql
+      - inventory-microservice
+      - product-microservice
+    depends_on:
+      - mysql
+    expose:
+      - "8084"
+  order-microservice:
+    image: vertx-blueprint/order-microservice
+    links:
+      - mysql
+    depends_on:
+      - mysql
+      - shopping-cart-microservice
+      - inventory-microservice
+    expose:
+      - "8090"
+  monitor-dashboard:
+    image: vertx-blueprint/monitor-dashboard
+    ports:
+      - "9100:9100"

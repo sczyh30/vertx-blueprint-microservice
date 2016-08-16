@@ -12,7 +12,6 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.ServiceDiscoveryOptions;
-import io.vertx.servicediscovery.docker.DockerLinksServiceImporter;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.types.JDBCDataSource;
@@ -43,7 +42,6 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
   public void start() throws Exception {
     // init service discovery instance
     discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
-    discovery.registerServiceImporter(new DockerLinksServiceImporter(), new JsonObject());
 
     // init circuit breaker instance
     JsonObject cbOptions = config().getJsonObject("circuit-breaker") != null ?
