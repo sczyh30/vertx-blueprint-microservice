@@ -125,7 +125,7 @@ var AccountService = function (j_val) {
    Update user account info.
 
    @public
-   @param account {Object} a account entity that we want to update
+   @param account {Object} a account entity that we want to update 
    @param resultHandler {function} the result handler will be called as soon as the account has been added. The async result indicates whether the operation was successful or not. 
    @return {AccountService}
    */

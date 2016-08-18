@@ -2,9 +2,6 @@
 
 set -e
 
-# Build the entire project and docker images
-mvn clean install
-
 # TODO: set env for docker-machine in Windows and OSX
 
 # Stop and remove all old containers

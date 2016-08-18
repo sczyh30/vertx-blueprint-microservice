@@ -8,8 +8,8 @@ ENV VERTICLE_HOME /opt/verticles
 EXPOSE 9100
 
 COPY $VERTICLE_FILE $VERTICLE_HOME/
-COPY src/docker/config.json $VERTICLE_HOME/
+COPY src/config/docker.json $VERTICLE_HOME/
 
 WORKDIR $VERTICLE_HOME
 ENTRYPOINT ["sh", "-c"]
-CMD ["java -jar monitor-dashboard-fat.jar -Dvertx.metrics.options.enabled=true -cluster -conf config.json"]
+CMD ["java -jar monitor-dashboard-fat.jar -Dvertx.metrics.options.enabled=true -cluster -conf docker.json"]

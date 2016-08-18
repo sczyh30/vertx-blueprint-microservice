@@ -10,7 +10,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.servicediscovery.types.EventBusService;
 
 
 /**
@@ -51,7 +50,7 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
     router.get(API_RETRIEVE_ALL).handler(this::apiRetrieveAll);
     router.patch(API_UPDATE).handler(this::apiUpdate);
     router.delete(API_DELETE).handler(this::apiDelete);
-    router.delete(API_DELETE_ALL).handler(this::apiDeleteAll);
+    router.delete(API_DELETE_ALL).handler(context -> requireLogin(context, this::apiDeleteAll));
 
     enableHeartbeatCheck(router, config());
 
@@ -114,7 +113,7 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
     service.deleteProduct(productId, deleteResultHandler(context));
   }
 
-  private void apiDeleteAll(RoutingContext context) {
+  private void apiDeleteAll(RoutingContext context, JsonObject principle) {
     service.deleteAllProducts(deleteResultHandler(context));
   }
 

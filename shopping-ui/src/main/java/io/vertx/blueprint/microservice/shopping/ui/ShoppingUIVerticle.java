@@ -29,6 +29,8 @@ public class ShoppingUIVerticle extends BaseMicroserviceVerticle {
     // static content
     router.route("/*").handler(StaticHandler.create());
 
+    // get HTTP host and port from configuration, or use default value
+    String host = config().getString("shopping.ui.http.address", "0.0.0.0");
     int port = config().getInteger("shopping.ui.http.port", 8080);
 
     // create HTTP server

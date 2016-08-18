@@ -1,0 +1,6 @@
+{
+  "api.name": "shop",
+  "store.http.address": "store-microservice",
+  "store.http.port": 8085,
+  "host": "mongo"
+}

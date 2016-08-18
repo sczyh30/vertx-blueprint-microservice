@@ -42,7 +42,7 @@ var OAuth2Service = function (j_val) {
 /**
 
  @memberof module:vertx-blueprint-common-js/o_auth2_service
- @param name {string}
+ @param name {string} 
  @param config {Object} 
  @param metadata {Object} 
  @return {Object}
@@ -58,7 +58,7 @@ OAuth2Service.createRecord = function (name, config, metadata) {
 
  @memberof module:vertx-blueprint-common-js/o_auth2_service
  @param discovery {ServiceDiscovery}
- @param filter {Object}
+ @param filter {Object} 
  @param consumerConfiguration {Object} 
  @param resultHandler {function} 
  */

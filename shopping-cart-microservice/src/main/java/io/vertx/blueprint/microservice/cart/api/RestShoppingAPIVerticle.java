@@ -5,6 +5,7 @@ import io.vertx.blueprint.microservice.cart.CheckoutService;
 import io.vertx.blueprint.microservice.cart.ShoppingCartService;
 import io.vertx.blueprint.microservice.common.RestAPIVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -37,9 +38,9 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
     // body handler
     router.route().handler(BodyHandler.create());
     // api route handler
-    router.post(API_CHECKOUT).handler(this::apiCheckout);
-    router.post(API_ADD_CART_EVENT).handler(this::apiAddCartEvent);
-    router.get(API_GET_CART).handler(this::apiGetCart);
+    router.post(API_CHECKOUT).handler(context -> requireLogin(context, this::apiCheckout));
+    router.post(API_ADD_CART_EVENT).handler(context -> requireLogin(context, this::apiAddCartEvent));
+    router.get(API_GET_CART).handler(context -> requireLogin(context, this::apiGetCart));
 
     enableLocalSession(router);
 
@@ -55,13 +56,13 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
       .setHandler(future.completer());
   }
 
-  private void apiCheckout(RoutingContext context) {
+  private void apiCheckout(RoutingContext context, JsonObject principle) {
     // TODO: validate user auth
     String userId = "TEST666";
     checkoutService.checkout(userId, resultHandler(context));
   }
 
-  private void apiAddCartEvent(RoutingContext context) {
+  private void apiAddCartEvent(RoutingContext context, JsonObject principle) {
     CartEvent cartEvent = new CartEvent(context.getBodyAsJson());
     System.out.println(cartEvent.toString());
     if (validateEvent(cartEvent)) {
@@ -71,7 +72,7 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
     }
   }
 
-  private void apiGetCart(RoutingContext context) {
+  private void apiGetCart(RoutingContext context, JsonObject principle) {
     // TODO: validate user auth
     String userId = "TEST666";
     shoppingCartService.getShoppingCart(userId, resultHandler(context));

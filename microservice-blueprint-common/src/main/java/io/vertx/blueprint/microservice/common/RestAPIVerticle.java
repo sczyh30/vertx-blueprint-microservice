@@ -12,6 +12,8 @@ import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.sstore.ClusteredSessionStore;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
@@ -91,18 +93,19 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
 
   /**
    * Validate if a user exists in the request scope.
-   *
-   * @param handler logic route handler
-   * @return generated handler
    */
-  protected Handler<RoutingContext> requireLogin(Handler<RoutingContext> handler) {
-    return context -> {
-      if (context.user() != null) {
-        handler.handle(context);
-      } else {
-        context.fail(401);
-      }
-    };
+  protected void requireLogin(RoutingContext context, BiConsumer<RoutingContext, JsonObject> biHandler) {
+    Optional<JsonObject> principle = Optional.ofNullable(context.request().getHeader("user-principle"))
+      .map(JsonObject::new);
+    if (principle.isPresent()) {
+      biHandler.accept(context, principle.get());
+    } else {
+      Optional.ofNullable(context.request().getHeader("redirect-saved"))
+        .ifPresent(URI -> context.response()
+          .setStatusCode(401)
+          .end(new JsonObject().put("to_auth", URI).encode())
+        );
+    }
   }
 
   // helper result handler within a request context

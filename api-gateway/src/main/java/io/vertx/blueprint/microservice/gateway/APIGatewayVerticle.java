@@ -42,12 +42,14 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
 
   private static final Logger logger = LoggerFactory.getLogger(APIGatewayVerticle.class);
 
+  private OAuth2AuthHandler authHandler;
+
   @Override
   public void start(Future<Void> future) throws Exception {
     super.start();
 
     // get HTTP host and port from configuration, or use default value
-    String host = config().getString("api.gateway.http.address", "0.0.0.0");
+    String host = config().getString("api.gateway.http.address", "localhost");
     int port = config().getInteger("api.gateway.http.port", 8787);
 
     Router router = Router.router(vertx);
@@ -69,11 +71,11 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     router.route().handler(UserSessionHandler.create(oauth2));
 
     String hostURI = String.format("https://%s:%d", host, port);
-    OAuth2AuthHandler authHandler = OAuth2AuthHandler.create(oauth2, hostURI);
-    authHandler.setupCallback(router.route("/callback"));
+    authHandler = OAuth2AuthHandler.create(oauth2, hostURI)
+      .setupCallback(Router.router(vertx).route("/callback"));
 
-    // set auth handler
-    router.route("/api/*").handler(authHandler);
+    // set auth callback handler
+    router.route("/callback").handler(context -> authCallback(oauth2, hostURI, context));
 
     // api dispatcher
     router.route("/api/*").handler(this::dispatchRequests);
@@ -127,6 +129,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
           String newPath = path.substring(initialOffset + prefix.length());
           // get one relevant HTTP client, may not exist
           Optional<HttpClient> client = recordList.stream()
+            .filter(record -> record.getMetadata().getString("api.name") != null)
             .filter(record -> record.getMetadata().getString("api.name").equals(prefix))
             .map(record -> (HttpClient) discovery.getReference(record).get())
             .findAny(); // simple load balance
@@ -164,9 +167,6 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
           response.headers().forEach(header -> {
             toRsp.putHeader(header.getKey(), header.getValue());
           });
-          if (context.user() != null) {
-            toRsp.putHeader("user-principle", context.user().principal().encode());
-          }
           // send response
           toRsp.end(body);
           cbFuture.complete();
@@ -176,6 +176,11 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     context.request().headers().forEach(header -> {
       toReq.putHeader(header.getKey(), header.getValue());
     });
+    if (context.user() != null) {
+      toReq.putHeader("user-principle", context.user().principal().encode());
+    } else {
+      toReq.putHeader("redirect-saved", authHandler.authURI("http://localhost:8080", ""));
+    }
     // send request
     if (context.getBody() == null) {
       toReq.end();
@@ -281,6 +286,30 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     JsonObject message = msg.copy()
       .put("time", System.currentTimeMillis());
     publishLogEvent("gateway", message);
+  }
+
+  // auth
+
+  private void authCallback(OAuth2Auth oauth2, String hostURL, RoutingContext context) {
+    final String code = context.request().getParam("code");
+    // code is a require value
+    if (code == null) {
+      context.fail(400);
+      return;
+    }
+    final String redirectTo = context.request().getParam("redirect_uri");
+    final String redirectURI = hostURL + context.currentRoute().getPath() + "?redirect_uri=" + redirectTo;
+    oauth2.getToken(new JsonObject().put("code", code).put("redirect_uri", redirectURI), ar -> {
+      if (ar.failed()) {
+        context.fail(ar.cause());
+      } else {
+        context.setUser(ar.result());
+        context.response()
+          .putHeader("Location", redirectTo)
+          .setStatusCode(302)
+          .end();
+      }
+    });
   }
 
   // helper methods

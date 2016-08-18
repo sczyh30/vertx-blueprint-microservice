@@ -1,0 +1,6 @@
+{
+  "api.name": "inventory",
+  "redis.host": "127.0.0.1",
+  "inventory.http.address": "0.0.0.0",
+  "inventory.http.port": 8086
+}
