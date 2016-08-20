@@ -2,14 +2,12 @@ package io.vertx.blueprint.microservice.account.impl;
 
 import io.vertx.blueprint.microservice.account.Account;
 import io.vertx.blueprint.microservice.account.AccountService;
+import io.vertx.blueprint.microservice.common.service.JdbcRepositoryWrapper;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.jdbc.JDBCClient;
-import io.vertx.ext.sql.SQLConnection;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,12 +17,10 @@ import java.util.stream.Collectors;
  *
  * @author Eric Zhao
  */
-public class JdbcAccountServiceImpl implements AccountService {
-
-  private final JDBCClient jdbc;
+public class JdbcAccountServiceImpl extends JdbcRepositoryWrapper<Account, String> implements AccountService {
 
   public JdbcAccountServiceImpl(Vertx vertx, JsonObject config) {
-    this.jdbc = JDBCClient.createNonShared(vertx, config);
+    super(vertx, config);
   }
 
   @Override
@@ -40,122 +36,64 @@ public class JdbcAccountServiceImpl implements AccountService {
 
   @Override
   public AccountService addAccount(Account account, Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
-      connection.updateWithParams(INSERT_STATEMENT, new JsonArray().add(account.getId())
-        .add(account.getUsername())
-        .add(account.getPhone())
-        .add(account.getEmail())
-        .add(account.getBirthDate()), r -> {
-        if (r.succeeded()) {
-          resultHandler.handle(Future.succeededFuture());
-        } else {
-          resultHandler.handle(Future.failedFuture(r.cause()));
-        }
-        connection.close();
-      });
-    }));
+    JsonArray params = new JsonArray().add(account.getId())
+      .add(account.getUsername())
+      .add(account.getPhone())
+      .add(account.getEmail())
+      .add(account.getBirthDate());
+    this.executeNoResult(params, INSERT_STATEMENT, resultHandler);
     return this;
   }
 
   @Override
   public AccountService retrieveAccount(String id, Handler<AsyncResult<Account>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
-      connection.queryWithParams(FETCH_STATEMENT, new JsonArray().add(id), r -> {
-        if (r.succeeded()) {
-          List<JsonObject> resList = r.result().getRows();
-          if (resList == null || resList.isEmpty()) {
-            resultHandler.handle(Future.succeededFuture());
-          } else {
-            resultHandler.handle(Future.succeededFuture(new Account(resList.get(0))));
-          }
-        } else {
-          resultHandler.handle(Future.failedFuture(r.cause()));
-        }
-        connection.close();
-      });
-    }));
+    this.retrieveOne(id, FETCH_STATEMENT)
+      .map(option -> option.map(Account::new).orElse(null))
+      .setHandler(resultHandler);
+    return this;
+  }
+
+  @Override
+  public AccountService retrieveByUsername(String username, Handler<AsyncResult<Account>> resultHandler) {
+    this.retrieveOne(username, FETCH_BY_USERNAME_STATEMENT)
+      .map(option -> option.map(Account::new).orElse(null))
+      .setHandler(resultHandler);
     return this;
   }
 
   @Override
   public AccountService retrieveAllAccounts(Handler<AsyncResult<List<Account>>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
-      connection.query(FETCH_ALL_STATEMENT, r -> {
-        if (r.succeeded()) {
-          List<Account> resList = r.result().getRows().stream()
-            .map(Account::new)
-            .collect(Collectors.toList());
-          resultHandler.handle(Future.succeededFuture(resList));
-        } else {
-          resultHandler.handle(Future.failedFuture(r.cause()));
-        }
-        connection.close();
-      });
-    }));
+    this.retrieveAll(FETCH_ALL_STATEMENT)
+      .map(rawList -> rawList.stream()
+        .map(Account::new)
+        .collect(Collectors.toList())
+      )
+      .setHandler(resultHandler);
     return this;
   }
 
   @Override
   public AccountService updateAccount(Account account, Handler<AsyncResult<Account>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
-      JsonArray params = new JsonArray()
-        .add(account.getUsername())
-        .add(account.getPhone())
-        .add(account.getEmail())
-        .add(account.getBirthDate())
-        .add(account.getId());
-      connection.updateWithParams(UPDATE_STATEMENT, params, ar -> {
-        if (ar.succeeded()) {
-          resultHandler.handle(Future.succeededFuture(account));
-        } else {
-          resultHandler.handle(Future.failedFuture(ar.cause()));
-        }
-        connection.close();
-      });
-    }));
+    JsonArray params = new JsonArray()
+      .add(account.getUsername())
+      .add(account.getPhone())
+      .add(account.getEmail())
+      .add(account.getBirthDate())
+      .add(account.getId());
+    this.execute(params, UPDATE_STATEMENT, account, resultHandler);
     return this;
   }
 
   @Override
   public AccountService deleteAccount(String id, Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
-      JsonArray params = new JsonArray().add(id);
-      connection.updateWithParams(DELETE_STATEMENT, params, r -> {
-        if (r.succeeded()) {
-          resultHandler.handle(Future.succeededFuture());
-        } else {
-          resultHandler.handle(Future.failedFuture(r.cause()));
-        }
-        connection.close();
-      });
-    }));
+    this.removeOne(id, DELETE_STATEMENT, resultHandler);
     return this;
   }
 
   @Override
   public AccountService deleteAllAccounts(Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
-      connection.update(DELETE_ALL_STATEMENT, r -> {
-        if (r.succeeded()) {
-          resultHandler.handle(Future.succeededFuture());
-        } else {
-          resultHandler.handle(Future.failedFuture(r.cause()));
-        }
-        connection.close();
-      });
-    }));
+    this.removeAll(DELETE_ALL_STATEMENT, resultHandler);
     return this;
-  }
-
-  private <T> Handler<AsyncResult<SQLConnection>> connHandler(Handler<AsyncResult<T>> h1, Handler<SQLConnection> h2) {
-    return conn -> {
-      if (conn.succeeded()) {
-        final SQLConnection connection = conn.result();
-        h2.handle(connection);
-      } else {
-        h1.handle(Future.failedFuture(conn.cause()));
-      }
-    };
   }
 
   // SQL statement
@@ -169,7 +107,9 @@ public class JdbcAccountServiceImpl implements AccountService {
     "  PRIMARY KEY (`id`),\n" +
     "  UNIQUE KEY `username_UNIQUE` (`username`) )";
   private static final String INSERT_STATEMENT = "INSERT INTO user_account (id, username, phone, email, birthDate) VALUES (?, ?, ?, ?, ?)";
+  private static final String EXISTS_STATEMENT = "SELECT EXISTS(1) FROM user_account WHERE username = ?";
   private static final String FETCH_STATEMENT = "SELECT * FROM user_account WHERE id = ?";
+  private static final String FETCH_BY_USERNAME_STATEMENT = "SELECT * FROM user_account WHERE username = ?";
   private static final String FETCH_ALL_STATEMENT = "SELECT * FROM user_account";
   private static final String UPDATE_STATEMENT = "UPDATE `user_account`\n" +
     "SET `username` = ?,\n" +

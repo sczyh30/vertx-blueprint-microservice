@@ -22,6 +22,9 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
 
   public CartEventDataSourceImpl(io.vertx.core.Vertx vertx, JsonObject json) {
     this.client = JDBCClient.createNonShared(Vertx.newInstance(vertx), json);
+    client.getConnectionObservable()
+      .flatMap(connection -> connection.executeObservable(INIT_STATEMENT))
+      .subscribe();
   }
 
   @Override

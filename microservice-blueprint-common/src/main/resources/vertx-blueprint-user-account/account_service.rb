@@ -48,6 +48,18 @@ module VertxBlueprintUserAccount
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_account(id)"
     end
+
+    #  Retrieve the user account with certain `username`.
+    # @param [String] username username
+    # @yield the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not.
+    # @return [self]
+    def retrieve_by_username(username=nil)
+      if username.class == String && block_given?
+        @j_del.java_method(:retrieveByUsername, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(username, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        return self
+      end
+      raise ArgumentError, "Invalid arguments when calling retrieve_by_username(username)"
+    end
     #  Retrieve all user accounts.
     # @yield the result handler will be called as soon as the users have been retrieved. The async result indicates whether the operation was successful or not.
     # @return [self]

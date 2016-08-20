@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -23,10 +22,6 @@ public class ShoppingCart {
 
   public ShoppingCart() {
     // Empty constructor
-  }
-
-  public ShoppingCart(ShoppingCart other) {
-    this.productItems = new ArrayList<>(other.productItems);
   }
 
   public ShoppingCart(JsonObject json) {
@@ -70,15 +65,6 @@ public class ShoppingCart {
             .equals(CartEventType.ADD_ITEM) ? 1 : -1)));
     }
 
-    return this;
-  }
-
-  private ShoppingCart generateProductItems(Map<String, Integer> productMap) {
-    this.productItems = productMap.entrySet()
-      .stream()
-      .map(item -> new ProductTuple())
-      .filter(item -> item.getAmount() > 0)
-      .collect(Collectors.toList());
     return this;
   }
 

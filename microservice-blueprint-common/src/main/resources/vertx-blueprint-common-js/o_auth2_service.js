@@ -57,7 +57,7 @@ OAuth2Service.createRecord = function (name, config, metadata) {
 /**
 
  @memberof module:vertx-blueprint-common-js/o_auth2_service
- @param discovery {ServiceDiscovery}
+ @param discovery {ServiceDiscovery} 
  @param filter {Object} 
  @param consumerConfiguration {Object} 
  @param resultHandler {function} 

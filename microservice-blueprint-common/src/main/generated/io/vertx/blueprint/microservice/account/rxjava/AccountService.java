@@ -110,6 +110,28 @@ public class AccountService {
   }
 
   /**
+   * Retrieve the user account with certain `username`.
+   * @param username username
+   * @param resultHandler the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not.
+   * @return 
+   */
+  public AccountService retrieveByUsername(String username, Handler<AsyncResult<Account>> resultHandler) { 
+    delegate.retrieveByUsername(username, resultHandler);
+    return this;
+  }
+
+  /**
+   * Retrieve the user account with certain `username`.
+   * @param username username
+   * @return 
+   */
+  public Observable<Account> retrieveByUsernameObservable(String username) { 
+    io.vertx.rx.java.ObservableFuture<Account> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
+    retrieveByUsername(username, resultHandler.toHandler());
+    return resultHandler;
+  }
+
+  /**
    * Retrieve all user accounts.
    * @param resultHandler the result handler will be called as soon as the users have been retrieved. The async result indicates whether the operation was successful or not.
    * @return 

@@ -22,11 +22,6 @@ public class CheckoutResult {
     this.order = order;
   }
 
-  public CheckoutResult(CheckoutResult other) {
-    this.message = other.message;
-    this.order = other.order;
-  }
-
   public CheckoutResult(JsonObject json) {
     CheckoutResultConverter.fromJson(json, this);
   }

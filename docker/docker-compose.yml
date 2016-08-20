@@ -7,6 +7,10 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=666666
       - MYSQL_DATABASE=vertx_blueprint
+  mongo:
+    image: mongo:3.3
+    expose:
+     - "27017"
   redis:
     image: redis:latest
     expose:

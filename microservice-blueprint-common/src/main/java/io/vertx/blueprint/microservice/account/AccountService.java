@@ -42,7 +42,7 @@ public interface AccountService {
   /**
    * Add a account to the persistence.
    *
-   * @param account          a account entity that we want to add
+   * @param account       a account entity that we want to add
    * @param resultHandler the result handler will be called as soon as the account has been added. The async result indicates
    *                      whether the operation was successful or not.
    */
@@ -60,6 +60,16 @@ public interface AccountService {
   AccountService retrieveAccount(String id, Handler<AsyncResult<Account>> resultHandler);
 
   /**
+   * Retrieve the user account with certain `username`.
+   *
+   * @param username      username
+   * @param resultHandler the result handler will be called as soon as the user has been retrieved. The async result indicates
+   *                      whether the operation was successful or not.
+   */
+  @Fluent
+  AccountService retrieveByUsername(String username, Handler<AsyncResult<Account>> resultHandler);
+
+  /**
    * Retrieve all user accounts.
    *
    * @param resultHandler the result handler will be called as soon as the users have been retrieved. The async result indicates
@@ -71,7 +81,7 @@ public interface AccountService {
   /**
    * Update user account info.
    *
-   * @param account          a account entity that we want to update
+   * @param account       a account entity that we want to update
    * @param resultHandler the result handler will be called as soon as the account has been added. The async result indicates
    *                      whether the operation was successful or not.
    */

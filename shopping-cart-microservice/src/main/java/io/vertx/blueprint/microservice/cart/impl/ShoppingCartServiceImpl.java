@@ -39,7 +39,6 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
   @Override
   public ShoppingCartService addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler) {
-    // TODO: NEED AUTH
     Future<Void> future = Future.future();
     repository.save(event).subscribe(future::complete, future::fail);
     future.setHandler(resultHandler);
@@ -48,7 +47,6 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
   @Override
   public ShoppingCartService getShoppingCart(String userId, Handler<AsyncResult<ShoppingCart>> resultHandler) {
-    // TODO: NEED AUTH
     aggregateCartEvents(userId)
       .setHandler(resultHandler);
     return this;

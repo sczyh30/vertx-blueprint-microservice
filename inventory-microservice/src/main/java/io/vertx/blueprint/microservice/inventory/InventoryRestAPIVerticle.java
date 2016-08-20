@@ -2,7 +2,6 @@ package io.vertx.blueprint.microservice.inventory;
 
 import io.vertx.blueprint.microservice.common.RestAPIVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -56,10 +55,10 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
         badRequest(context, new IllegalStateException("Negative increase"));
       } else {
         inventoryService.increase(productId, increase)
-          .setHandler(resultHandler(context));
+          .setHandler(rawResultHandler(context));
       }
     } catch (Exception ex) {
-      badRequest(context, ex);
+      context.fail(400);
     }
   }
 
@@ -71,10 +70,10 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
         badRequest(context, new IllegalStateException("Negative decrease"));
       } else {
         inventoryService.decrease(productId, decrease)
-          .setHandler(resultHandler(context));
+          .setHandler(rawResultHandler(context));
       }
-    } catch (NumberFormatException ex) {
-      notFound(context);
+    } catch (Exception ex) {
+      context.fail(400);
     }
   }
 

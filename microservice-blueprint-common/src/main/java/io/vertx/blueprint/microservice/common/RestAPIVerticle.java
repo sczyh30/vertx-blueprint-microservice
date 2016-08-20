@@ -77,18 +77,6 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
       ClusteredSessionStore.create(vertx, "shopping.user.session")));
   }
 
-  /**
-   * Enable clustered session storage in requests.
-   *
-   * @param name   session name
-   * @param router router instance
-   */
-  protected void enableClusteredSession(String name, Router router) {
-    router.route().handler(CookieHandler.create());
-    router.route().handler(SessionHandler.create(
-      ClusteredSessionStore.create(vertx, name)));
-  }
-
   // auth helper method
 
   /**
@@ -119,6 +107,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
         handler.handle(res.result());
       } else {
         internalError(context, res.cause());
+        res.cause().printStackTrace();
       }
     };
   }
@@ -136,6 +125,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
           .end(res == null ? "{}" : res.toString());
       } else {
         internalError(context, ar.cause());
+        ar.cause().printStackTrace();
       }
     };
   }
@@ -163,6 +153,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
         }
       } else {
         internalError(context, ar.cause());
+        ar.cause().printStackTrace();
       }
     };
   }
@@ -189,6 +180,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
         }
       } else {
         internalError(context, ar.cause());
+        ar.cause().printStackTrace();
       }
     };
   }
@@ -209,6 +201,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
           .end(res == null ? "" : res.toString());
       } else {
         internalError(context, ar.cause());
+        ar.cause().printStackTrace();
       }
     };
   }
@@ -235,6 +228,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
           .end(result.encodePrettily());
       } else {
         internalError(context, ar.cause());
+        ar.cause().printStackTrace();
       }
     };
   }
@@ -248,6 +242,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
           .end();
       } else {
         internalError(context, ar.cause());
+        ar.cause().printStackTrace();
       }
     };
   }
@@ -270,6 +265,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
           .end(new JsonObject().put("message", "delete_success").encodePrettily());
       } else {
         internalError(context, res.cause());
+        res.cause().printStackTrace();
       }
     };
   }

@@ -21,14 +21,6 @@ public class Account {
     // Empty constructor
   }
 
-  public Account(Account other) {
-    this.id = other.id;
-    this.username = other.username;
-    this.phone = other.phone;
-    this.email = other.email;
-    this.birthDate = other.birthDate;
-  }
-
   public Account(JsonObject json) {
     AccountConverter.fromJson(json, this);
   }

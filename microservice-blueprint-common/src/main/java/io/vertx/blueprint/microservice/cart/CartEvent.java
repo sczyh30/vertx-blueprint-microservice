@@ -23,15 +23,6 @@ public class CartEvent {
     this.createdAt = System.currentTimeMillis();
   }
 
-  public CartEvent(CartEvent other) {
-    this.id = other.id;
-    this.cartEventType = other.cartEventType;
-    this.userId = other.userId;
-    this.productId = other.productId;
-    this.amount = other.amount;
-    this.createdAt = other.createdAt;
-  }
-
   public CartEvent(JsonObject json) {
     CartEventConverter.fromJson(json, this);
   }

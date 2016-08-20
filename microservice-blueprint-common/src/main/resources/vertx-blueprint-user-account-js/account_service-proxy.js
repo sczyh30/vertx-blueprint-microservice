@@ -112,6 +112,27 @@
     };
 
     /**
+     Retrieve the user account with certain `username`.
+
+     @public
+     @param username {string} username
+     @param resultHandler {function} the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not.
+     @return {AccountService}
+     */
+    this.retrieveByUsername = function (username, resultHandler) {
+      var __args = arguments;
+      if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
+        if (closed) {
+          throw new Error('Proxy is closed');
+        }
+        j_eb.send(j_address, {"username": __args[0]}, {"action": "retrieveByUsername"}, function (err, result) {
+          __args[1](err, result && result.body);
+        });
+        return that;
+      } else throw new TypeError('function invoked with invalid arguments');
+    };
+
+    /**
      Retrieve all user accounts.
 
      @public
