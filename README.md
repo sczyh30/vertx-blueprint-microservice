@@ -2,7 +2,8 @@
 
 [![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-microservice.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-microservice)
 
-Vert.x blueprint application - An online shopping microservice application.
+Vert.x blueprint application - An online shopping microservice application developed with Vert.x.
+This repo is intended to be an illustration on how to develop microservice applications using Vert.x toolkit. 
 
 ## Content
 
@@ -24,10 +25,10 @@ Detailed tutorials are available here!
 
 - English Version
     - [Vert.x Blueprint - Online shopping microservice practice (Development)](http://sczyh30.github.io/vertx-blueprint-microservice/index.html)
-    - [Vert.x Blueprint - Online shopping microservice practice (Deployment)](http://sczyh30.github.io/vertx-blueprint-microservice/deployment.html)
+    - [Vert.x Blueprint - Online shopping microservice practice (API Gateway)](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html)
 - 中文版本
     - [Vert.x 蓝图 - Online Shopping 微服务实战(开发篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/index.html)
-    - [Vert.x 蓝图 - Online Shopping 微服务实战(部署篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/deployment.html)
+    - [Vert.x 蓝图 - Online Shopping 微服务实战(API Gateway)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/api-gateway.html)
 
 ## Architecture
 
@@ -41,7 +42,8 @@ To build the code:
 
 To run the microservice with Docker Compose:
 
-    ./run.sh
+    cd docker
+    sudo ./run.sh
 
 ## Contributing
 
