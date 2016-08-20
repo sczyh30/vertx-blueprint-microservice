@@ -1,0 +1,5 @@
+{
+  "shopping.ui.http.address": "shopping-ui",
+  "shopping.ui.http.port": 8080,
+  "ui-service": "shopping-spa"
+}

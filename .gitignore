@@ -1,0 +1,8 @@
+# IntelliJ project files
+.idea
+*.iml
+
+# build files
+build
+target
+.vertx

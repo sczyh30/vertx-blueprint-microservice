@@ -1,0 +1,167 @@
+= Cheatsheets
+
+[[Account]]
+== Account
+
+++++
+ User account data object
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[birthDate]]`birthDate`|`Number (Long)`|-
+|[[email]]`email`|`String`|-
+|[[id]]`id`|`String`|-
+|[[phone]]`phone`|`String`|-
+|[[username]]`username`|`String`|-
+|===
+
+[[CartEvent]]
+== CartEvent
+
+++++
+ Cart event state object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[amount]]`amount`|`Number (Integer)`|-
+|[[cartEventType]]`cartEventType`|`link:enums.html#CartEventType[CartEventType]`|-
+|[[createdAt]]`createdAt`|`Number (Long)`|-
+|[[id]]`id`|`Number (Long)`|-
+|[[productId]]`productId`|`String`|-
+|[[userId]]`userId`|`String`|-
+|===
+
+[[CheckoutResult]]
+== CheckoutResult
+
+++++
+ Checkout result data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[message]]`message`|`String`|-
+|[[order]]`order`|`link:dataobjects.html#Order[Order]`|-
+|===
+
+[[Order]]
+== Order
+
+++++
+ Order data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[buyerId]]`buyerId`|`String`|-
+|[[createTime]]`createTime`|`Number (Long)`|-
+|[[orderId]]`orderId`|`Number (Long)`|-
+|[[payId]]`payId`|`String`|-
+|[[products]]`products`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
+|[[totalPrice]]`totalPrice`|`Number (Double)`|-
+|===
+
+[[Payment]]
+== Payment
+
+++++
+ Payment data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[payAmount]]`payAmount`|`Number (Double)`|-
+|[[payId]]`payId`|`String`|-
+|[[paySource]]`paySource`|`Number (Short)`|-
+|[[paymentTime]]`paymentTime`|`Number (Long)`|-
+|===
+
+[[Product]]
+== Product
+
+++++
+ Product data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[illustration]]`illustration`|`String`|-
+|[[name]]`name`|`String`|-
+|[[price]]`price`|`Number (double)`|-
+|[[productId]]`productId`|`String`|-
+|[[sellerId]]`sellerId`|`String`|-
+|[[type]]`type`|`String`|-
+|===
+
+[[ProductTuple]]
+== ProductTuple
+
+++++
+ A product tuple represents the amount of a certain product in a shopping.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[amount]]`amount`|`Number (Integer)`|-
+|[[price]]`price`|`Number (Double)`|-
+|[[productId]]`productId`|`String`|-
+|[[sellerId]]`sellerId`|`String`|-
+|===
+
+[[ShoppingCart]]
+== ShoppingCart
+
+++++
+ Shopping cart state object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[empty]]`empty`|`Boolean`|-
+|[[productItems]]`productItems`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
+|===
+
+[[Store]]
+== Store
+
+++++
+ Online store data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[description]]`description`|`String`|-
+|[[name]]`name`|`String`|-
+|[[openTime]]`openTime`|`Number (Long)`|-
+|[[sellerId]]`sellerId`|`String`|-
+|===
+

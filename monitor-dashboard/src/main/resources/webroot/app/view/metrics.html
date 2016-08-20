@@ -1,0 +1,49 @@
+<div class="container">
+  <div class="row clearfix">
+    <div class="col-md-6">
+      <table class="table table-striped">
+        <caption>Vert.x Metrics</caption>
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>event-loop-size</td>
+          <td>{{metrics["vertx.event-loop-size"].value}}</td>
+        </tr>
+        <tr>
+          <td>worker-pool-size</td>
+          <td>{{metrics["vertx.worker-pool-size"].value}}</td>
+        </tr>
+        <tr>
+          <td>current-verticles</td>
+          <td>{{metrics["vertx.verticles"].count}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-6">
+      <table class="table table-striped">
+        <caption>Vert.x Event Bus Metrics</caption>
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>current-handlers</td>
+          <td>{{metrics["vertx.eventbus.handlers"].count}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-12">
+      <highchart id="eb-chart" config="ebChartConfig"></highchart>
+    </div>
+  </div>
+</div>

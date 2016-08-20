@@ -1,0 +1,29 @@
+<div class="container">
+  <div class="row clearfix">
+    <div class="col-md-12">
+      <table class="table table-striped">
+        <caption>Published logs</caption>
+        <thead>
+        <tr>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Message</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="l in logs">
+          <td>{{l.type}}</td>
+          <td><span ng-if="l.status == undefined || !l.status" class='label label-danger'>×</span></td>
+          <td><span ng-if="l.status" class='label label-success'>√</span></td>
+          <td>{{l.message}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>

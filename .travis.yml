@@ -1,0 +1,10 @@
+language: java
+
+jdk:
+  - oraclejdk8
+
+services:
+  - mysql
+
+before_script:
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS microservice_test;' -uroot

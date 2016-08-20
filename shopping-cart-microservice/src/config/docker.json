@@ -1,0 +1,9 @@
+{
+  "api.name": "cart",
+  "shopping.cart.http.address": "shopping-cart-microservice",
+  "url": "jdbc:mysql://mysql:3306/vertx_blueprint?characterEncoding=UTF-8&useSSL=false",
+  "driver_class": "com.mysql.cj.jdbc.Driver",
+  "user": "root",
+  "password": "666666",
+  "max_pool_size": 30
+}

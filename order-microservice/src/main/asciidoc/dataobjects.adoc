@@ -1,0 +1,22 @@
+= Cheatsheets
+
+[[Order]]
+== Order
+
+++++
+ Order data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[buyerId]]`buyerId`|`String`|-
+|[[createTime]]`createTime`|`Number (Long)`|-
+|[[orderId]]`orderId`|`Number (Long)`|-
+|[[payId]]`payId`|`String`|-
+|[[products]]`products`|`Array of link:dataobjects.html#ProductTuple[ProductTuple]`|-
+|[[totalPrice]]`totalPrice`|`Number (Double)`|-
+|===
+

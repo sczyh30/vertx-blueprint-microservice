@@ -1,0 +1,18 @@
+{
+  "api.gateway.http.port": 8787,
+  "api.gateway.http.address": "localhost",
+  "circuit-breaker": {
+    "name": "api-gateway-cb",
+    "timeout": 10000,
+    "max-failures": 5
+  },
+  "realm": "Vert.x",
+  "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkto9ZZm69cmdA9e7X4NUSo8T4CyvrYzlRiJdhr+LMqELdfN3ghEY0EBpaROiOueva//iUc/KViYGiAHVXEQ3nr3kytF6uZs9iwqkshKvltpxkOm2Qpj/FSRsCyHlB8Ahbt5xBmzH2mI1VDIxmVTdEBze4u6tLoi4ieo72b2q/dz09yrEokRm/sSYqzNgfE0i1JY6DI8C7FaKszKTK5DRGMIAib8wURrTyf8au0iiisKEXOHKEjo/g0uHCFGSOKqPOprNNIWYwedV+qaQa9oSah2IpwNgFNRLtHpvbcanftMLQOQIR0iufIJ+bHrNhH0RISZhTzcGX3pSIBw/HaERwQIDAQAB",
+  "auth-server-url": "http://127.0.0.1:8180/auth",
+  "ssl-required": "external",
+  "resource": "vertx-blueprint",
+  "credentials": {
+    "secret": "ea99a8e6-f503-4bdb-afbd-9ae322ee7089"
+  },
+  "use-resource-role-mappings": true
+}
