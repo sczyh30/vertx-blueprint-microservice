@@ -17,6 +17,7 @@ What you are going to learn:
 - How to use Vert.x Circuit Breaker
 - How to implement a simple API gateway
 - How to manage global authentication using OAuth 2 and Keycloak with Vert.x-Auth
+- How to configure and use SockJS - Event bus bridge
 
 And many more things too...
 
@@ -57,15 +58,15 @@ Asynchronous and reactive is very suitable for microservices, and Vert.x owes bo
 
 Ok, now that you've had a basic understanding of microservice architecture, let's discuss our microservice application in this blueprint. This is a online shopping application like eBay. People can buy things via it... The application contains a set of microservices currently:
 
-- Account service - provides user account operation functionality. Use MySQL as persistence.
-- Product service - provides product operation functionality. Use MySQL as persistence.
-- Inventory service - provides product inventory operation functionality, e.g. `retrieve`, `increase` and `decrease`. Use Redis as persistence (via Cache infrastructure service).
-- Store service - provides personal shop operation functionality. Use MongoDB as persistence.
-- Shopping cart service - it manages the shopping cart operations (e.g. `add`, `remove` and `checkout`) and generates orders. Shopping carts are stored and retrieved with event sourcing pattern. Orders are sent on the event bus.
-- Order dispatcher and processor - it receives order requests from the cart service via event bus and then dispatch the orders to the infrastructure services (e.g. processing, storage and logging).
-- The shopping SPA - the frontend SPA of the microservice
-- The monitor dashbord - a simple web UI to monitor the status of the microservice system
-- The API gateway - it is responsible for the requests to corresponding REST endpoints. It is also responsible for authentication, simple load-balancing and failure handling (using Vert.x Circuit Breaker).
+- **Account microservice** - provides user account operation functionality. Use MySQL as persistence.
+- **Product microservice** - provides product operation functionality. Use MySQL as persistence.
+- **Inventory microservice** - provides product inventory operation functionality, e.g. `retrieve`, `increase` and `decrease`. Use Redis as persistence (via Cache infrastructure service).
+- **Store microservice** - provides personal shop operation functionality. Use MongoDB as persistence.
+- **Shopping cart microservice** - it manages the shopping cart operations (e.g. `add`, `remove` and `checkout`) and generates orders. Shopping carts are stored and retrieved with event sourcing pattern. Orders are sent on the event bus.
+- **Order microservice(dispatcher and processor)** - it receives order requests from the cart service via event bus and then dispatch the orders to the infrastructure services (e.g. processing, storage and logging).
+- **The Micro Shop SPA** - the frontend SPA of the microservice (now integrated with `api-gateway`)
+- **The monitor dashbord** - a simple web UI to monitor the status of the microservice system
+- **The API gateway** - it is responsible for the requests to corresponding REST endpoints. It is also responsible for authentication, simple load-balancing and failure handling (using Vert.x Circuit Breaker).
 
 ## Online shopping microservice architecture
 
@@ -89,11 +90,11 @@ We have services in each component, for example `ProductService` for `product-mi
 
 The application uses several types of services:
 
-- HTTP endpoint (e.g. REST endpoint and gateway) - the service is located using an HTTP URL
-- Event bus service - as we've mentioned above, we can do async RPC to consume event bus services (aka. service proxies) via the event bus. The service is located using an event bus address.
-- Message source - this kind of service publishes messages to specific addresses on event bus. The service is located using an event bus address.
+- **HTTP endpoint** (e.g. REST endpoint and gateway) - the service is located using an HTTP URL
+- **Event bus service** - as we've mentioned above, we can do async RPC to consume event bus services (aka. service proxies) via the event bus. The service is located using an event bus address.
+- **Message source** - this kind of service publishes messages to specific addresses on event bus. The service is located using an event bus address.
 
-So these components can interact with each other via HTTP or event bus. For example:
+So these components can interact with each other via HTTP or event bus like this picture:
 
 ![Interaction](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/rpc-inc-1.png)
 
@@ -103,7 +104,7 @@ Now let's start our journey with this blueprint! First we clone the project from
 
   git clone https://github.com/sczyh30/vertx-blueprint-microservice.git
 
-First see the `pom.xml`. From it we can see our blueprint is composed of several subprojects:
+In this tutorial we use *Maven* as the build tool. Let's first look at the `pom.xml` config file. From it we can see our blueprint is composed of several subprojects:
 
 ```xml
 <modules>
@@ -116,7 +117,6 @@ First see the `pom.xml`. From it we can see our blueprint is composed of several
   <module>order-microservice</module>
   <module>api-gateway</module>
   <module>cache-infrastructure</module>
-  <module>shopping-ui</module>
   <module>monitor-dashboard</module>
 </modules>
 ```
@@ -259,7 +259,66 @@ See here: [Vert.x Blueprint - Online Shopping Microservice Practice (API Gateway
 
 # Event bus services - Account, store and product service
 
-# Future based service - Inventory service
+## Asynchronous RPC on event bus
+
+We have introduced asynchronous RPC (aka. service proxy) in the previous blueprint [Vert.x Blueprint - Vert.x Kue (Core)](http://www.sczyh30.com/vertx-blueprint-job-queue/kue-core/index.html#async-rpc) and here let's have a revision~
+
+With RPC, a component can send messages to another component by doing a local procedure call. But traditional RPC has a drawback: the caller has to wait until the response from the callee has been received, which does not fit for Vert.x asynchronous model. In addition, the traditional RPC isn't really **Failure-Oriented**. Thanks to Vert.x, we can do **asynchronous RPC** on the (clustered) event bus. With async RPC, we don't have to wait for the response, but only need to pass a `Handler<AsyncResult<R>>` to the method and when the result arrives, the handler will be called. That corresponds to the asynchronous model of Vert.x.
+
+Vert.x Service Proxy can automatically generate service proxy classes from the service interface with `@ProxyGen` (aka. event bus service). It can prevent us from sending and consuming data from the event bus, handle timeout and decoding data manually. What we should care is to obey [the constraints](http://vertx.io/docs/vertx-service-proxy/java/#_restrictions_for_service_interface) of `@ProxyGen` annotation.
+
+For example, there is a event bus service interface:
+
+```java
+@ProxyGen
+public interface MyService {
+  @Fluent
+  MyService retrieveData(String id, Handler<AsyncResult<JsonObject>> resultHandler);
+}
+```
+
+We can register the service on event bus by calling `registerService` method in `ProxyHelper` class:
+
+```java
+MyService myService = MyService.createService(vertx, config);
+ProxyHelper.registerService(MyService.class, vertx, myService, SERVICE_ADDRESS);
+```
+
+With service discovery, it's convenient to publish the event bus service to the discovery infrastructure using our wrapped `publishEventBusService` method or original `publish` method in `ServiceDiscovery`:
+
+```java
+publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, MyService.class)
+```
+
+Well, the register has been done. Now we can do asynchronous RPC in another component like this:
+
+```java
+EventBusService.<MyService>getProxy(discovery, new JsonObject().put("name", SERVICE_NAME), ar -> {
+  if (ar.succeeded()) {
+    MyService myService = ar.result();
+    myService.retrieveData(...);
+  }
+});
+```
+
+With `EventBusService.getProxy` method, we could easily get our service via the discovery infrastructure, then call it like a *local procedure call* (in fact RPC)!
+
+## Common features
+
+The account, store and product microservices have some features and regulations in common. Let's give a summary.
+
+Every microservice component contains:
+
+- An event bus service interface. The service defines entity operations.
+- Implementation of the service interface.
+- A REST API verticle that exposes HTTP server and publishes REST endpoints to the discovery infrastructure.
+- A main verticle that deploys the REST verticle and publishes event bus services to the discovery infrastructure.
+
+## Product service with MySQL
+
+## Account service with MongoDB
+
+# Inventory microservice with Redis
 
 The inventory service is responsible for operations about product inventory, e.g. `retrieve` inventory of a product, `increase` or `decrease` inventory amount. Different from the previous event bus service, the inventory service interface is not callback-based, but future-based. The service proxy does not support processing future-based asynchronous method, hence we'd only publish a HTTP endpoint.
 
@@ -739,19 +798,599 @@ Currently, as the `Observable` containing initial shopping cart resembles a `Sin
 
 The shopping cart we got initially is incomplete and need more data. So we first compose the cart future with `getProductService` async method (5). We retrieve the `ProductService` from the discovery infrastructure, then prepare products data for shopping cart (6) and finally aggregate the complete shopping cart with `generateCurrentCartFromStream` async method. There are several composition of the asynchronous methods here and we'll take a look for each.
 
+First let's see the `getProductService` method. It retrieves `ProductService` from the discovery infrastructure and returns a `Future<ProductService>`:
+
+```java
+private Future<ProductService> getProductService() {
+  Future<ProductService> future = Future.future();
+  EventBusService.getProxy(discovery,
+    new JsonObject().put("name", ProductService.SERVICE_NAME),
+    future.completer());
+  return future;
+}
+```
+
+Now we get the service, so next step is to retrieve necessary product data from the `ProductService`. We call this method `prepareProduct`:
+
+```java
+private Future<List<Product>> prepareProduct(ProductService service, ShoppingCart cart) {
+  List<Future<Product>> futures = cart.getAmountMap().keySet() // (1)
+    .stream()
+    .map(productId -> {
+      Future<Product> future = Future.future();
+      service.retrieveProduct(productId, future.completer());
+      return future; // (2)
+    })
+    .collect(Collectors.toList()); // (3)
+  return Functional.sequenceFuture(futures); // (4)
+}
+```
+
+In this implementation, first we get the list of product number in the current cart (1) and then for each product number, we retrieve corresponding `Product` entity via the `retrieveProduct` asynchronous method. The procedure is asynchronous so we map the result as `Future<Product>`. Then we collect the future stream as `List<Future<Product>>` (3). Now that we have a list of futures, how can we transform the `List<Future<Product>>` into `Future<List<Product>>`? Here I implemented a helper method `sequenceFuture` (4) to do this. It's in the `Functional` class in `io.vertx.blueprint.microservice.common.functional` package:
+
+```java
+public static <R> Future<List<R>> sequenceFuture(List<Future<R>> futures) {
+  return CompositeFutureImpl.all(futures.toArray(new Future[futures.size()])) // (1)
+    .map(v -> futures.stream()
+        .map(Future::result) // (2)
+        .collect(Collectors.toList()) // (3)
+    );
+}
+```
+
+This method is useful for reducing a sequence of futures into a single `Future` with a list of the results. Here we first invoke `CompositeFutureImpl#all` method (1). It returns a composite future, succeeds only if every result is successful and fails when any result is failed. Then we transform each `Future` to the corresponding result (2) as the `all` method have forced each `Future` to get results. Finally we collect the result list (3).
+
+Get back! Now we've got products from the `ProductService`, it's time to aggregate the complete shopping cart! Let's see `generateCurrentCartFromStream` method:
+
+```java
+private Future<ShoppingCart> generateCurrentCartFromStream(ShoppingCart rawCart, List<Product> productList) {
+  Future<ShoppingCart> future = Future.future();
+  // check if any of the product is invalid
+  if (productList.stream().anyMatch(e -> e == null)) { // (1)
+    future.fail("Error when retrieve products: empty");
+    return future;
+  }
+  // construct the product items
+  List<ProductTuple> currentItems = rawCart.getAmountMap().entrySet() // (2)
+    .stream()
+    .map(item -> new ProductTuple(getProductFromStream(productList, item.getKey()), // (3)
+      item.getValue())) // (4) amount value
+    .filter(item -> item.getAmount() > 0) // (5) amount must be greater than zero
+    .collect(Collectors.toList());
+
+  ShoppingCart cart = rawCart.setProductItems(currentItems); // (6)
+  return Future.succeededFuture(cart); // (7)
+}
+```
+
+Notice that the method doesn't require asynchronous, but we need to demonstrate a failure or success state, so here we still return a `Future`. First we create a `Future`, then we check if any of the products is invalid using `anyMatch` method (2). If invalid, return a failed future. Then we construct the product items `ProductTuple` from the retrieved data. Here we use this constructor of `ProductTuple` class:
+
+```java
+public ProductTuple(Product product, Integer amount) {
+  this.productId = product.getProductId();
+  this.sellerId = product.getSellerId();
+  this.price = product.getPrice();
+  this.amount = amount;
+}
+```
+
+The first parameter is a `Product`, and we could get corresponding product from the given product list using `getProductFromStream` method:
+
+```java
+private Product getProductFromStream(List<Product> productList, String productId) {
+  return productList.stream()
+    .filter(product -> product.getProductId().equals(productId))
+    .findFirst()
+    .get();
+}
+```
+
+After constructing the `ProductTuple`, we set it to the given `ShoppingCart`  (6) and then return the cart future (7). Now we finally made a complete shopping cart!
+
 ## Checkout - generate order from shopping cart
+
+Now that we have chosen our favorite products and the shopping cart is prepared, it's time to checkout! The `CheckoutService` interface only contains one method: `checkout`:
+
+```java
+@VertxGen
+@ProxyGen
+public interface CheckoutService {
+
+  /**
+   * The name of the event bus service.
+   */
+  String SERVICE_NAME = "shopping-checkout-eb-service";
+
+  /**
+   * The address on which the service is published.
+   */
+  String SERVICE_ADDRESS = "service.shopping.cart.checkout";
+
+  /**
+   * Order event source address.
+   */
+  String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
+
+  /**
+   * Create a shopping checkout service instance
+   */
+  static CheckoutService createService(Vertx vertx, ServiceDiscovery discovery) {
+    return new CheckoutServiceImpl(vertx, discovery);
+  }
+
+  void checkout(String userId, Handler<AsyncResult<CheckoutResult>> handler);
+
+}
+```
+
+Let's step into the implementation, `CheckoutServiceImpl`. Even though it only contains a checkout logic, it's a bit complex and includes various kind of component interaction... First see `checkout` method:
+
+```java
+@Override
+public void checkout(String userId, Handler<AsyncResult<CheckoutResult>> resultHandler) {
+  if (userId == null) { // (1)
+    resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid user")));
+    return;
+  }
+  Future<ShoppingCart> cartFuture = getCurrentCart(userId); // (2)
+  Future<CheckoutResult> orderFuture = cartFuture.compose(cart ->
+    checkAvailableInventory(cart).compose(checkResult -> { // (3)
+      if (checkResult.getBoolean("res")) { // (3)
+        double totalPrice = calculateTotalPrice(cart); // (4)
+        // create order instance
+        Order order = new Order().setBuyerId(userId) // (5)
+          .setPayId("TEST") // reserved field
+          .setProducts(cart.getProductItems())
+          .setTotalPrice(totalPrice);
+        // set id and then send order, wait for reply
+        return saveCheckoutEvent(userId) // (6)
+          .compose(eventSaved -> retrieveCounter("order")) // (7)
+          .compose(id -> sendOrderAwaitResult(order.setOrderId(id))); // (8)
+      } else {
+        // has insufficient inventory, fail
+        return Future.succeededFuture(new CheckoutResult()
+          .setMessage(checkResult.getString("message"))); // (9)
+      }
+    })
+  );
+
+  orderFuture.setHandler(resultHandler); // (10)
+}
+```
+
+You've seen a lot of `compose`... Yes, here we composed many future-based asynchronous methods reactively! First we check whether the given `userId` is valid (1), if not then return a failed future. Then we get current shopping cart of the user using `getCurrentCart` method (2). It's asynchronous so returns a `Future<ShoppingCart>`:
+
+```java
+private Future<ShoppingCart> getCurrentCart(String userId) {
+  Future<ShoppingCartService> future = Future.future();
+  EventBusService.getProxy(discovery,
+    new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
+    future.completer());
+  return future.compose(service -> {
+    Future<ShoppingCart> cartFuture = Future.future();
+    service.getShoppingCart(userId, cartFuture.completer());
+    return cartFuture.compose(c -> {
+      if (c == null || c.isEmpty())
+        return Future.failedFuture(new IllegalStateException("Invalid shopping cart"));
+      else
+        return Future.succeededFuture(c);
+    });
+  });
+}
+```
+
+In `getCurrentCart` method we get the `ShoppingCartService` from the discovery infrastructure using `EventBusService.getProxy` method. Then we call `ShoppingCartService#getShoppingCart` to get current cart for the user. We need also to validate if the cart is empty, then return the future result.
+
+You may also notice that the `checkout` method will return a `CheckoutResult`, which refers to the async result of checkout:
+
+```java
+@DataObject(generateConverter = true)
+public class CheckoutResult {
+  private String message; // result message
+  private Order order; // order entity
+}
+```
+
+So we'll generate a `Future<CheckoutResult>` from the retrieved `cartFuture`. We first compose it with `checkAvailableInventory` method (3). The `checkAvailableInventory` is responsible for checking whether the inventory is sufficient and we'll explain it later. Then comes another compose. We check the inventory result and judge if all inventories are sufficient (3). If not, we return a `CheckoutResult` with the insufficient product message (9). Or we calculate the total price of the products (4) and generate new `Order` (5). The order contains:
+
+- buyer id
+- amount, seller, unit price for each selected products
+- total price
+
+Next we save the checkout cart event to the event store (6), retrieve new order id from the global counter (7) and then send the order to order components and await for `CheckoutResult` (8).
+
+Finally we set `resultHandler` on the `orderFuture` (10). When it is assigned, the handler will be called.
+
+Now let's see the `checkAvailableInventory` async method we've mentioned above:
+
+```java
+private Future<JsonObject> checkAvailableInventory(ShoppingCart cart) {
+  Future<List<JsonObject>> allInventories = getInventoryEndpoint().compose(client -> { // (1)
+    List<Future<JsonObject>> futures = cart.getProductItems() // (2)
+      .stream()
+      .map(product -> getInventory(product, client)) // (3)
+      .collect(Collectors.toList());
+    return Functional.sequenceFuture(futures); // (4)
+  });
+  return allInventories.map(inventories -> {
+    JsonObject result = new JsonObject();
+    // get the list of products whose inventory is lower than the demand amount
+    List<JsonObject> insufficient = inventories.stream()
+      .filter(item -> item.getInteger("inventory") - item.getInteger("amount") < 0) // (5)
+      .collect(Collectors.toList());
+    // insufficient inventory exists
+    if (insufficient.size() > 0) {
+      String insufficientList = insufficient.stream()
+        .map(item -> item.getString("id"))
+        .collect(Collectors.joining(", ")); // (6)
+      result.put("message", String.format("Insufficient inventory available for product %s.", insufficientList))
+        .put("res", false); // (7)
+    } else {
+      result.put("res", true); // (8)
+    }
+    return result;
+  });
+}
+```
+
+Wow! A bit complex! First we get the inventory REST endpoint with `getInventoryEndpoint` method (1). It simply get the REST endpoint from the discovery infrastructure using `HttpEndpoint.getClient` method:
+
+```java
+private Future<HttpClient> getInventoryEndpoint() {
+  Future<HttpClient> future = Future.future();
+  HttpEndpoint.getClient(discovery,
+    new JsonObject().put("name", "inventory-rest-api"),
+    future.completer());
+  return future;
+}
+```
+
+Then we'll compose another `Future`. We get the product item list from the shopping cart (2) and map each items to corresponding product number and inventory amount (3). In the previous we have got the `HttpClient` for the inventory REST endpoint, so we retrieve each inventory via the client. The logic is in `getInventory` method:
+
+```java
+private Future<JsonObject> getInventory(ProductTuple product, HttpClient client) {
+  Future<Integer> future = Future.future(); // (A)
+  client.get("/" + product.getProductId(), response -> { // (B)
+    if (response.statusCode() == 200) { // (C)
+      response.bodyHandler(buffer -> {
+        try {
+          int inventory = Integer.valueOf(buffer.toString()); // (D)
+          future.complete(inventory);
+        } catch (NumberFormatException ex) {
+          future.fail(ex);
+        }
+      });
+    } else {
+      future.fail("not_found:" + product.getProductId()); // (E)
+    }
+  })
+    .exceptionHandler(future::fail)
+    .end();
+  return future.map(inv -> new JsonObject()
+    .put("id", product.getProductId())
+    .put("inventory", inv)
+    .put("amount", product.getAmount())); // (F)
+}
+```
+
+The procedure is clear. First we create a `Future<Integer>` to store the inventory amount result (A). Then we use `client.get(path, responseHandler)` method to consume inventory endpoint (B). In the response handler, if the status code is **200 OK** (C), we can then get the inventory from the response body via `bodyHandler` and convert it to `Integer` (D). As soon as every process is successful, the future will be assigned with the inventory amount. If the status code is not **200** (e.g. **400** or **404**), we think that there is something wrong so fail the future (E).
+
+Only containing inventory number is not enough. For convenient, we design the result as a `JsonObject` containing product id, inventory amount and product amount in shopping cart, so we finally map the `future` to the `JsonObject` (F).
+
+Now back to the `checkAvailableInventory` method. After line (3) we get a list of futures again, so we map it into a future of list with `Functional.sequenceFuture` method (4). Now we get a `Future<List<JsonObject>>`, it's time to check each inventory amount! We created a list `insufficient` specificly saving insufficient products (5). If the insufficient list is not empty, that means insufficient inventory exists so we need to get each id of sufficient product. Here we implemented this by using `collect(Collectors.joining(", "))` (6). This trick is very useful. For example, product id list `[TST-0001, TST-0002, BK-16623]` will be reduced to single string "TST-0001, TST-0002, BK-16623".
+
+After getting insufficient product message, we put the message into the `JsonObject` result. Meanwhile, whether all inventories are sufficient or not is identified by a boolean field `res` in the `JsonObject` so we set it to false (7).
+
+If we got an empty insufficient list before, it means that all inventories are available so set the `res` field to true (8). Finally we return the resut future.
+
+Get back. The `calculateTotalPrice` method calculate total price from the shopping cart, which can be regarded as a map-reduce procedure:
+
+```java
+return cart.getProductItems().stream()
+  .map(p -> p.getAmount() * p.getPrice()) // join by product id
+  .reduce(0.0d, (a, b) -> a + b);
+```
+
+As we've mentioned above in the `checkout` method, after generating new raw order, we have three asynchronous method composition: `saveCheckoutEvent -> retrieveCounter -> sendOrderAwaitResult`. Let's have a look.
+
+The `saveCheckoutEvent` method is quite similar to `getCurrentCart` method as they all get `ShoppingCartService` from the discovery infrastructure and then call an asynchronous method of the service:
+
+```java
+private Future<Void> saveCheckoutEvent(String userId) {
+  Future<ShoppingCartService> future = Future.future();
+  EventBusService.getProxy(discovery,
+    new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
+    future.completer());
+  return future.compose(service -> {
+    Future<Void> resFuture = Future.future();
+    CartEvent event = CartEvent.createCheckoutEvent(userId);
+    service.addCartEvent(event, resFuture.completer());
+    return resFuture;
+  });
+}
+```
+
+Having saved the checkout cart event, we then retrieve the counter of order id from `CounterService` in the `cache-infrastructure`:
+
+```java
+private Future<Long> retrieveCounter(String key) {
+  Future<Long> future = Future.future();
+  EventBusService.<CounterService>getProxy(discovery,
+    new JsonObject().put("name", "counter-eb-service"),
+    ar -> {
+      if (ar.succeeded()) {
+        CounterService service = ar.result();
+        service.addThenRetrieve(key, future.completer());
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+  return future;
+}
+```
+
+Of course you can also use the original auto-increment counter in RDBMS but if you have several database nodes, you will have to maintain the consistency of the counter manually.
 
 ## Send orders to order microservice
 
+As the new order id has been retrieved, we can set the id to the order entity and then, as a key part, send the order to *order microservice*. Let's see the `sendOrderAwaitResult` asynchronous method:
+
+```java
+private Future<CheckoutResult> sendOrderAwaitResult(Order order) {
+  Future<CheckoutResult> future = Future.future();
+  vertx.eventBus().send(CheckoutService.ORDER_EVENT_ADDRESS, order.toJson(), reply -> {
+    if (reply.succeeded()) {
+      future.complete(new CheckoutResult((JsonObject) reply.result().body()));
+    } else {
+      future.fail(reply.cause());
+    }
+  });
+  return future;
+}
+```
+
+We `send` the order to a specific address on the event bus, then the order microservice could consume orders on the another side. Notice that the `send` method also accepts a `Handler<AsyncResult<Message<T>>>`, which means that we should wait for the reply message from the consumer. This is actually called **request-response** pattern. If we successfully received the reply, we'll complete the future with the received `CheckoutResult`. If we received an error or timeout triggered, we'll fail the future.
+
+So, having experienced a long composition chain, we've finally finished our exploration with `checkout`! Feel a bit more reactive? That's cool!
+
+As we've mentioned above, the order microservice will consume our orders from the event bus. As they don't know where we sent the orders, we need to publish a **message source** into the service discovery infrastructure. Thus, the order component can get a corresponding `MessageConsumer` from the discovery layer so that they can consume the orders. We'll publish services in the `CartVerticle`. Before we have an encounter with `CartVerticle`, let's have a glimpse of `RestShoppingAPIVerticle`.
+
+## Shopping cart REST API
+
+As we've mentioned above, the REST API verticles are responsible for creating server and publish HTTP endpoint to the discovery infrastructure. That's the same as `RestShoppingAPIVerticle`. We have three shopping cart APIs here:
+
+- GET `/cart` - get current shopping cart of current user in session scope
+- POST `/events` - add a new cart event for current user in session scope
+- POST `/checkout` - issue a checkout request for current user's shopping cart
+
+All of three APIs require login so their routes are wrapped with `requireLogin`:
+
+```java
+// api route handler
+router.post(API_CHECKOUT).handler(context -> requireLogin(context, this::apiCheckout));
+router.post(API_ADD_CART_EVENT).handler(context -> requireLogin(context, this::apiAddCartEvent));
+router.get(API_GET_CART).handler(context -> requireLogin(context, this::apiGetCart));
+```
+
+As for implementations, they are very simple and here we only describe one `apiAddCartEvent` method:
+
+```java
+private void apiAddCartEvent(RoutingContext context, JsonObject principle) {
+  String userId = Optional.ofNullable(principle.getString("userId"))
+    .orElse(TEST_USER); // (1)
+  CartEvent cartEvent = new CartEvent(context.getBodyAsJson()); // (2)
+  if (validateEvent(cartEvent, userId)) {
+    shoppingCartService.addCartEvent(cartEvent, resultVoidHandler(context, 201)); // (3)
+  } else {
+    context.fail(400); // (4)
+  }
+}
+```
+
+First we get the user id from the principal and use `TEST_USER` as test id if `userId` field does not exists (1). Then we create `CartEvent` from the request body (2). We need to validate if the user id in request cart event equals to current user id. If equals, invoke `addCartEvent` to add cart event to the event store and returing **201** status when successful (3). If the request cart event is invalid, end the response with **400** status (4).
+
+## Cart verticle
+
+The shopping cart verticle is responsible for publishing services. Here we publish three services:
+
+- `shopping-checkout-eb-service`: Checkout service. This is an **event bus service**.
+- `shopping-cart-eb-service`: Shopping cart service. This is an **event bus service**.
+- `shopping-order-message-source`: Order message source where we send orders. This is a **message source service**.
+
+Simultaneously, the `CartVerticle` will deploy the `RestShoppingAPIVerticle`. The **api name** of the REST endpoint is `cart` by default.
+
 # Order microservice
+
+Well, now we have submitted checkout request and an order is sent to the order microservice. So the next thing we need to to is dispatching and processing the order. In current version of the blueprint, we simply save orders to database and modify the inventory amount. In real production, we might need to publish the orders into MQ then consume them in the upstream components.
+
+As the implementation of database operation service is similar to others, we won't explain the detail of `OrderService`. You can look up the implementation on [GitHub](https://github.com/sczyh30/vertx-blueprint-microservice/blob/master/order-microservice/src/main/java/io/vertx/blueprint/microservice/order/impl/OrderServiceImpl.java).
+
+Our simple order processing logic is in `RawOrderDispatcher` verticle so let's have a look on it.
+
+## Consume the Cart-To-Order message source
+
+It's easy to comsume an message source using `getConsumer` static method in `MessageSource` interface. In `RawOrderDispatcher`, we'll consume the `shopping-order-message-source` message source published in shopping cart microservice:
+
+```java
+@Override
+public void start(Future<Void> future) throws Exception {
+  super.start();
+  MessageSource.<JsonObject>getConsumer(discovery,
+    new JsonObject().put("name", "shopping-order-message-source"),
+    ar -> {
+      if (ar.succeeded()) {
+        MessageConsumer<JsonObject> orderConsumer = ar.result();
+        orderConsumer.handler(message -> {
+          Order wrappedOrder = wrapRawOrder(message.body());
+          dispatchOrder(wrappedOrder, message);
+        });
+        future.complete();
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+}
+```
+
+The result is a `MessageConsumer<T>` and you can consume the messages by calling `handler` method to attach a `Handler<Message<T>>` on it. Here our message body is an order in `JsonObject` format so we can create the order with the message body then dispatch and process the order by `dispatchOrder` method.
+
+## "Process" the order
+
+Let's see our simple "dispatch and process" method `dispatchOrder`:
+
+```java
+private void dispatchOrder(Order order, Message<JsonObject> sender) {
+  Future<Void> orderCreateFuture = Future.future();
+  orderService.createOrder(order, orderCreateFuture.completer()); // (1)
+  orderCreateFuture
+    .compose(orderCreated -> applyInventoryChanges(order)) // (2)
+    .setHandler(ar -> {
+      if (ar.succeeded()) {
+        CheckoutResult result = new CheckoutResult("checkout_success", order); // (3)
+        sender.reply(result.toJson()); // (4)
+        publishLogEvent("checkout", result.toJson(), true); // (5)
+      } else {
+        sender.fail(5000, ar.cause().getMessage()); // (6)
+        ar.cause().printStackTrace();
+      }
+    });
+}
+```
+
+First we create a future indicating the result of creating an order. Then we call `createOrder` method of `orderService` to save the order into the database (1). As we set `orderCreateFuture.completer()` as the result handler, the `orderCreateFuture` will be assigned as soon as the create procedure is finished (or failed). Then we compose the future with `applyInventoryChanges` method to modify inventory amount changes (2). If the two procedures are successful, we then create a success `CheckoutResult` (3) and reply to the sender with the result by calling `reply` method (4). After that we publish the event to notify the log component (5). If the procedures failed, we should notify the sender of the failure with `fail` method (6).
+
+Very easy yeah? Let's then take a look at `applyInventoryChanges` method:
+
+```java
+private Future<Void> applyInventoryChanges(Order order) {
+  Future<Void> future = Future.future();
+  // get REST endpoint
+  Future<HttpClient> clientFuture = Future.future();
+  HttpEndpoint.getClient(discovery,
+    new JsonObject().put("name", "inventory-rest-api"),
+    clientFuture.completer());
+  // modify the inventory changes via REST API
+  return clientFuture.compose(client -> {
+    List<Future> futures = order.getProducts()
+      .stream()
+      .map(item -> {
+        Future<Void> resultFuture = Future.future();
+        String url = String.format("/%s/decrease?n=%d", item.getProductId(), item.getAmount());
+        client.put(url, response -> {
+          if (response.statusCode() == 200) {
+            resultFuture.complete(); // need to check result?
+          } else {
+            resultFuture.fail(response.statusMessage());
+          }
+        })
+          .exceptionHandler(resultFuture::fail)
+          .end();
+        return resultFuture;
+      })
+      .collect(Collectors.toList());
+    // composite async results, all must be complete
+    CompositeFuture.all(futures).setHandler(ar -> {
+      if (ar.succeeded()) {
+        future.complete();
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+    return future;
+  });
+}
+```
+
+You shouldn't feel unfamiliar with this implementation as it's similar to the previous `getInventory` method in shopping cart microservice. We first get the inventory client, then for each products in the order, apply corresponding inventory changes with the `amount`. Then comes a `List<Future>`, but here we don't need the actual results of each procedures so we just call `CompositeFuture.all` method to check if all futures are successful.
+
+As for `OrderVerticle`, it just does three small things: publish order event bus, deploy the dispatcher verticle and deploy the REST verticle.
 
 # Online shopping SPA integration
 
-![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/shopping-spa-index.png)
+In this blueprint, we provide a simple micro shop SPA frontend written in Angular.js. So a question is: How to integrate the SPA frontend with the microservice?
+
+In current version, we integrate the SPA into the `api-gateway` for convenience. All we need to do is configure the route so that it can handle static resources. Just one line:
+
+```java
+router.route("/*").handler(StaticHandler.create());
+```
+
+The default mapped directory for the static resources is `webroot` directory. For example, `webroot/index.html` corresponds to the url `http://host:port/index.html`. You can also configure the directory when  you create the `StaticHandler`.
+
+![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/shopping-spa-product-detail.png)
 
 # Monitor dashboard with metrics
 
+Similarly, the monitor dashboard is also an SPA frontend. In this section we'll learn:
+
+- How to configure SockJS - EventBus bridge
+- How to consume messages from the event bus in the browser
+- How to use **Vert.x Dropwizard Metrics** to get some metrics data
+
+## SockJS - Event bus bridge
+
+There are times when we want to consume messages from event bus in the browser. This seems to be magic, and you can imagine, Vert.x can do this! Vert.x provides a [SockJS - Event bus bridge](http://vertx.io/docs/vertx-sockjs-service-proxy/java/) to enable interaction on event bus between the server and client (usually the browser).
+
+To enable the bridge we need to configure the `SockJSHandler` and router:
+
+```java
+// event bus bridge
+SockJSHandler sockJSHandler = SockJSHandler.create(vertx); // (1)
+BridgeOptions options = new BridgeOptions()
+  .addOutboundPermitted(new PermittedOptions().setAddress("microservice.monitor.metrics")) // (2)
+  .addOutboundPermitted(new PermittedOptions().setAddress("events.log"));
+
+sockJSHandler.bridge(options); // (3)
+router.route("/eventbus/*").handler(sockJSHandler); // (4)
+```
+
+First we create the `SockJSHandler` (1). By default, it doesn't allow any interactions on event bus for security, so we need to configure the handler. We can create a `BridgeOptions` and set a set of permitted addresses on it. There are two kinds of addresses: **Outbound** and **Inbound**. Outbound addresses are for messages from the event bus to the browser, while inbound addresses are for messages from the browser to the event bus. And here we only need outbound addresses, `microservice.monitor.metrics` for metrics data and `events.log` for log (2). Then we set the options on the bridge (3) and finally create a route in the router (4). The path `/eventbus/*` is required by the SockJS client in the browser side for interactions.
+
+## Send metrics data to event bus
+
+Monitoring is an essential part of a microservice system. With **Vert.x Dropwizard Metrics** or **Vert.x Hawkular Metrics**, we can easily retrieve metrics data from the metrics library.
+
+Here we use **Vert.x Dropwizard Metrics**. It's very easy to create a `MetricsService`:
+
+```java
+MetricsService service = MetricsService.create(vertx);
+```
+
+Then we could call `getMetricsSnapshot` method to get metrics for corresponding data. The method takes a parameter in `Measured` type, which can be a `Vertx` instance, an `EventBus` instance or any other classes implementing `Measured` interface. The retrieved metrics data is in `JsonObject` format. Here we get metrics data of `vertx` instance:
+
+```java
+// send metrics message to the event bus
+vertx.setPeriodic(metricsInterval, t -> {
+  JsonObject metrics = service.getMetricsSnapshot(vertx);
+  vertx.eventBus().publish("microservice.monitor.metrics", metrics);
+});
+```
+
+We set an interval timer to publish metrics data on the event bus in every interval.
+
+For the detail of the metrics data, please reference [Documentation - Vert.x Dropwizard metrics](http://vertx.io/docs/vertx-dropwizard-metrics/java/#_the_metrics).
+
+Now it's time to consume the metrics and log data in the browser side.
+
+## Consume event bus messages in the browser
+
+In order to consume messages in the browser, first we need the `vertx3-eventbus-client` and `sockjs` library. You can get them via npm or bower. Then we can create an `EventBus` object and register handlers:
+
+```javascript
+var eventbus = new EventBus('/eventbus');
+
+eventbus.onopen = () => {
+  eventbus.registerHandler('microservice.monitor.metrics', (err, message) => {
+      $scope.metrics = message.body;
+      $scope.$apply();
+  });
+}
+```
+
+You can get the message data via `message.body`.
+
 ![Monitor Dashboard](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/monitor-dashboard.png)
+
 
 # Show time!
 
@@ -759,20 +1398,26 @@ Wow, we've explored all of the code of the online shopping microservice, so it's
 
 First build the code:
 
-  mvn clean install
+```
+mvn clean install
+```
 
 Then build all Docker containers:
 
-  cd docker
-  sudo ./build.sh
+```
+cd docker
+sudo ./build.sh
+```
 
 As soon as the build finished, run the microservice:
 
-  sudo ./run.sh
+```
+sudo ./run.sh
+```
 
 The persistence containers (MySQL, MongoDB and Redis) will be started first because it might take some time to initialize. When the persistence is prepared okay, the other services will be started in order.
 
-When the entire microservice is initialized successful, we can visit the shop SPA in broswer, by default the URL is [http://localhost:8080](http://localhost:8080).
+When the entire microservice is initialized successful, we can visit the shop SPA in browser, by default the URL is [https://localhost:8787](https://localhost:8787).
 
 ![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/shopping-spa-index.png)
 
