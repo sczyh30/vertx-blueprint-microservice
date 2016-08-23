@@ -91,10 +91,6 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-service-discovery-bridge-docker-links</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
       <artifactId>vertx-circuit-breaker</artifactId>
     </dependency>
 

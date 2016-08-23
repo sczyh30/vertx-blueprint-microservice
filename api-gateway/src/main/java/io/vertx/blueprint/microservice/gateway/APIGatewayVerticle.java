@@ -1,6 +1,8 @@
 package io.vertx.blueprint.microservice.gateway;
 
-import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
+import io.vertx.blueprint.microservice.account.Account;
+import io.vertx.blueprint.microservice.account.AccountService;
+import io.vertx.blueprint.microservice.common.RestAPIVerticle;
 import io.vertx.blueprint.microservice.common.functional.Functional;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
@@ -19,10 +21,12 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.OAuth2AuthHandler;
 import io.vertx.ext.web.handler.SessionHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
+import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 
 import java.util.List;
@@ -36,7 +40,7 @@ import java.util.stream.Collectors;
  *
  * @author Eric Zhao
  */
-public class APIGatewayVerticle extends BaseMicroserviceVerticle {
+public class APIGatewayVerticle extends RestAPIVerticle {
 
   private static final int DEFAULT_CHECK_PERIOD = 60000;
 
@@ -54,9 +58,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
 
     Router router = Router.router(vertx);
     // cookie and session handler
-    router.route().handler(CookieHandler.create());
-    router.route().handler(SessionHandler.create(
-      LocalSessionStore.create(vertx, "shopping.user.session")));
+    enableLocalSession(router);
 
     // body handler
     router.route().handler(BodyHandler.create());
@@ -77,14 +79,18 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     // set auth callback handler
     router.route("/callback").handler(context -> authCallback(oauth2, hostURI, context));
 
+    router.get("/uaa").handler(this::authUaaHandler);
+    router.get("/login").handler(this::loginEntryHandler);
+    router.post("/logout").handler(this::logoutHandler);
+
     // api dispatcher
     router.route("/api/*").handler(this::dispatchRequests);
 
-    // discovery endpoint
-    ServiceDiscoveryRestEndpoint.create(router, discovery);
-
     // init heart beat check
     initHealthCheck();
+
+    // static content
+    router.route("/*").handler(StaticHandler.create());
 
     // enable HTTPS
     HttpServerOptions httpServerOptions = new HttpServerOptions()
@@ -162,14 +168,18 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     HttpClientRequest toReq = client
       .request(context.request().method(), path, response -> {
         response.bodyHandler(body -> {
-          HttpServerResponse toRsp = context.response()
-            .setStatusCode(response.statusCode());
-          response.headers().forEach(header -> {
-            toRsp.putHeader(header.getKey(), header.getValue());
-          });
-          // send response
-          toRsp.end(body);
-          cbFuture.complete();
+          if (response.statusCode() >= 500) { // api endpoint server error, circuit breaker should fail
+            cbFuture.fail(response.statusCode() + ": " + body.toString());
+          } else {
+            HttpServerResponse toRsp = context.response()
+              .setStatusCode(response.statusCode());
+            response.headers().forEach(header -> {
+              toRsp.putHeader(header.getKey(), header.getValue());
+            });
+            // send response
+            toRsp.end(body);
+            cbFuture.complete();
+          }
         });
       });
     // set headers
@@ -179,7 +189,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     if (context.user() != null) {
       toReq.putHeader("user-principle", context.user().principal().encode());
     } else {
-      toReq.putHeader("redirect-saved", authHandler.authURI("http://localhost:8080", ""));
+      toReq.putHeader("redirect-saved", generateAuthRedirectURI());
     }
     // send request
     if (context.getBody() == null) {
@@ -229,6 +239,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     return getAllEndpoints()
       .compose(records -> {
         List<Future<JsonObject>> statusFutureList = records.stream()
+          .filter(record -> record.getMetadata().getString("api.name") != null)
           .map(record -> { // for each client, send heart beat request
             String apiName = record.getMetadata().getString("api.name");
             HttpClient client = discovery.getReference(record).get();
@@ -249,8 +260,7 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
       })
       .map(List::stream)
       .compose(statusList -> {
-        boolean notHealthy = statusList
-          .anyMatch(status -> !status.getBoolean("status"));
+        boolean notHealthy = statusList.anyMatch(status -> !status.getBoolean("status"));
 
         if (notHealthy) {
           String issues = statusList.filter(status -> !status.getBoolean("status"))
@@ -312,22 +322,60 @@ public class APIGatewayVerticle extends BaseMicroserviceVerticle {
     });
   }
 
-  // helper methods
-
-  private void notFound(RoutingContext context) {
-    context.response()
-      .setStatusCode(404)
-      .putHeader("content-type", "application/json")
-      .end(new JsonObject().put("message", "not_found").encodePrettily());
+  private void authUaaHandler(RoutingContext context) {
+    if (context.user() != null) {
+      JsonObject principal = context.user().principal();
+      String username = principal.getString("username");
+      if (username == null) {
+        context.response()
+          .putHeader("content-type", "application/json")
+          .end(new Account().setId("TEST001").setUsername("test").toString());
+      } else {
+        Future<AccountService> future = Future.future();
+        EventBusService.getProxy(discovery,
+          new JsonObject().put("name", AccountService.SERVICE_NAME),
+          future.completer()
+        );
+        future.compose(accountService -> {
+          Future<Account> accountFuture = Future.future();
+          accountService.retrieveByUsername(username, accountFuture.completer());
+          return accountFuture;
+        }).setHandler(ar -> {
+          if (ar.succeeded()) {
+            context.response()
+              .putHeader("content-type", "application/json")
+              .end(ar.result().toString());
+          } else {
+            context.fail(500);
+          }
+        });
+      }
+    } else {
+      context.fail(401);
+    }
   }
 
-  private void badGateway(Throwable ex, RoutingContext context) {
+  private void loginEntryHandler(RoutingContext context) {
+    String from = Optional.ofNullable(context.request().getParam("from"))
+      .orElse("https://localhost:8787");
     context.response()
-      .setStatusCode(502)
-      .putHeader("content-type", "application/json")
-      .end(new JsonObject().put("error", "bad_gateway")
-        .put("message", ex.getMessage())
-        .encodePrettily());
+      .putHeader("Location", generateAuthRedirectURI(from))
+      .setStatusCode(302)
+      .end();
+  }
+
+  private void logoutHandler(RoutingContext context) {
+    context.clearUser();
+    context.session().destroy();
+    context.response().setStatusCode(204).end();
+  }
+
+  private String generateAuthRedirectURI() {
+    return authHandler.authURI("https://localhost:8787", "");
+  }
+
+  private String generateAuthRedirectURI(String from) {
+    return authHandler.authURI(from, "");
   }
 
 }

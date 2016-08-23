@@ -18,25 +18,14 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-jdbc-client</artifactId>
+      <groupId>io.vertx.blueprint</groupId>
+      <artifactId>microservice-blueprint-common</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>6.0.3</version>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx.blueprint</groupId>
-      <artifactId>microservice-blueprint-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hsqldb</groupId>
-      <artifactId>hsqldb</artifactId>
-      <version>2.3.3</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

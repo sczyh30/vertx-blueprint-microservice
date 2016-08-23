@@ -28,7 +28,8 @@ public class MonitorDashboardVerticle extends BaseMicroserviceVerticle {
     // event bus bridge
     SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
     BridgeOptions options = new BridgeOptions()
-      .addOutboundPermitted(new PermittedOptions().setAddress("microservice.monitor.metrics"));
+      .addOutboundPermitted(new PermittedOptions().setAddress("microservice.monitor.metrics"))
+      .addOutboundPermitted(new PermittedOptions().setAddress("events.log"));
 
     sockJSHandler.bridge(options);
     router.route("/eventbus/*").handler(sockJSHandler);

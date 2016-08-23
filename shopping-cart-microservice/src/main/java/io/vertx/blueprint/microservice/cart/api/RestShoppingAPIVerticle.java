@@ -10,6 +10,8 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
+import java.util.Optional;
+
 /**
  * This verticle exposes a HTTP endpoint to process shopping cart with REST APIs.
  *
@@ -57,29 +59,33 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
   }
 
   private void apiCheckout(RoutingContext context, JsonObject principle) {
-    // TODO: validate user auth
-    String userId = "TEST666";
+    String userId = Optional.ofNullable(principle.getString("userId"))
+      .orElse(TEST_USER);
     checkoutService.checkout(userId, resultHandler(context));
   }
 
-  private void apiAddCartEvent(RoutingContext context, JsonObject principle) {
+  private void apiAddCartEvent(RoutingContext context, JsonObject principal) {
+    String userId = Optional.ofNullable(principal.getString("userId"))
+      .orElse(TEST_USER);
     CartEvent cartEvent = new CartEvent(context.getBodyAsJson());
-    System.out.println(cartEvent.toString());
-    if (validateEvent(cartEvent)) {
+    if (validateEvent(cartEvent, userId)) {
       shoppingCartService.addCartEvent(cartEvent, resultVoidHandler(context, 201));
     } else {
       context.fail(400);
     }
   }
 
-  private void apiGetCart(RoutingContext context, JsonObject principle) {
-    // TODO: validate user auth
-    String userId = "TEST666";
+  private void apiGetCart(RoutingContext context, JsonObject principal) {
+    String userId = Optional.ofNullable(principal.getString("userId"))
+      .orElse(TEST_USER);
     shoppingCartService.getShoppingCart(userId, resultHandler(context));
   }
 
-  private boolean validateEvent(CartEvent event) {
-    return event.getUserId() != null;
+  private boolean validateEvent(CartEvent event, String userId) {
+    return event.getUserId() != null && event.getUserId().equals(userId);
   }
+
+  // for test
+  private static final String TEST_USER = "TEST666";
 
 }

@@ -39,7 +39,6 @@ public class CheckoutServiceImpl implements CheckoutService {
 
   @Override
   public void checkout(String userId, Handler<AsyncResult<CheckoutResult>> resultHandler) {
-    // TODO: NEED AUTH
     if (userId == null) {
       resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid user")));
       return;

@@ -81,7 +81,7 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
 
   // SQL Statement
 
-  private static final String INIT_STATEMENT = "CREATE TABLE `cart_event` (\n" +
+  private static final String INIT_STATEMENT = "CREATE TABLE IF NOT EXISTS `cart_event` (\n" +
     "  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n" +
     "  `type` VARCHAR(20) NOT NULL,\n" +
     "  `user_id` varchar(45) NOT NULL,\n" +
