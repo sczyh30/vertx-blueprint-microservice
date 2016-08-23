@@ -261,7 +261,7 @@ See here: [Vert.x Blueprint - Online Shopping Microservice Practice (API Gateway
 
 ## Asynchronous RPC on event bus
 
-We have introduced asynchronous RPC (aka. service proxy) in the previous blueprint [Vert.x Blueprint - Vert.x Kue (Core)](http://www.sczyh30.com/vertx-blueprint-job-queue/kue-core/index.html#async-rpc) and here let's have a revision~
+We have introduced asynchronous RPC (aka. service proxy) in the previous blueprint [Vert.x Blueprint - Vert.x Kue (Core)](http://www.sczyh30.com/vertx-blueprint-job-queue/kue-core/index.html#async-rpc) and here let's have a recall~
 
 With RPC, a component can send messages to another component by doing a local procedure call. But traditional RPC has a drawback: the caller has to wait until the response from the callee has been received, which does not fit for Vert.x asynchronous model. In addition, the traditional RPC isn't really **Failure-Oriented**. Thanks to Vert.x, we can do **asynchronous RPC** on the (clustered) event bus. With async RPC, we don't have to wait for the response, but only need to pass a `Handler<AsyncResult<R>>` to the method and when the result arrives, the handler will be called. That corresponds to the asynchronous model of Vert.x.
 
@@ -307,20 +307,305 @@ With `EventBusService.getProxy` method, we could easily get our service via the 
 
 The account, store and product microservices have some features and regulations in common. Let's give a summary.
 
-Every microservice component contains:
+Every component of the three microservices contains:
 
-- An event bus service interface. The service defines entity operations.
+- An event bus service interface. The service defines entity operations for database.
 - Implementation of the service interface.
 - A REST API verticle that exposes HTTP server and publishes REST endpoints to the discovery infrastructure.
 - A main verticle that deploys the REST verticle and publishes event bus services to the discovery infrastructure.
 
-## Product service with MySQL
+The product microservice and account microservice uses **MySQL** as backend persistence, while the store microservice uses **MongoDB**. In this chapter we'll have a look of `product-microservice` and `store-microservice` to illustrate the component structure and operations for database. The structure of `account-microservice` is similar to `product-microservice` and you can refer to the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-microservice/tree/master/account-microservice).
 
-## Account service with MongoDB
+## Product microservice with MySQL
+
+The product microservice provides functionality for managing products. The key part is `ProductService` interface and its implementation. Let's first take a look on the service interface:
+
+```java
+@VertxGen
+@ProxyGen
+public interface ProductService {
+
+  /**
+   * The name of the event bus service.
+   */
+  String SERVICE_NAME = "product-eb-service";
+
+  /**
+   * The address on which the service is published.
+   */
+  String SERVICE_ADDRESS = "service.product";
+
+  /**
+   * Initialize the persistence.
+   */
+  @Fluent
+  ProductService initializePersistence(Handler<AsyncResult<Void>> resultHandler);
+
+  /**
+   * Add a product to the persistence.
+   */
+  @Fluent
+  ProductService addProduct(Product product, Handler<AsyncResult<Void>> resultHandler);
+
+  /**
+   * Retrieve the product with certain `productId`.
+   */
+  @Fluent
+  ProductService retrieveProduct(String productId, Handler<AsyncResult<Product>> resultHandler);
+
+  /**
+   * Retrieve the product price with certain `productId`.
+   */
+  @Fluent
+  ProductService retrieveProductPrice(String productId, Handler<AsyncResult<JsonObject>> resultHandler);
+
+  /**
+   * Retrieve all products.
+   */
+  @Fluent
+  ProductService retrieveAllProducts(Handler<AsyncResult<List<Product>>> resultHandler);
+
+  /**
+   * Retrieve products by page.
+   */
+  @Fluent
+  ProductService retrieveProductsByPage(int page, Handler<AsyncResult<List<Product>>> resultHandler);
+
+  /**
+   * Delete a product from the persistence
+   */
+  @Fluent
+  ProductService deleteProduct(String productId, Handler<AsyncResult<Void>> resultHandler);
+
+  /**
+   * Delete all products from the persistence
+   */
+  @Fluent
+  ProductService deleteAllProducts(Handler<AsyncResult<Void>> resultHandler);
+
+}
+```
+
+As we've mentioned above, this is an **event bus service** so it is annotated with `@ProxyGen` annotation. These methods are asynchronous so they need to accept a `Handler<AsyncResult<T>>`. When the invocation is ready, the handler will be called. Notice that there is also a `@VertxGen` annotation. As we've explained in the previous blueprint tutorial, this is for **polyglot support**. Vert.x Codegen will process the class with `@VertxGen` annotation and generate polyglot code such as JavaScript, Ruby... This is very useful and fit for the microservice architecture!
+
+The illustrations of the logic methods are given in the comment.
+
+The implementation of the product service is in `ProductServiceImpl` class. The products are stored in MySQL so we can operate the database with **Vert.x-JDBC**! We have introduced the detail usage of Vert.x JDBC in [the first blueprint tutorial](http://sczyh30.github.io/vertx-blueprint-todo-backend/) so here we don't take about more details. Here we pay attention to reducing the code! Recall the procedure of a database operation:
+
+1. Get the `SQLConnection` from the JDBC client
+2. Execute the SQL statement and attach a result handler
+3. Don't forget to close the `SQLConnection` in the end
+
+So for common `CRUD` operations, the implementations are very similar so let's encapsulate these operations in a `JdbcRepositoryWrapper` class. It is in `io.vertx.blueprint.microservice.common.service` package:
+
+![JdbcRepositoryWrapper class structure](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/jdbc-repo-wrapper-class-structure.png)
+
+We provide the following encapsulated methods:
+
+- `executeNoResult`: execute the prepared statement with parameters (using `updateWithParams`). The result is not needed so just accepts a `Handler<AsyncResult<Void>>`. This is useful for operations such as `insert`.
+- `retrieveOne`: retrieve one entity with the given prepared statement and one query parameter (always the primary key or index key) using `queryWithParams`. This method returns a `Future<Optional<JsonObject>>` as the asynchronous result. If the result list is empty, returns an `empty` optional monad, or returns the first item wrapped with `Optional` monad.
+- `retrieveMany`: retrieve several entities and returns a `Future<List<JsonObject>>`.
+- `retrieveByPage`: similar to `retrieveMany` method but with pagination.
+- `retrieveAll`: similar to `retrieveMany` method but does not require query parameters as it simply executes statement such as `SELECT * FROM xx_table`.
+- `removeOne` and `removeAll`: remove entity from the database.
+
+So the `JdbcRepositoryWrapper` could reduce many duplicate codes of components using Vert.x JDBC. For example, our `ProductServiceImpl` class could simply extend `JdbcRepositoryWrapper` class and make use of these encapsulated methods. Take a look of `retrieveProduct` method:
+
+```java
+@Override
+public ProductService retrieveProduct(String productId, Handler<AsyncResult<Product>> resultHandler) {
+  this.retrieveOne(productId, FETCH_STATEMENT)
+    .map(option -> option.map(Product::new).orElse(null))
+    .setHandler(resultHandler);
+  return this;
+}
+```
+
+The only thing we need is to map the result to our expected type. Very convenient yeah?
+
+This is only a simple approach to eliminate duplicate code. In the following section, you'll see a more reactive solution - use Rx version of Vert.x JDBC Client. And using `vertx-sync` is also a good idea!
+
+As we've mentioned above, every basic component in this blueprint has a REST verticle and their structures are similar. Let's take `RestProductAPIVerticle` as example:
+
+```java
+public class RestProductAPIVerticle extends RestAPIVerticle {
+
+  public static final String SERVICE_NAME = "product-rest-api";
+
+  private static final String API_ADD = "/add";
+  private static final String API_RETRIEVE = "/:productId";
+  private static final String API_RETRIEVE_BY_PAGE = "/products";
+  private static final String API_RETRIEVE_PRICE = "/:productId/price";
+  private static final String API_RETRIEVE_ALL = "/products";
+  private static final String API_DELETE = "/:productId";
+  private static final String API_DELETE_ALL = "/all";
+
+  private final ProductService service;
+
+  public RestProductAPIVerticle(ProductService service) {
+    this.service = service;
+  }
+
+  @Override
+  public void start(Future<Void> future) throws Exception {
+    super.start();
+    final Router router = Router.router(vertx);
+    // body handler
+    router.route().handler(BodyHandler.create());
+    // API route handler
+    router.post(API_ADD).handler(this::apiAdd);
+    router.get(API_RETRIEVE).handler(this::apiRetrieve);
+    router.get(API_RETRIEVE_BY_PAGE).handler(this::apiRetrieveByPage);
+    router.get(API_RETRIEVE_PRICE).handler(this::apiRetrievePrice);
+    router.get(API_RETRIEVE_ALL).handler(this::apiRetrieveAll);
+    router.patch(API_UPDATE).handler(this::apiUpdate);
+    router.delete(API_DELETE).handler(this::apiDelete);
+    router.delete(API_DELETE_ALL).handler(context -> requireLogin(context, this::apiDeleteAll));
+
+    enableHeartbeatCheck(router, config());
+
+    // get HTTP host and port from configuration, or use default value
+    String host = config().getString("product.http.address", "0.0.0.0");
+    int port = config().getInteger("product.http.port", 8082);
+
+    // create HTTP server and publish REST service
+    createHttpServer(router, host, port)
+      .compose(serverCreated -> publishHttpEndpoint(SERVICE_NAME, host, port))
+      .setHandler(future.completer());
+  }
+
+  private void apiAdd(RoutingContext context) {
+    try {
+      Product product = new Product(new JsonObject(context.getBodyAsString()));
+      service.addProduct(product, resultHandler(context, r -> {
+        String result = new JsonObject().put("message", "product_added")
+          .put("productId", product.getProductId())
+          .encodePrettily();
+        context.response().setStatusCode(201)
+          .putHeader("content-type", "application/json")
+          .end(result);
+      }));
+    } catch (DecodeException e) {
+      badRequest(context, e);
+    }
+  }
+
+  private void apiRetrieve(RoutingContext context) {
+    String productId = context.request().getParam("productId");
+    service.retrieveProduct(productId, resultHandlerNonEmpty(context));
+  }
+
+  private void apiRetrievePrice(RoutingContext context) {
+    String productId = context.request().getParam("productId");
+    service.retrieveProductPrice(productId, resultHandlerNonEmpty(context));
+  }
+
+  private void apiRetrieveByPage(RoutingContext context) {
+    try {
+      String p = context.request().getParam("p");
+      int page = p == null ? 1 : Integer.parseInt(p);
+      service.retrieveProductsByPage(page, resultHandler(context, Json::encodePrettily));
+    } catch (Exception ex) {
+      badRequest(context, ex);
+    }
+  }
+
+  private void apiRetrieveAll(RoutingContext context) {
+    service.retrieveAllProducts(resultHandler(context, Json::encodePrettily));
+  }
+
+  private void apiDelete(RoutingContext context) {
+    String productId = context.request().getParam("productId");
+    service.deleteProduct(productId, deleteResultHandler(context));
+  }
+
+  private void apiDeleteAll(RoutingContext context, JsonObject principle) {
+    service.deleteAllProducts(deleteResultHandler(context));
+  }
+
+}
+```
+
+The verticle extends `RestAPIVerticle` so that we can make use of helper methods in it. In the important `start` method, we first call `super.start()` to initialize discovery, then we create the `Router`, set `BodyHandler` to operate request body, and create API routes. Next we `enableHeartbeatCheck` so that the API gateway can ensure if the endpoint is active. Then we use the `createHttpServer` method to create HTTP server and publish REST endpoint by `publishHttpEndpoint` method.
+
+The `createHttpServer` method is simple. It just wraps `vertx.createHttpServer` method as future-based style:
+
+```java
+protected Future<Void> createHttpServer(Router router, String host, int port) {
+  Future<HttpServer> httpServerFuture = Future.future();
+  vertx.createHttpServer()
+    .requestHandler(router::accept)
+    .listen(port, host, httpServerFuture.completer());
+  return httpServerFuture.map(r -> null);
+}
+```
+
+The REST content is about Vert.x Web and you can refer to [Vert.x Blueprint - Todo Backend Tutorial](http://www.sczyh30.com/vertx-blueprint-todo-backend/#rest-api-with-vert-x-web) for more tutorials.
+
+Finally let's open `ProductVerticle` class - the main verticle Vert.x Launcher will run. As is mentioned above, the main verticle is responsible for publishing services and deploying REST verticles, so let's see the `start` method:
+
+```java
+@Override
+public void start(Future<Void> future) throws Exception {
+  super.start();
+
+  // create the service instance
+  ProductService productService = new ProductServiceImpl(vertx, config()); // (1)
+  // register the service proxy on event bus
+  ProxyHelper.registerService(ProductService.class, vertx, productService, SERVICE_ADDRESS); // (2)
+  // publish the service in the discovery infrastructure
+  initProductDatabase(productService) // (3)
+    .compose(databaseOkay -> publishEventBusService(ProductService.SERVICE_NAME, SERVICE_ADDRESS, ProductService.class)) // (4)
+    .compose(servicePublished -> deployRestService(productService)) // (5)
+    .setHandler(future.completer()); // (6)
+}
+```
+
+In (1), we first create a product service instance (1). Then we use `registerService` method to register the service on event bus so that other components could consume the service remotely (2). Next we initialize the database table (3), publish the product service into discovery infrastructure (4) and deploy the REST verticle (5). This is a sequence of composition of asynchronous procedure :-) We set `future.completer()` to the composed future (6) so when all are ready, the future will be assigned so the deployment of the main verticle finishes.
+
+## Store microservice with MongoDB
+
+Our microservice application is an online shopping application like eBay, so every one can open online shops to sell their favorite things! The store microservice is responsible for online shops management. The structure of the store microservice is quite the same as the product microservice, so we don't elaborate more here. We just simply have a glimpse on how to use Vert.x Mongo Client to operate Mongo.
+
+Using Vert.x Mongo Client is quite simple. We first need to create a `MongoClient`:
+
+```java
+private final MongoClient client;
+
+public StoreCRUDServiceImpl(Vertx vertx, JsonObject config) {
+  this.client = MongoClient.createNonShared(vertx, config);
+}
+```
+
+Ok, now we can operate the MongoDB via the client. For example, we want to save an online shop into the db, we can write:
+
+```java
+@Override
+public void saveStore(Store store, Handler<AsyncResult<Void>> resultHandler) {
+  client.save(COLLECTION, new JsonObject().put("_id", store.getSellerId())
+      .put("name", store.getName())
+      .put("description", store.getDescription())
+      .put("openTime", store.getOpenTime()),
+    ar -> {
+      if (ar.succeeded()) {
+        resultHandler.handle(Future.succeededFuture());
+      } else {
+        resultHandler.handle(Future.failedFuture(ar.cause()));
+      }
+    }
+  );
+}
+```
+
+Like other Vert.x APIs, the methods in `MongoClient` are asynchronous so you must be familar with this! The original API is also callback-based. But almost every component in Vert.x provides a Rx version API, wo if you want to be more reactive, you can also use Rx-fied APIs!
+
+For the details of Vert.x Mongo Client, please refer to the [Documentation](http://vertx.io/docs/vertx-mongo-client/java/).
 
 # Inventory microservice with Redis
 
-The inventory service is responsible for operations about product inventory, e.g. `retrieve` inventory of a product, `increase` or `decrease` inventory amount. Different from the previous event bus service, the inventory service interface is not callback-based, but future-based. The service proxy does not support processing future-based asynchronous method, hence we'd only publish a HTTP endpoint.
+The inventory service is responsible for operations about product inventory, e.g. `retrieve` inventory of a product, `increase` or `decrease` inventory amount.
+
+Different from the previous event bus service, the inventory service interface is not callback-based, but future-based. The service proxy does not support processing future-based asynchronous method, hence we'd only publish a HTTP endpoint.
 
 We use **Redis** as the persistence of product inventory. Let's first look at `InventoryService` interface:
 
