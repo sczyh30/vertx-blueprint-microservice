@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  *
  * @author Eric Zhao
  */
-public class JdbcAccountServiceImpl extends JdbcRepositoryWrapper<Account, String> implements AccountService {
+public class JdbcAccountServiceImpl extends JdbcRepositoryWrapper implements AccountService {
 
   public JdbcAccountServiceImpl(Vertx vertx, JsonObject config) {
     super(vertx, config);
@@ -25,7 +25,7 @@ public class JdbcAccountServiceImpl extends JdbcRepositoryWrapper<Account, Strin
 
   @Override
   public AccountService initializePersistence(Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
+    client.getConnection(connHandler(resultHandler, connection -> {
       connection.execute(CREATE_STATEMENT, r -> {
         resultHandler.handle(r);
         connection.close();

@@ -4,9 +4,12 @@ import io.vertx.blueprint.microservice.common.RestAPIVerticle;
 import io.vertx.blueprint.microservice.order.OrderService;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+
+import java.util.Optional;
 
 /**
  * A verticle supplies REST endpoint for order service.
@@ -35,7 +38,7 @@ public class RestOrderAPIVerticle extends RestAPIVerticle {
     router.route().handler(BodyHandler.create());
     // API route
     router.get(API_RETRIEVE).handler(this::apiRetrieve);
-    router.get(API_RETRIEVE_FOR_ACCOUNT).handler(this::apiRetrieveForAccount);
+    router.get(API_RETRIEVE_FOR_ACCOUNT).handler(context -> requireLogin(context, this::apiRetrieveForAccount));
 
     String host = config().getString("order.http.address", "0.0.0.0");
     int port = config().getInteger("order.http.port", 8090);
@@ -55,8 +58,17 @@ public class RestOrderAPIVerticle extends RestAPIVerticle {
     }
   }
 
-  private void apiRetrieveForAccount(RoutingContext context) {
+  private void apiRetrieveForAccount(RoutingContext context, JsonObject principal) {
     String userId = context.request().getParam("id");
-    service.retrieveOrdersForAccount(userId, resultHandler(context, Json::encodePrettily));
+    String authUid = Optional.ofNullable(principal.getString("userId"))
+      .orElse(TEST_USER);
+    if (authUid.equals(userId)) {
+      service.retrieveOrdersForAccount(userId, resultHandler(context, Json::encodePrettily));
+    } else {
+      context.fail(400);
+    }
   }
+
+  // for test
+  private static final String TEST_USER = "TEST666";
 }

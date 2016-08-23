@@ -105,7 +105,7 @@ var AccountService = function (j_val) {
 
    @public
    @param username {string} username
-   @param resultHandler {function} the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not.
+   @param resultHandler {function} the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not. 
    @return {AccountService}
    */
   this.retrieveByUsername = function (username, resultHandler) {

@@ -17,12 +17,12 @@ import java.util.Optional;
  *
  * @author Eric Zhao
  */
-public class JdbcRepositoryWrapper<T, K> {
+public class JdbcRepositoryWrapper {
 
-  protected final JDBCClient jdbc;
+  protected final JDBCClient client;
 
   public JdbcRepositoryWrapper(Vertx vertx, JsonObject config) {
-    this.jdbc = JDBCClient.createNonShared(vertx, config);
+    this.client = JDBCClient.createNonShared(vertx, config);
   }
 
   /**
@@ -33,7 +33,7 @@ public class JdbcRepositoryWrapper<T, K> {
    * @param resultHandler async result handler
    */
   protected void executeNoResult(JsonArray params, String sql, Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
+    client.getConnection(connHandler(resultHandler, connection -> {
       connection.updateWithParams(sql, params, r -> {
         if (r.succeeded()) {
           resultHandler.handle(Future.succeededFuture());
@@ -46,7 +46,7 @@ public class JdbcRepositoryWrapper<T, K> {
   }
 
   protected <R> void execute(JsonArray params, String sql, R ret, Handler<AsyncResult<R>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
+    client.getConnection(connHandler(resultHandler, connection -> {
       connection.updateWithParams(sql, params, r -> {
         if (r.succeeded()) {
           resultHandler.handle(Future.succeededFuture(ret));
@@ -58,7 +58,7 @@ public class JdbcRepositoryWrapper<T, K> {
     }));
   }
 
-  protected Future<Optional<JsonObject>> retrieveOne(K param, String sql) {
+  protected <K> Future<Optional<JsonObject>> retrieveOne(K param, String sql) {
     return getConnection()
       .compose(connection -> {
         Future<Optional<JsonObject>> future = Future.future();
@@ -101,6 +101,21 @@ public class JdbcRepositoryWrapper<T, K> {
     });
   }
 
+  protected Future<List<JsonObject>> retrieveMany(JsonArray param, String sql) {
+    return getConnection().compose(connection -> {
+      Future<List<JsonObject>> future = Future.future();
+      connection.queryWithParams(sql, param, r -> {
+        if (r.succeeded()) {
+          future.complete(r.result().getRows());
+        } else {
+          future.fail(r.cause());
+        }
+        connection.close();
+      });
+      return future;
+    });
+  }
+
   protected Future<List<JsonObject>> retrieveAll(String sql) {
     return getConnection().compose(connection -> {
       Future<List<JsonObject>> future = Future.future();
@@ -116,8 +131,8 @@ public class JdbcRepositoryWrapper<T, K> {
     });
   }
 
-  protected void removeOne(K id, String sql, Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
+  protected <K> void removeOne(K id, String sql, Handler<AsyncResult<Void>> resultHandler) {
+    client.getConnection(connHandler(resultHandler, connection -> {
       JsonArray params = new JsonArray().add(id);
       connection.updateWithParams(sql, params, r -> {
         if (r.succeeded()) {
@@ -131,7 +146,7 @@ public class JdbcRepositoryWrapper<T, K> {
   }
 
   protected void removeAll(String sql, Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
+    client.getConnection(connHandler(resultHandler, connection -> {
       connection.update(sql, r -> {
         if (r.succeeded()) {
           resultHandler.handle(Future.succeededFuture());
@@ -161,7 +176,7 @@ public class JdbcRepositoryWrapper<T, K> {
 
   protected Future<SQLConnection> getConnection() {
     Future<SQLConnection> future = Future.future();
-    jdbc.getConnection(future.completer());
+    client.getConnection(future.completer());
     return future;
   }
 

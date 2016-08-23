@@ -21,14 +21,14 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
 
   public static final String SERVICE_NAME = "product-rest-api";
 
-  private static final String API_ADD = "/product";
-  private static final String API_RETRIEVE = "/product/:productId";
+  private static final String API_ADD = "/add";
+  private static final String API_RETRIEVE = "/:productId";
   private static final String API_RETRIEVE_BY_PAGE = "/products";
-  private static final String API_RETRIEVE_PRICE = "/product/:productId/price";
-  private static final String API_RETRIEVE_ALL = "/products/all";
-  private static final String API_UPDATE = "/product/:productId";
-  private static final String API_DELETE = "/product/:productId";
-  private static final String API_DELETE_ALL = "/product";
+  private static final String API_RETRIEVE_PRICE = "/:productId/price";
+  private static final String API_RETRIEVE_ALL = "/products";
+  private static final String API_UPDATE = "/:productId";
+  private static final String API_DELETE = "/:productId";
+  private static final String API_DELETE_ALL = "/all";
 
   private final ProductService service;
 

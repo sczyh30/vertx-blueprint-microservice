@@ -9,10 +9,8 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.rxjava.circuitbreaker.CircuitBreaker;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
-import io.vertx.rxjava.servicediscovery.spi.ServiceImporter;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscoveryOptions;
-import io.vertx.servicediscovery.docker.DockerLinksServiceImporter;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.types.JDBCDataSource;
@@ -37,7 +35,6 @@ public class BaseMicroserviceRxVerticle extends AbstractVerticle {
   @Override
   public void start() throws Exception {
     discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
-    discovery.registerServiceImporter(ServiceImporter.newInstance(new DockerLinksServiceImporter()), new JsonObject());
     JsonObject cbOptions = config().getJsonObject("circuit-breaker") != null ?
       config().getJsonObject("circuit-breaker") : new JsonObject();
     circuitBreaker = CircuitBreaker.create(cbOptions.getString("name", "circuit-breaker"), vertx,
@@ -84,6 +81,7 @@ public class BaseMicroserviceRxVerticle extends AbstractVerticle {
   public void stop(Future<Void> future) throws Exception {
     Observable.from(registeredRecords)
       .flatMap(record -> discovery.unpublishObservable(record.getRegistration()))
+      .reduce((Void) null, (a, b) -> null)
       .subscribe(future::complete, future::fail);
   }
 }

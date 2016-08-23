@@ -39,17 +39,11 @@ public class ProductVerticle extends BaseMicroserviceVerticle {
   }
 
   private Future<Void> deployRestService(ProductService service) {
-    Future<Void> future = Future.future();
+    Future<String> future = Future.future();
     vertx.deployVerticle(new RestProductAPIVerticle(service),
       new DeploymentOptions().setConfig(config()),
-      ar -> {
-      if (ar.succeeded()) {
-        future.complete();
-      } else {
-        future.fail(ar.cause());
-      }
-    });
-    return future;
+      future.completer());
+    return future.map(r -> null);
   }
 
 }

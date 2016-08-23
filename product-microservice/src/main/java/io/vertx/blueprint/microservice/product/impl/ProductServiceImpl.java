@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  *
  * @author Eric Zhao
  */
-public class ProductServiceImpl extends JdbcRepositoryWrapper<Product, String> implements ProductService {
+public class ProductServiceImpl extends JdbcRepositoryWrapper implements ProductService {
 
   private static final int PAGE_LIMIT = 10;
 
@@ -27,7 +27,7 @@ public class ProductServiceImpl extends JdbcRepositoryWrapper<Product, String> i
 
   @Override
   public ProductService initializePersistence(Handler<AsyncResult<Void>> resultHandler) {
-    jdbc.getConnection(connHandler(resultHandler, connection -> {
+    client.getConnection(connHandler(resultHandler, connection -> {
       connection.execute(CREATE_STATEMENT, r -> {
         resultHandler.handle(r);
         connection.close();
@@ -106,7 +106,7 @@ public class ProductServiceImpl extends JdbcRepositoryWrapper<Product, String> i
     "  `sellerId` varchar(30) NOT NULL,\n" +
     "  `name` varchar(255) NOT NULL,\n" +
     "  `price` double NOT NULL,\n" +
-    "  `illustration` varchar(255) NOT NULL,\n" +
+    "  `illustration` MEDIUMTEXT NOT NULL,\n" +
     "  `type` varchar(45) NOT NULL,\n" +
     "  PRIMARY KEY (`productId`),\n" +
     "  KEY `index_seller` (`sellerId`) )";

@@ -48,7 +48,6 @@ module VertxBlueprintUserAccount
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_account(id)"
     end
-
     #  Retrieve the user account with certain `username`.
     # @param [String] username username
     # @yield the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not.
