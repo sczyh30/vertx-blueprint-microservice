@@ -1,0 +1,110 @@
+<div class="container" ng-model="product">
+  <div class="row">
+    <div>
+      <ol class="breadcrumb">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Products</a></li>
+        <li class="active">{{product.name}}</li>
+      </ol>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-8 col-md-push-4 col-sm-8 col-sm-push-4">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="panel panel-default">
+            <!-- Default panel contents -->
+            <div class="panel-heading">Product Details</div>
+            <div class="panel-body">
+              <p>{{product.illustration}}</p>
+            </div>
+
+            <!-- List group -->
+            <ul class="list-group list-group-details">
+              <li class="list-group-item">
+                <div class="panel-heading">Price: <span
+                  class="panel-heading text-in-stock">{{product.price | currency}}</span></div>
+              </li>
+              <li class="list-group-item">
+                <div class="panel-heading">Product number: <span class="panel-heading">{{product.productId}}</span>
+                </div>
+              </li>
+              <li class="list-group-item">
+                <div class="panel-heading">Seller: <span class="panel-heading"> Hacker</span>
+                </div>
+              </li>
+              <li class="list-group-item">
+                <div ng-if="!inventory">
+                  <div class="panel-heading">
+                    <p class="text-out-of-stock">Out of stock.</p>
+                  </div>
+                </div>
+                <div ng-if="inventory">
+                  <div class="panel-heading">
+                    <p class="text-in-stock">In stock.</p>
+                  </div>
+                </div>
+              </li>
+              <li class="list-group-item" ng-if="authenticated">
+                <form ng-submit="addToCart()" ng-controller="AddToCartCtrl" ng-if="inventory">
+                  <div class="panel-heading form-inline">
+                    <div class="form-group">
+                      <label>Choose quantity: </label>
+                      <input type="number" ng-model="amount" placeholder="Amount" min="0"
+                             class="form-control">
+                    </div>
+                    <input type="hidden" ng-model="productId" value="{{product.productId}}"/>
+                    <button class="btn btn-primary" id="addToCart" type="submit">Add to Cart
+                    </button>
+                    <div class="form-group">
+                      <div id="addProductAlert" class="alert alert-success fade" role="alert">
+                        <p>Product added to cart!</p>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </li>
+            </ul>
+          </div>
+          <div class="panel panel-info">
+            <div class="panel-heading panel-info">Related</div>
+            <div class="panel-body">
+              <p class="text-center">None</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix visible-xs"></div>
+    <div class="col-md-4 col-md-pull-8 col-sm-4 col-sm-pull-8">
+      <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+          <div class="thumbnail">
+            <img ng-src="{{product.poster_image}}" alt="{{product.name}}">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 col-sm-12">
+
+          <div class="panel panel-success item-left-panel">
+            <!-- Default panel contents -->
+            <div class="panel-heading">Overview</div>
+            <div class="row">
+              <div class="item-label col-md-12">Product name:</div>
+            </div>
+            <div class="row">
+              <div class="col-md-12">{{product.name}}</div>
+            </div>
+            <div class="row">
+              <div class="item-label col-md-12">Price:</div>
+            </div>
+            <div class="row">
+              <div class="col-md-12">{{product.price | currency}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

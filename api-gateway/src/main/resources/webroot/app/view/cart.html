@@ -1,0 +1,69 @@
+<div class="container" ng-model="cart">
+  <div class="panel panel-default">
+    <div class="panel-heading">Shopping Cart</div>
+
+    <ul class="list-group list-group-details shopping-cart">
+      <li class="list-group-item" ng-if="cart.productItems.length == 0">
+        Your shopping cart is empty
+      </li>
+      <li ng-repeat="item in cart.productItems" class="list-group-item">
+        <div class="row">
+          <div class="col-md-2 col-xs-2 cart-item-image">
+            <div class="thumbnail">
+              <a href="index.html#/products/{{item.productId}}">
+                <img alt="{{item.productId}}" ng-src="{{item.posterImage}}"/>
+              </a>
+            </div>
+          </div>
+          <div class="col-md-4 col-xs-4 cart-item-description">
+            <div class="row">
+              <div class="col-md-12"><label>Product:</label>{{item.productId}}</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-xs-3 cart-item-price"><label>Unit Price:</label>{{item.price |
+            currency}}
+          </div>
+          <br/>
+          <div class="col-md-3 col-xs-3 cart-item-amount">
+            <form ng-submit="updateCart()" ng-controller="UpdateCartCtrl">
+              <div class="form-inline">
+                <div class="form-group"><input type="number" required ng-model="item.amount" placeholder="Amount"
+                                               class="form-control" min="0"></div>
+                <input type="hidden" ng-model="item.productId" value="{{item.productId}}"/>
+                <input type="hidden" ng-model="originalQuantity" value="{{item.amount}}"/>
+                <button class="btn btn-primary" id="updateCart-{{item.productId}}" type="submit">
+                  Update
+                </button>
+                <div>
+                  <div id="updateProductAlert" class="{{item.productId}} alert alert-success fade"
+                       role="alert">
+                    <p>Cart updated!</p>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </li>
+    </ul>
+    <ul class="list-group list-group-details shopping-cart" ng-if="cart.productItems.length > 0">
+      <li class="list-group-item checkout-summary">
+        <div class="row">
+          <div class="col-md-12"><label>Items: </label>{{cart.totalItems}}</div>
+        </div>
+        <div class="row">
+          <div class="col-md-12"><label>Sub-total: </label>{{cart.total | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <form ng-submit="checkout()" ng-controller="CheckoutCtrl">
+              <button class="btn btn-primary" id="" type="submit">
+                Checkout
+              </button>
+            </form>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>

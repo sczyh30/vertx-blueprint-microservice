@@ -54,9 +54,9 @@ public class CheckoutServiceImpl implements CheckoutService {
             .setProducts(cart.getProductItems())
             .setTotalPrice(totalPrice);
           // set id and then send order, wait for reply
-          return saveCheckoutEvent(userId)
-            .compose(eventSaved -> retrieveCounter("order"))
-            .compose(id -> sendOrderAwaitResult(order.setOrderId(id)));
+          return retrieveCounter("order")
+            .compose(id -> sendOrderAwaitResult(order.setOrderId(id)))
+            .compose(result -> saveCheckoutEvent(userId).map(v -> result));
         } else {
           // has insufficient inventory, fail
           return Future.succeededFuture(new CheckoutResult()

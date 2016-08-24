@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="vertxApp">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Vert.x Microservice Blueprint - Online shopping SPA">
+  <meta name="author" content="sczyh30">
+
+  <title>Online Market</title>
+
+  <link href="assets/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <script src="assets/lib/angular/angular.js"></script>
+  <script src="assets/lib/angular-route/angular-route.js"></script>
+  <script src="app/app.js"></script>
+  <script src="app/controller.js"></script>
+</head>
+
+<body>
+<!-- navbar on the top -->
+<nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation" ng-controller="HeaderCtrl">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">
+        <div class="brand"><span class="glyphicon glyphicon-cloud"></span>&nbsp;&nbsp;Micro Shop</div>
+      </a>
+    </div>
+    <div class="navbar-collapse collapse">
+      <ul class="nav navbar-nav navbar-right">
+        <li ng-if="user.id != undefined">
+                    <span class="welcome-tag">
+                        <span>Welcome,</span>
+                        <span><a href="/#/account">{{ user.username }}</a></span>
+                    </span>
+        </li>
+        <li ng-if="user.id != undefined"><a href="/#/orders">Orders</a></li>
+        <li ng-if="user.id != undefined">
+          <a href="/#/cart"><span class="glyphicon glyphicon-shopping-cart">Cart</span></a></li>
+        <li ng-if="user.id == undefined"><a ng-href="/login">Login</a></li>
+        <li ng-if="user.id != undefined"><a ng-click="logout()" href="#">Logout</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div ng-view></div>
+
+<script src="assets/lib/jquery/dist/jquery.js"></script>
+<script src="assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

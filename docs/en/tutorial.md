@@ -1484,6 +1484,8 @@ The shopping cart verticle is responsible for publishing services. Here we publi
 
 Simultaneously, the `CartVerticle` will deploy the `RestShoppingAPIVerticle`. The **api name** of the REST endpoint is `cart` by default.
 
+![Cart Page](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/spa-cart.png)
+
 # Order microservice
 
 Well, now we have submitted checkout request and an order is sent to the order microservice. So the next thing we need to to is dispatching and processing the order. In current version of the blueprint, we simply save orders to database and modify the inventory amount. In real production, we might need to publish the orders into MQ then consume them in the upstream components.

@@ -22,10 +22,10 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
   public static final String SERVICE_NAME = "product-rest-api";
 
   private static final String API_ADD = "/add";
-  private static final String API_RETRIEVE = "/:productId";
   private static final String API_RETRIEVE_BY_PAGE = "/products";
-  private static final String API_RETRIEVE_PRICE = "/:productId/price";
   private static final String API_RETRIEVE_ALL = "/products";
+  private static final String API_RETRIEVE_PRICE = "/:productId/price";
+  private static final String API_RETRIEVE = "/:productId";
   private static final String API_UPDATE = "/:productId";
   private static final String API_DELETE = "/:productId";
   private static final String API_DELETE_ALL = "/all";
@@ -44,10 +44,10 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
     router.route().handler(BodyHandler.create());
     // API route handler
     router.post(API_ADD).handler(this::apiAdd);
-    router.get(API_RETRIEVE).handler(this::apiRetrieve);
     router.get(API_RETRIEVE_BY_PAGE).handler(this::apiRetrieveByPage);
-    router.get(API_RETRIEVE_PRICE).handler(this::apiRetrievePrice);
     router.get(API_RETRIEVE_ALL).handler(this::apiRetrieveAll);
+    router.get(API_RETRIEVE_PRICE).handler(this::apiRetrievePrice);
+    router.get(API_RETRIEVE).handler(this::apiRetrieve);
     router.patch(API_UPDATE).handler(this::apiUpdate);
     router.delete(API_DELETE).handler(this::apiDelete);
     router.delete(API_DELETE_ALL).handler(context -> requireLogin(context, this::apiDeleteAll));

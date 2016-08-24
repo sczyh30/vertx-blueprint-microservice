@@ -1,0 +1,21 @@
+<div class="container">
+  <div class="row clearfix">
+    <div ng-repeat="product in products" class="col-md-4">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+        </div>
+        <ul class="list-group">
+          <li class="list-group-item text-center">
+            <div class="pic-center">
+              <img class="limited-size" ng-src="/assets/img/posters/{{product.productId}}.jpg" alt="{{product.name}}">
+            </div>
+            <div>
+              <a href="/#/products/{{product.productId}}">{{product.name}}</a>
+              <p class="text-out-of-stock">{{product.price | currency}}</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

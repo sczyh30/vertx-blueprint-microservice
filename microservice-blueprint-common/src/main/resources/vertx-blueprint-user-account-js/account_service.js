@@ -104,7 +104,7 @@ var AccountService = function (j_val) {
    Retrieve the user account with certain `username`.
 
    @public
-   @param username {string} username
+   @param username {string} username 
    @param resultHandler {function} the result handler will be called as soon as the user has been retrieved. The async result indicates whether the operation was successful or not. 
    @return {AccountService}
    */

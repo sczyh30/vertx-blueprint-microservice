@@ -1,0 +1,60 @@
+<div class="container" ng-model="order">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="panel panel-success">
+        <div class="panel-heading">Order Details</div>
+        <ul class="list-group list-group-details">
+          <li class="list-group-item">
+            <div class="panel-heading">Order Id: <span
+              class="panel-heading">{{ order.orderId }}</span>
+            </div>
+          </li>
+          <li class="list-group-item">
+            <div class="panel-heading">Order Date: <span
+              class="panel-heading">{{ order.createTime | date:"yyyy-MM-dd 'at' h:mma" }}</span>
+            </div>
+          </li>
+          <li class="list-group-item">
+            <div class="panel-heading">Order Total Price: <span
+              class="panel-heading">{{ order.totalPrice }}</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-md-12 panel-head-list">
+      <div class="panel panel-default">
+        <div class="panel-heading">Order Product Items</div>
+
+        <ul class="list-group list-group-details shopping-cart">
+          <li class="list-group-item" ng-if="order.products.length == 0">
+            Your order is empty.
+          </li>
+          <li ng-repeat="item in order.products" class="list-group-item">
+            <div class="row">
+              <div class="col-md-2 col-xs-2 cart-item-image">
+                <div class="thumbnail">
+                  <a href="/#/products/{{item.productId}}">
+                    <img alt="{{item.name}}" ng-src="/assets/img/posters/{{item.productId}}.jpg"/>
+                  </a>
+                </div>
+              </div>
+              <div class="col-md-4 col-xs-4 cart-item-description">
+                <div class="row">
+                  <div class="col-md-12"><label>Product:</label>{{item.productId}}</div>
+                </div>
+              </div>
+              <div class="col-md-3 col-xs-3 cart-item-price"><label>Unit Price:</label>{{item.price
+                |
+                currency}}
+              </div>
+              <div class="col-md-3 col-xs-3 cart-item-price"><label>Amount:</label>{{item.amount}}
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

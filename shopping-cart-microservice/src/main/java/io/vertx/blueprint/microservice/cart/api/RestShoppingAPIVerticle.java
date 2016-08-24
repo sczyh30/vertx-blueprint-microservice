@@ -82,7 +82,8 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
   }
 
   private boolean validateEvent(CartEvent event, String userId) {
-    return event.getUserId() != null && event.getUserId().equals(userId);
+    return event.getUserId() != null && event.getAmount() != null && event.getAmount() > 0
+      && event.getUserId().equals(userId);
   }
 
   // for test

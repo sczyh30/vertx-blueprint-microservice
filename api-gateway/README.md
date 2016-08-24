@@ -1,8 +1,10 @@
 # API Gateway
 
 This component provides an API gateway. The API gateway is responsible
-for dispatch the requests to the corresponding REST endpoint, load balancing,
+for dispatch the requests to the corresponding REST endpoint (reverse proxy), load balancing,
 simple heart beat check as well as failure handling (with circuit breaker).
+
+In current version, the SPA frontend is also integrated in the API gateway.
 
 ## Configuration
 

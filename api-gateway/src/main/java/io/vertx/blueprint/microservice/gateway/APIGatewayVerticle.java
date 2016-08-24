@@ -329,7 +329,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
       if (username == null) {
         context.response()
           .putHeader("content-type", "application/json")
-          .end(new Account().setId("TEST001").setUsername("test").toString());
+          .end(new Account().setId("TEST666").setUsername("Eric").toString());
       } else {
         Future<AccountService> future = Future.future();
         EventBusService.getProxy(discovery,
