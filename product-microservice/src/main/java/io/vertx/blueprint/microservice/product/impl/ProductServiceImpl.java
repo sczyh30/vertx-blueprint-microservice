@@ -110,7 +110,7 @@ public class ProductServiceImpl extends JdbcRepositoryWrapper implements Product
     "  `type` varchar(45) NOT NULL,\n" +
     "  PRIMARY KEY (`productId`),\n" +
     "  KEY `index_seller` (`sellerId`) )";
-  private static final String INSERT_STATEMENT = "INSERT INTO product (productId, sellerId, name, price, illustration, type) VALUES (?, ?, ?, ?, ?, ?)";
+  private static final String INSERT_STATEMENT = "INSERT INTO product (`productId`, `sellerId`, `name`, `price`, `illustration`, `type`) VALUES (?, ?, ?, ?, ?, ?)";
   private static final String FETCH_STATEMENT = "SELECT * FROM product WHERE productId = ?";
   private static final String FETCH_ALL_STATEMENT = "SELECT * FROM product";
   private static final String FETCH_WITH_PAGE_STATEMENT = "SELECT * FROM product LIMIT ?, ?";

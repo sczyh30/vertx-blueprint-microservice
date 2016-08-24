@@ -1,6 +1,7 @@
 package io.vertx.blueprint.microservice.product;
 
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
+import io.vertx.blueprint.microservice.common.service.ExampleHelper;
 import io.vertx.blueprint.microservice.product.api.RestProductAPIVerticle;
 import io.vertx.blueprint.microservice.product.impl.ProductServiceImpl;
 import io.vertx.core.DeploymentOptions;
@@ -35,7 +36,10 @@ public class ProductVerticle extends BaseMicroserviceVerticle {
   private Future<Void> initProductDatabase(ProductService service) {
     Future<Void> initFuture = Future.future();
     service.initializePersistence(initFuture.completer());
-    return initFuture;
+    return initFuture.map(v -> {
+      ExampleHelper.initData(vertx, config());
+      return null;
+    });
   }
 
   private Future<Void> deployRestService(ProductService service) {

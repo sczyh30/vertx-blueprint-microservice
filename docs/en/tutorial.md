@@ -1676,20 +1676,27 @@ eventbus.onopen = () => {
 
 You can get the message data via `message.body`.
 
-![Monitor Dashboard](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/monitor-dashboard.png)
-
+Later we'll run the dashboard and inspect the status of the microservices.
 
 # Show time!
 
-Wow, we've explored all of the code of the online shopping microservice, so it's show time! I recommend you run the microservice application with Docker Compose so that we needn't configure too much.
+Wow, we've explored all of the code of the online shopping microservice, so it's show time! I recommend you run the microservice application with Docker Compose as it's very convenient.
 
-First build the code:
+## Build the code and containers
+
+Before we build the code, we have to install the frontend dependencies with **bower** for `api-gateway` and `monitor-dashboard` component. Enter to each `src/resources/webroot` directory and execute:
+
+```
+bower install
+```
+
+Then we can build the code:
 
 ```
 mvn clean install
 ```
 
-Then build all Docker containers:
+After that, we build all Docker containers:
 
 ```
 cd docker
@@ -1702,11 +1709,57 @@ As soon as the build finished, run the microservice:
 sudo ./run.sh
 ```
 
-The persistence containers (MySQL, MongoDB and Redis) will be started first because it might take some time to initialize. When the persistence is prepared okay, the other services will be started in order.
+The persistence and auth containers (MySQL, MongoDB, Redis and Keycloak) will be started first because it might take some time to initialize. When the persistence is prepared okay, the other services will be started in order.
 
 When the entire microservice is initialized successful, we can visit the shop SPA in browser, by default the URL is [https://localhost:8787](https://localhost:8787).
 
+## Some configuration for the first time
+
+If we run the microservice for the first time, we must configure the **Keycloak** server manually. First we need to map the `keycloak-server` to the local host. Modify the `hosts` file (for Linux it's in `/etc` directory) and add:
+
+```
+0.0.0.0	keycloak-server
+```
+
+Then we should visit `http://keycloak-server:8080` and enter the admin console. By default the user and password is `admin`. Now we enter into the admin dashboard. First we should create a new realm with any name. Then in this realm, we create a new client like this:
+
+![Keycloak configuration](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/keycloak-client-config.png)
+
+After created, we shep into the **** tab and copy the JSON configuration. Replace the corresponding part of `api-gateway/src/config/docker.json` file with the copied configuration. For example:
+
+```json
+{
+  "api.gateway.http.port": 8787,
+  "api.gateway.http.address": "localhost",
+  "circuit-breaker": {
+    "name": "api-gateway-cb",
+    "timeout": 10000,
+    "max-failures": 5
+  },
+  // from here is the config of keycloak
+  "realm": "Vert.x",
+  "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkto9ZZm69cmdA9e7X4NUSo8T4CyvrYzlRiJdhr+LMqELdfN3ghEY0EBpaROiOueva//iUc/KViYGiAHVXEQ3nr3kytF6uZs9iwqkshKvltpxkOm2Qpj/FSRsCyHlB8Ahbt5xBmzH2mI1VDIxmVTdEBze4u6tLoi4ieo72b2q/dz09yrEokRm/sSYqzNgfE0i1JY6DI8C7FaKszKTK5DRGMIAib8wURrTyf8au0iiisKEXOHKEjo/g0uHCFGSOKqPOprNNIWYwedV+qaQa9oSah2IpwNgFNRLtHpvbcanftMLQOQIR0iufIJ+bHrNhH0RISZhTzcGX3pSIBw/HaERwQIDAQAB",
+  "auth-server-url": "http://127.0.0.1:8180/auth",
+  "ssl-required": "external",
+  "resource": "vertx-blueprint",
+  "credentials": {
+    "secret": "ea99a8e6-f503-4bdb-afbd-9ae322ee7089"
+  },
+  "use-resource-role-mappings": true
+}
+```
+
+You should also create a user or allow user register so that you can login as the user later.
+
+For the details of configuring Keycloak, here is a wonderful tutorial: [Vertx 3 and Keycloak tutorial](http://vertx.io/blog/vertx-3-and-keycloak-tutorial/).
+
+## Enjoy our shopping!
+
+As soon as you have finished the configuration, you can visit the URL of the frontend. By default it is `https://localhost:8787`:
+
 ![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/shopping-spa-index.png)
+
+Now we can login with Keycloak via `https://localhost:8787/login`. This will carry us to the login page. As soon as the authentication is successful, we'll be brought back to the home page. Now we can choose our favorite products and buy! Nice!
 
 And you can also visit the monitor dashboard. By default the URL is [http://localhost:9100](http://localhost:9100).
 

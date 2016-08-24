@@ -10,20 +10,23 @@ services:
   mongo:
     image: mongo:3.3
     expose:
-     - "27017"
+      - "27017"
+  keycloak-server:
+    image: jboss/keycloak:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
   redis:
     image: redis:latest
     expose:
       - "6379"
-  api-gateway:
-    image: vertx-blueprint/api-gateway
-    ports:
-      - "8787:8787"
-    links:
-      - inventory-microservice
   inventory-microservice:
     image: vertx-blueprint/inventory-microservice
     links:
+      - redis
+    depends_on:
       - redis
     expose:
       - "8086"
@@ -35,12 +38,35 @@ services:
       - mysql
     expose:
       - "8082"
+  account-microservice:
+    image: vertx-blueprint/account-microservice
+    links:
+      - mysql
+    depends_on:
+      - mysql
+    expose:
+      - "8081"
+  store-microservice:
+    image: vertx-blueprint/store-microservice
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    expose:
+      - "8085"
+  cache-infrastructure:
+    image: vertx-blueprint/cache-infrastructure
+    links:
+      - redis
+    depends_on:
+      - redis
   shopping-cart-microservice:
     image: vertx-blueprint/shopping-cart-microservice
     links:
       - mysql
       - inventory-microservice
       - product-microservice
+      - cache-infrastructure
     depends_on:
       - mysql
     expose:
@@ -59,3 +85,15 @@ services:
     image: vertx-blueprint/monitor-dashboard
     ports:
       - "9100:9100"
+  api-gateway:
+      image: vertx-blueprint/api-gateway
+      ports:
+        - "8787:8787"
+      links:
+        - keycloak-server
+        - inventory-microservice
+        - product-microservice
+        - shopping-cart-microservice
+        - order-microservice
+        - account-microservice
+        - store-microservice

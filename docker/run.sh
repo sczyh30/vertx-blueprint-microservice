@@ -4,15 +4,14 @@ set -e
 
 # TODO: set env for docker-machine in Windows and OSX
 
-# Stop and remove all old containers
+# Stop
 docker-compose stop
-docker-compose rm --all -f
 
 # Start container cluster
-# First start persistence container and wait for it
-docker-compose up -d mysql mongo redis
+# First start persistence and auth container and wait for it
+docker-compose up -d mysql mongo redis keycloak-server
 echo "Waiting for persistence init..."
-sleep 25
+sleep 30
 
 # Start other containers
-docker compose up
+docker-compose up

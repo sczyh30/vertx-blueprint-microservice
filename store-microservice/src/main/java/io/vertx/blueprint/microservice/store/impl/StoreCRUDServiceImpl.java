@@ -43,8 +43,12 @@ public class StoreCRUDServiceImpl implements StoreCRUDService {
     JsonObject query = new JsonObject().put("_id", sellerId);
     client.findOne(COLLECTION, query, null, ar -> {
       if (ar.succeeded()) {
-        Store store = new Store(ar.result().put("sellerId", ar.result().getString("_id")));
-        resultHandler.handle(Future.succeededFuture(store));
+        if (ar.result() == null) {
+          resultHandler.handle(Future.succeededFuture());
+        } else {
+          Store store = new Store(ar.result().put("sellerId", ar.result().getString("_id")));
+          resultHandler.handle(Future.succeededFuture(store));
+        }
       } else {
         resultHandler.handle(Future.failedFuture(ar.cause()));
       }

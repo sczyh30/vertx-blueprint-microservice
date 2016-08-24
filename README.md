@@ -3,7 +3,7 @@
 [![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-microservice.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-microservice)
 
 Vert.x blueprint application - An online shopping microservice application developed with Vert.x.
-This repo is intended to be an illustration on how to develop microservice applications using Vert.x toolkit. 
+This repo is intended to be an illustration on how to develop microservice applications using Vert.x toolkit.
 
 ## Content
 
@@ -36,14 +36,15 @@ Detailed tutorials are available here!
 
 ## Build/Run
 
-To build the code:
+First, for `api-gateway` and `monitor-dashboard` component, you have to enter the `src/resources/webroot` directory and install the frontend dependencies with **bower**:
+
+    bower install
+
+Then build the code:
 
     mvn clean install
 
-To run the microservice with Docker Compose:
-
-    cd docker
-    sudo ./run.sh
+To run the microservice with Docker Compose, please refer to the [run instruction](http://www.sczyh30.com/vertx-blueprint-microservice/index.html#show-time-).
 
 ## Contributing
 

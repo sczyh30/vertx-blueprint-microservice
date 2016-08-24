@@ -18,14 +18,9 @@ import io.vertx.ext.auth.oauth2.OAuth2FlowType;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.CookieHandler;
-import io.vertx.ext.web.handler.OAuth2AuthHandler;
-import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
-import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.servicediscovery.Record;
-import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 
@@ -46,7 +41,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
 
   private static final Logger logger = LoggerFactory.getLogger(APIGatewayVerticle.class);
 
-  private OAuth2AuthHandler authHandler;
+  private OAuth2Auth oauth2;
 
   @Override
   public void start(Future<Void> future) throws Exception {
@@ -67,14 +62,12 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     router.get("/api/v").handler(this::apiVersion);
 
     // create OAuth 2 instance for Keycloak
-    OAuth2Auth oauth2 = OAuth2Auth
+    oauth2 = OAuth2Auth
       .createKeycloak(vertx, OAuth2FlowType.AUTH_CODE, config());
 
     router.route().handler(UserSessionHandler.create(oauth2));
 
-    String hostURI = String.format("https://%s:%d", host, port);
-    authHandler = OAuth2AuthHandler.create(oauth2, hostURI)
-      .setupCallback(Router.router(vertx).route("/callback"));
+    String hostURI = String.format("https://localhost:%d", port);
 
     // set auth callback handler
     router.route("/callback").handler(context -> authCallback(oauth2, hostURI, context));
@@ -311,8 +304,10 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     final String redirectURI = hostURL + context.currentRoute().getPath() + "?redirect_uri=" + redirectTo;
     oauth2.getToken(new JsonObject().put("code", code).put("redirect_uri", redirectURI), ar -> {
       if (ar.failed()) {
+        logger.warn("Auth fail");
         context.fail(ar.cause());
       } else {
+        logger.info("Auth success");
         context.setUser(ar.result());
         context.response()
           .putHeader("Location", redirectTo)
@@ -371,11 +366,19 @@ public class APIGatewayVerticle extends RestAPIVerticle {
   }
 
   private String generateAuthRedirectURI() {
-    return authHandler.authURI("https://localhost:8787", "");
+    int port = config().getInteger("api.gateway.http.port", 8787);
+    return oauth2.authorizeURL(new JsonObject()
+      .put("redirect_uri", "https://localhost:" + port + "/callback?redirect_uri=https://localhost:8787")
+      .put("scope", "")
+      .put("state", ""));
   }
 
   private String generateAuthRedirectURI(String from) {
-    return authHandler.authURI(from, "");
+    int port = config().getInteger("api.gateway.http.port", 8787);
+    return oauth2.authorizeURL(new JsonObject()
+      .put("redirect_uri", "https://localhost:" + port + "/callback?redirect_uri=" + from)
+      .put("scope", "")
+      .put("state", ""));
   }
 
 }
