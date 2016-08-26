@@ -1,4 +1,4 @@
-- [What is API Gateway?](#what-is-api-gateway)
+- [What is API Gateway?](#what-is-api-gateway-)
 - [Circuit Breaker](#circuit-breaker)
 - [Implementing API Gateway with Vert.x](#implementing-api-gateway-with-vert-x)
 	- [Overview](#overview)

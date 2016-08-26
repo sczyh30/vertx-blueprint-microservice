@@ -1,4 +1,4 @@
-# Vert.x 蓝图 - Online Shopping 微服务应用
+# Vert.x 蓝图 - Micro Shop 微服务应用
 
 [![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-microservice.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-microservice)
 
@@ -18,18 +18,12 @@
 
 ## 文档
 
-- [Vert.x 蓝图 - Online Shopping 微服务实战(开发篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/index.html)
-- [Vert.x 蓝图 - Online Shopping 微服务实战(部署篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/deployment.html)
+- [Vert.x 蓝图 - Micro Shop 微服务实战 (开发篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/index.html)
+- [Vert.x 蓝图 - Micro Shop 微服务实战 (API Gateway)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/api-gateway.html)
 
 ## 构建/运行
 
-构建项目:
-
-    mvn clean install
-
-运行微服务(利用Docker Compose):
-
-    ./run.sh
+请参考[文档](http://www.sczyh30.com/vertx-blueprint-microservice/index.html#show-time-)来构建并运行此项目。
 
 ## 贡献
 

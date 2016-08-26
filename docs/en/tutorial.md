@@ -15,9 +15,9 @@ What you are going to learn:
 - Various type of services (e.g. HTTP endpoint, message source, data source)
 - Service discovery with Vert.x
 - How to use Vert.x Circuit Breaker
-- How to implement a simple API gateway
+- How to implement a simple API Gateway
 - How to manage global authentication using OAuth 2 and Keycloak with Vert.x-Auth
-- How to configure and use SockJS - Event bus bridge
+- How to configure and use SockJS - Event Bus Bridge
 
 And many more things too...
 
@@ -31,22 +31,22 @@ Aha~ You must be familar -- at least sounds familar with the word "microservice"
 
 Let's step across the definition and see what makes microservices different.
 
-1. First of all, microservices are small, individual, each of which focus on doing one specific thing. We split the monolithic application into several decoupled components. We focus our service boundaries on business boundaries so that the service won't grow too large. But you may wonder, **how small is small?** That is hard to answer and that always depends on your application. As Sam Newman says in the book *Building
+- First of all, microservices are small, individual, each of which focus on doing one specific thing. We split the monolithic application into several decoupled components. We focus our service boundaries on business boundaries so that the service won't grow too large. But you may wonder, **how small is small?** That is hard to answer and that always depends on your application. As Sam Newman says in the book *Building
 Microservices*:
 
 > We seem to have a very good sense of what is too big, and so it could be argued that once a piece of code no longer feels too big, it’s probably small enough.
 
-2. In microservice architecture, components can interact between each other via whatever protocol, e.g REST, Thrift.
-3. As components are individual, we can use different language, different technologies in different components -- that is so-called **polyglot support**.
-4. Each component is developed, deployed and delivered independently, so it reduces the complexity of deployment.
-5. Microservice architecture is usually inseparable from distributed systems, so we need to think of resilience and scaling.
-6. Microservices are often designed as **Failure Oriented** as the faliure is more complicated in the distributed systems.
+- In microservice architecture, components can interact between each other via whatever protocol, e.g REST, Thrift.
+- As components are individual, we can use different language, different technologies in different components -- that is so-called **polyglot support**.
+- Each component is developed, deployed and delivered independently, so it reduces the complexity of deployment.
+- Microservice architecture is usually inseparable from distributed systems, so we need to think of resilience and scaling.
+- Microservices are often designed as **Failure Oriented** as the faliure is more complicated in the distributed systems.
 
 Microservices can ensure the cohension between each components and reduce the time to deployment and production. But remember: microservices are not a silver bullet as it increases the complexity of the whole distributed system so you need to think of more circumstances.
 
 ## Service discovery
 
-In distributed systems, each components are indivial and they are not aware of the location of other services, but if we want to invoke other services, we need to know their locations. Hardcoded in the code is not a good idea so we need a mechanism to record the location of each services dynamically -- that is **service discovery**. With service discovery, we can publish various kind of services to the discovery infrastructure and other components can consume registered services via discovery infrastructure. We don't need to know the location so it could let your components react smoothly to location or environment changes. And it also enables load-balancing, health check and so on.
+In distributed systems, each components are indivial and they are not aware of the location of other services, but if we want to invoke other services, we need to know their locations. Hardcoded in the code is not a good idea so we need a mechanism to record the location of each services dynamically -- that is **service discovery**. With service discovery, we can publish various kind of services to the discovery infrastructure and other components can consume registered services via discovery infrastructure. We don't need to know the location so it could let your components react smoothly to location or environment changes.
 
 Vert.x provides us a service discovery component to publish and discover various resources. In Vert.x Service Discovery, services are described by a `Record`. Service provider can publish services, and the `Record` can be saved in local map, distributed map or Redis depending on `ServiceDiscoveryBackend`. Service consumer can retrieve service record from the discovery backend and get corresponding service instance. At present Vert.x provides out of box support of several service types such as **event bus service(service proxy)**, **HTTP endpoint**, **message source** and **data source**. And of course we can create our own service types. We'll elaborate the usage of service discovery soon.
 
@@ -54,27 +54,25 @@ Vert.x provides us a service discovery component to publish and discover various
 
 Asynchronous and reactive is very suitable for microservices, and Vert.x owes both of them! With `Future` based and Rx based asynchronous development model, we can compose asynchronous procedures in a reactive way. That's concise and nice! We'll see more usage of `Future` based and Rx based asynchronous methods later~
 
-# The online shopping application
+# The Micro Shop application
 
-Ok, now that you've had a basic understanding of microservice architecture, let's discuss our microservice application in this blueprint. This is a online shopping application like eBay. People can buy things via it... The application contains a set of microservices currently:
+Ok, now that you've had a basic understanding of microservice architecture, let's discuss our microservice application in this blueprint. This is a micro-shop application like eBay. People can buy things via it... The application contains a set of microservices currently:
 
 - **Account microservice** - provides user account operation functionality. Use MySQL as persistence.
 - **Product microservice** - provides product operation functionality. Use MySQL as persistence.
-- **Inventory microservice** - provides product inventory operation functionality, e.g. `retrieve`, `increase` and `decrease`. Use Redis as persistence (via Cache infrastructure service).
+- **Inventory microservice** - provides product inventory operation functionality, e.g. `retrieve`, `increase` and `decrease`. Use Redis as persistence.
 - **Store microservice** - provides personal shop operation functionality. Use MongoDB as persistence.
 - **Shopping cart microservice** - it manages the shopping cart operations (e.g. `add`, `remove` and `checkout`) and generates orders. Shopping carts are stored and retrieved with event sourcing pattern. Orders are sent on the event bus.
 - **Order microservice(dispatcher and processor)** - it receives order requests from the cart service via event bus and then dispatch the orders to the infrastructure services (e.g. processing, storage and logging).
 - **The Micro Shop SPA** - the frontend SPA of the microservice (now integrated with `api-gateway`)
 - **The monitor dashbord** - a simple web UI to monitor the status of the microservice system
-- **The API gateway** - it is responsible for the requests to corresponding REST endpoints. It is also responsible for authentication, simple load-balancing and failure handling (using Vert.x Circuit Breaker).
+- **The API Gateway** - The API gateway is the door of the entire system. Every requests must be first sent to the gateway and then dispatched to each service endpoints (reverse proxy). It is also responsible for authentication, simple load-balancing and failure handling (using Vert.x Circuit Breaker).
 
 ## Online shopping microservice architecture
 
 Let's have a look to the microservice architecture:
 
 ![Microservice Architecture](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/entire-architecture.png)
-
-The API gateway is the door of the entire system. Every requests must be first sent to the gateway and then dispatched to each service.
 
 Let's then see the structure of every individual component.
 
@@ -1592,7 +1590,7 @@ You shouldn't feel unfamiliar with this implementation as it's similar to the pr
 
 As for `OrderVerticle`, it just does three small things: publish order event bus, deploy the dispatcher verticle and deploy the REST verticle.
 
-# Online shopping SPA integration
+# Micro Shop SPA integration
 
 In this blueprint, we provide a simple micro shop SPA frontend written in Angular.js. So a question is: How to integrate the SPA frontend with the microservice?
 
@@ -1684,7 +1682,7 @@ Wow, we've explored all of the code of the online shopping microservice, so it's
 
 ## Build the code and containers
 
-Before we build the code, we have to install the frontend dependencies with **bower** for `api-gateway` and `monitor-dashboard` component. Enter to each `src/resources/webroot` directory and execute:
+Before we build the code, we have to install the frontend dependencies with **bower** for `api-gateway` and `monitor-dashboard` component. Enter to each `src/main/resources/webroot` directory and execute:
 
 ```
 bower install
@@ -1752,6 +1750,8 @@ After created, we shep into the **** tab and copy the JSON configuration. Replac
 You should also create a user or allow user register so that you can login as the user later.
 
 For the details of configuring Keycloak, here is a wonderful tutorial: [Vertx 3 and Keycloak tutorial](http://vertx.io/blog/vertx-3-and-keycloak-tutorial/).
+
+After modifying the config file, you have to rebuild the container of `api-gateway` and then restart with `docker-compose`.
 
 ## Enjoy our shopping!
 

@@ -62,40 +62,37 @@ public void start(Future<Void> future) throws Exception {
   router.get("/api/v").handler(this::apiVersion); // (5)
 
   // create OAuth 2 instance for Keycloak
-  OAuth2Auth oauth2 = OAuth2Auth
-    .createKeycloak(vertx, OAuth2FlowType.AUTH_CODE, config());  // (6)
+  oauth2 = OAuth2Auth.createKeycloak(vertx, OAuth2FlowType.AUTH_CODE, config()); // (6)
 
   router.route().handler(UserSessionHandler.create(oauth2)); // (7)
 
-  String hostURI = String.format("https://%s:%d", host, port);
-  authHandler = OAuth2AuthHandler.create(oauth2, hostURI)
-    .setupCallback(Router.router(vertx).route("/callback")); // (8)
+  String hostURI = String.format("https://localhost:%d", port);
 
   // set auth callback handler
-  router.route("/callback").handler(context -> authCallback(oauth2, hostURI, context)); // (9)
+  router.route("/callback").handler(context -> authCallback(oauth2, hostURI, context)); // (8)
 
   router.get("/uaa").handler(this::authUaaHandler);
   router.get("/login").handler(this::loginEntryHandler);
-  router.post("/logout").handler(this::logoutHandler);  // (10)
+  router.post("/logout").handler(this::logoutHandler); // (9)
 
   // api dispatcher
-  router.route("/api/*").handler(this::dispatchRequests); // (11)
+  router.route("/api/*").handler(this::dispatchRequests); // (10)
 
   // init heart beat check
-  initHealthCheck(); // (12)
+  initHealthCheck(); // (11)
 
   // static content
-  router.route("/*").handler(StaticHandler.create()); // (13)
+  router.route("/*").handler(StaticHandler.create()); // (12)
 
   // enable HTTPS
   HttpServerOptions httpServerOptions = new HttpServerOptions()
     .setSsl(true)
-    .setKeyStoreOptions(new JksOptions().setPath("server.jks").setPassword("123456")); // (14)
+    .setKeyStoreOptions(new JksOptions().setPath("server.jks").setPassword("123456")); // (13)
 
   // create http server
-  vertx.createHttpServer(httpServerOptions) // (15)
+  vertx.createHttpServer(httpServerOptions)
     .requestHandler(router::accept)
-    .listen(port, host, ar -> {
+    .listen(port, host, ar -> { // (14)
       if (ar.succeeded()) {
         publishApiGateway(host, port);
         future.complete();
@@ -109,6 +106,26 @@ public void start(Future<Void> future) throws Exception {
 
 }
 ```
+
+Wow! Our API Gateway has so many obligations! First we get the host and port of the gateway from `config()` (1). Then we create a router instance (2) and enable cookie and session storage (3) with `enableLocalSession` method. Look at its implementation:
+
+```java
+protected void enableLocalSession(Router router) {
+  router.route().handler(CookieHandler.create());
+  router.route().handler(SessionHandler.create(
+    LocalSessionStore.create(vertx, "shopping.user.session")));
+}
+```
+
+We first set a `CookieHandler` as the session storage depends on cookie. Then we set a `SessionHandler` to the router. The `create` method of `SessionHandler` takes one `SessionStore` as parameter. In Vert.x we have two kinds of `SessionStore`: `LocalSessionStore` and `ClusteredSessionStore`. The former one saves session in the local map, while the other saves session in a distributed map so they are available across the cluster.
+
+After that, we set `BodyHandler` to the router so that we can get the request body (4). We also create a route demonstrating the version of the APIs (5).
+
+As is said above, the API Gateway is responsible for authentication, so here we create a `OAuth2Auth` instance with `createKeycloak` method (6) so that we can manage authentication with Keycloak. Next we set the `UserSessionHandler` to the router (7) so that Vert.x can automatically save the user holder in the session. OAuth 2 authentication also requires a callback handler so here we create a callback route (8). We'll elaborate this in the auth section. Then we create a series routes about auth: `authUaaHandler` for getting current user, `loginEntryHandler` for login redirect and `logoutHandler` for logout (9). Vert.x Web provides us a helper handler `AuthHandler` which can also do this well, but in order to integrate with the SPA and implement fine-grained permission, here we don't use the `AuthHandler`.
+
+Then we create the route for dispatcher (reverse proxy) (10) and enable health check with `initHealthCheck` method (11). In addition, our SPA frontend has been integrated with the API Gateway so we should also handle static content with `StaticHandler` (12). This route should be in low priority so we put it in the end. In order to illustrate usage of **HTTPS**, here we create a `HttpServerOptions` and configure it with `HTTPS` options (13). Finally we create the server with given `HttpServerOptions` (14). If successfully created, we publish the API Gateway to the service discovery layer, complete the `future` and publish success log. If failed, we need to fail the `future`.
+
+Well, that's done. Now it's time to explore each functionality~
 
 ## Failure Orinted - using circuit breaker
 
@@ -223,7 +240,7 @@ private Future<List<Record>> getAllEndpoints() {
 
 Notice that this is asynchronous, when it fails, the `future` should be failed to (8).
 
-Then comes to the logic of getting the api name `prefix` for the path, rebuild the relative path for endpoint client. After that we need to filter the endpoints with the correct api name (3). Then we map each records to the corresponding HTTP client using `discovery.getReference(record).get()` (4). Now we get a stream of clients so we can use `findAny` operator to get one possible client that matches the api (5). So now we get an `Optional<HttpClient>`, then we should check whether the client exists. If exists, send request to the service and get response using `doDispatch` method with the client (6). And if the client does not exist, that means there aren't any services matches the api so just return **404** and complete the future (7).
+Then comes to the logic of getting the api name `prefix` for the path, rebuild the relative path for endpoint client. After that we need to filter the endpoints with the correct api name (3). Then we map each records to the corresponding HTTP client using `discovery.getReference(record).get()` (4). Now we get a stream of clients so we can use `findAny` operator to get one possible client that matches the api (5). The `findAny` can be the entry of simple load-balancing, and we can implement our own load-balancing logic to manipulate the stream and get one client. So now we get an `Optional<HttpClient>`, then we should check whether the client exists. If exists, send request to the service and get response using `doDispatch` method with the client (6). And if the client does not exist, that means there aren't any services matches the API so just return **404** and complete the future (7).
 
 Then we need to deal with the failure. The `Future` returned by the circuit breaker refers to the result that executed in the circuit breaker, so we just set a handler on it and when the future fails, we call our wrapped `badGateway` method to respond **Bad Gateway** error (9) and record logs.
 
@@ -275,6 +292,109 @@ Wow! A simple reverse proxy with failure handling is finished! Next let' see how
 ## Authentication management
 
 In this microservice blueprint, we use Keycloak as the security component. And with the help of Vert.x OAuth2, we can easily handle authentication with Keycloak in the routing context.
+
+As is said above, we create a `OAuth2Auth` instance for Keycloak with `createKeycloak` method:
+
+```java
+oauth2 = OAuth2Auth.createKeycloak(vertx, OAuth2FlowType.AUTH_CODE, config());
+```
+
+Here the OAuth 2 flow type is [Authorization Code Flow](http://tools.ietf.org/html/draft-ietf-oauth-v2-31#section-4.1). The authorization code grant type is used to obtain both access tokens and refresh tokens and is optimized for confidential clients. And we need to get the Keycloak configuration from the outside config file. To see how to configure Keycloak and get the JSON configuration, please see [here](http://www.sczyh30.com/vertx-blueprint-microservice/index.html#show-time-).
+
+In our micro-shop application, some APIs are protected and need authentication. The routing handler of these APIs are wrapped with `requireLogin` method. For example, in shopping cart microservice the cart operations require authentication:
+
+```java
+router.post(API_CHECKOUT).handler(context -> requireLogin(context, this::apiCheckout));
+```
+
+The `requireLogin` method wraps logic about authentication principal:
+
+```java
+protected void requireLogin(RoutingContext context, BiConsumer<RoutingContext, JsonObject> biHandler) {
+  Optional<JsonObject> principal = Optional.ofNullable(context.request().getHeader("user-principal"))
+    .map(JsonObject::new);
+  if (principal.isPresent()) {
+    biHandler.accept(context, principal.get());
+  } else {
+    context.response()
+      .setStatusCode(401)
+      .end(new JsonObject().put("message", "need_auth").encode());
+  }
+}
+```
+
+The `requireLogin` method takes a `RoutingContext` as the context, and a `BiConsumer<RoutingContext, JsonObject>` as the routing handler. In the original route, the type of handler is `Handler<RoutingContext>`, but here there is an additional `JsonObject` parameter that refers to the user principal. We can get user authentication data from the principal.
+
+As we've seen above from the reverse proxy part, if there is a user existing in the routing context, we'll put its principal into the header with name `user-principal`. Here we make use of the header. We first get the principal and convert it to the `JsonObject`. If the principal exists, we pass the context and principal to the routing handler. By contrast, if the principal is not present, we'll return a response with `401` status indicating that authentication is needed.
+
+The Keycloak is responsible for login management, so we implemented a `loginEntryHandler` to redirect the request to the login entry:
+
+```java
+private void loginEntryHandler(RoutingContext context) {
+  String from = Optional.ofNullable(context.request().getParam("from"))
+    .orElse("https://localhost:8787");
+  context.response()
+    .putHeader("Location", generateAuthRedirectURI(from))
+    .setStatusCode(302)
+    .end();
+}
+```
+
+We implement redirection by set the header `Location` with the destination and set status code with **302 Redirect**. But how can we get the destination? That is from `generateAuthRedirectURI` method:
+
+```java
+private String generateAuthRedirectURI(String from) {
+  int port = config().getInteger("api.gateway.http.port", 8787);
+  return oauth2.authorizeURL(new JsonObject()
+    .put("redirect_uri", "https://localhost:" + port + "/callback?redirect_uri=" + from)
+    .put("scope", "")
+    .put("state", ""));
+}
+```
+
+Here we make use of the `authorizeURL` method of `oauth2` to get the login entry. Here a `redirect_uri` parameter is needed and the format is like `host:port/callback?redirect_uri=xxx`. Notice that our auth callback path is `/callback`, let's see its implementation:
+
+```java
+private void authCallback(OAuth2Auth oauth2, String hostURL, RoutingContext context) {
+  final String code = context.request().getParam("code"); // (1)
+  // code is a require value
+  if (code == null) {
+    context.fail(400);
+    return;
+  }
+  final String redirectTo = context.request().getParam("redirect_uri"); // (2)
+  final String redirectURI = hostURL + context.currentRoute().getPath() + "?redirect_uri=" + redirectTo; // (3)
+  oauth2.getToken(new JsonObject().put("code", code).put("redirect_uri", redirectURI), ar -> { // (4)
+    if (ar.failed()) {
+      logger.warn("Auth fail");
+      context.fail(ar.cause()); // (5)
+    } else {
+      logger.info("Auth success");
+      context.setUser(ar.result()); // (6)
+      context.response()
+        .putHeader("Location", redirectTo) // (7)
+        .setStatusCode(302)
+        .end();
+    }
+  });
+}
+```
+
+In the OAuth 2 standard, a `code` parameter is required (1). If the `code` is not present, the request will fail. Then we get the `redirect_uri` destination URL from the URI parameter (2) and aggregate present URI (3). Then we could retrieve the user token by calling `oauth2.getToken(params, handler)` asynchronous method (4). We need to put the `code` and `redirect_uri` (actually current URI) into the parameters. If we successfully get the token, which means authentication succeeds, we'll set the result `User` to the current routing context (6) and redirect to the final destination path (7) (here is often the frontend page). If authentication failed, we should fail the request with `context.fail` method (5).
+
+The `authCallback` and `generateAuthRedirectURI` method is actually from the `AuthHandler` class provided by Vert.x. It provides out-of-box encapsulation of simple authentication handler. You can visit the [Documentation](http://vertx.io/docs/vertx-web/java/#_authentication_authorisation) for more details.
+
+Now that we have a login handler, there must be a logout handler. The logout operation is simple:
+
+```java
+private void logoutHandler(RoutingContext context) {
+  context.clearUser();
+  context.session().destroy();
+  context.response().setStatusCode(204).end();
+}
+```
+
+We just clear the context user with `clearUser` method, then destroy the current session and respond with *204* status.
 
 ## Simple heart beat check
 

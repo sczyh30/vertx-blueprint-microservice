@@ -62,8 +62,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     router.get("/api/v").handler(this::apiVersion);
 
     // create OAuth 2 instance for Keycloak
-    oauth2 = OAuth2Auth
-      .createKeycloak(vertx, OAuth2FlowType.AUTH_CODE, config());
+    oauth2 = OAuth2Auth.createKeycloak(vertx, OAuth2FlowType.AUTH_CODE, config());
 
     router.route().handler(UserSessionHandler.create(oauth2));
 
@@ -180,9 +179,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
       toReq.putHeader(header.getKey(), header.getValue());
     });
     if (context.user() != null) {
-      toReq.putHeader("user-principle", context.user().principal().encode());
-    } else {
-      toReq.putHeader("redirect-saved", generateAuthRedirectURI());
+      toReq.putHeader("user-principal", context.user().principal().encode());
     }
     // send request
     if (context.getBody() == null) {
@@ -335,15 +332,8 @@ public class APIGatewayVerticle extends RestAPIVerticle {
           Future<Account> accountFuture = Future.future();
           accountService.retrieveByUsername(username, accountFuture.completer());
           return accountFuture;
-        }).setHandler(ar -> {
-          if (ar.succeeded()) {
-            context.response()
-              .putHeader("content-type", "application/json")
-              .end(ar.result().toString());
-          } else {
-            context.fail(500);
-          }
-        });
+        })
+          .setHandler(resultHandler(context));
       }
     } else {
       context.fail(401);

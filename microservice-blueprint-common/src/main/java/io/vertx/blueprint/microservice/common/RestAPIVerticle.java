@@ -110,16 +110,14 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
    * Validate if a user exists in the request scope.
    */
   protected void requireLogin(RoutingContext context, BiConsumer<RoutingContext, JsonObject> biHandler) {
-    Optional<JsonObject> principle = Optional.ofNullable(context.request().getHeader("user-principle"))
+    Optional<JsonObject> principal = Optional.ofNullable(context.request().getHeader("user-principal"))
       .map(JsonObject::new);
-    if (principle.isPresent()) {
-      biHandler.accept(context, principle.get());
+    if (principal.isPresent()) {
+      biHandler.accept(context, principal.get());
     } else {
-      Optional.ofNullable(context.request().getHeader("redirect-saved"))
-        .ifPresent(URI -> context.response()
-          .setStatusCode(401)
-          .end(new JsonObject().put("to_auth", URI).encode())
-        );
+      context.response()
+        .setStatusCode(401)
+        .end(new JsonObject().put("message", "need_auth").encode());
     }
   }
 

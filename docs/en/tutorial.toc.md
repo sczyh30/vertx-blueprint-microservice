@@ -30,7 +30,7 @@
 - [Order microservice](#order-microservice)
 	- [Consume the Cart-To-Order message source](#consume-the-cart-to-order-message-source)
 	- ["Process" the order](#-process-the-order)
-- [Online shopping SPA integration](#online-shopping-spa-integration)
+- [Micro Shop SPA integration](#micro-shop-spa-integration)
 - [Monitor dashboard with metrics](#monitor-dashboard-with-metrics)
 	- [SockJS - Event bus bridge](#sockjs-event-bus-bridge)
 	- [Send metrics data to event bus](#send-metrics-data-to-event-bus)
