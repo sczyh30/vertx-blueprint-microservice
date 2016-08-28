@@ -116,3 +116,11 @@ protected void enableLocalSession(Router router) {
     LocalSessionStore.create(vertx, "shopping.user.session")));
 }
 ```
+
+## 面向失败设计 — 基于断路器
+
+## 反向代理 - 分发请求
+
+## 权限管理
+
+## 简单的心跳检测

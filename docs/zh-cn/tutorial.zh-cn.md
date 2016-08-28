@@ -124,3 +124,1217 @@ API Gateway与其它组件通过HTTP进行通信。
 ```
 
 每个模块代表一个组件。看着配置文件，似乎有不少组件呢！不要担心，我们将会一一探究这些组件。下面我们先来看一下所有组件的基础模块 -  `microservice-blueprint-common`。
+
+# 微服务基础模块
+
+`microservice-blueprint-common`模块提供了一些微服务功能相关的辅助类以及辅助Verticle。我们先来看一下两个base verticles - `BaseMicroserviceVerticle` 和 `RestAPIVerticle`。
+
+## Base Microservice Verticle
+
+`BaseMicroserviceVerticle`提供了与微服务相关的初始化函数以及各种各样的辅助函数。其它每一个Verticle都会继承此Verticle，因此这个基础Verticle非常重要。
+
+首先我们来看一下其中的成员变量：
+
+```java
+protected ServiceDiscovery discovery;
+protected CircuitBreaker circuitBreaker;
+protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
+```
+
+`discovery`以及`circuitBreaker`分别代表服务发现实例以及断路器实例，而`registeredRecords`代表当前已发布的服务记录的集合，用于在结束Verticle时注销服务。
+
+`start`函数中主要是对服务发现实例和断路器实例进行初始化，配置文件从`config()`中获取。它的实现非常简单：
+
+```java
+@Override
+public void start() throws Exception {
+  // init service discovery instance
+  discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
+
+  // init circuit breaker instance
+  JsonObject cbOptions = config().getJsonObject("circuit-breaker") != null ?
+    config().getJsonObject("circuit-breaker") : new JsonObject();
+  circuitBreaker = CircuitBreaker.create(cbOptions.getString("name", "circuit-breaker"), vertx,
+    new CircuitBreakerOptions()
+      .setMaxFailures(cbOptions.getInteger("max-failures", 5))
+      .setTimeout(cbOptions.getLong("timeout", 10000L))
+      .setFallbackOnFailure(true)
+      .setResetTimeout(cbOptions.getLong("reset-timeout", 30000L))
+  );
+}
+```
+
+下面我们还提供了几个辅助函数用于发布各种各样的服务。这些函数都是异步的，并且基于Future：
+
+```java
+protected Future<Void> publishHttpEndpoint(String name, String host, int port) {
+  Record record = HttpEndpoint.createRecord(name, host, port, "/",
+    new JsonObject().put("api.name", config().getString("api.name", ""))
+  );
+  return publish(record);
+}
+
+protected Future<Void> publishMessageSource(String name, String address) {
+  Record record = MessageSource.createRecord(name, address);
+  return publish(record);
+}
+
+protected Future<Void> publishJDBCDataSource(String name, JsonObject location) {
+  Record record = JDBCDataSource.createRecord(name, location, new JsonObject());
+  return publish(record);
+}
+
+protected Future<Void> publishEventBusService(String name, String address, Class serviceClass) {
+  Record record = EventBusService.createRecord(name, address, serviceClass);
+  return publish(record);
+}
+```
+
+之前我们提到过，每个服务记录`Record`代表一个服务，其中服务类型由记录中的`type`字段标识。Vert.x原生支持的各种服务接口中都包含着好几个`createRecord`方法因此我们可以利用这些方法来方便地创建服务记录。通常情况下我们需要给每个服务都指定一个`name`，这样之后我们就可以通过名称来获取服务了。我们还可以通过`setMetadata`方法来给服务记录添加额外的元数据。
+
+你可能注意到在`publishHttpEndpoint`方法中我们就提供了含有`api-name`的元数据，之后我们会了解到，API Gateway在进行反向代理时会用到它。
+
+下面我们来看一下发布服务的通用方法 —— `publish`方法：
+
+```java
+private Future<Void> publish(Record record) {
+  Future<Void> future = Future.future();
+  // publish the service
+  discovery.publish(record, ar -> {
+    if (ar.succeeded()) {
+      registeredRecords.add(record);
+      logger.info("Service <" + ar.result().getName() + "> published");
+      future.complete();
+    } else {
+      future.fail(ar.cause());
+    }
+  });
+  return future;
+}
+```
+
+在`publish`方法中，我们调用了服务发现实例`discovery`的`publish`方法来将服务发布至服务发现模块。它同样也是一个异步方法，当发布成功时，我们将此服务记录存储至`registeredRecords`中，输出日志然后通知`future`操作已完成。最后返回对应的`future`。
+
+注意，在Vert.x Service Discovery当前版本(3.3.2)的设计中，服务发布者需要在必要时手动注销服务，因此当Verticle结束时，我们需要将注册的服务都注销掉：
+
+```java
+@Override
+public void stop(Future<Void> future) throws Exception {
+  // In current design, the publisher is responsible for removing the service
+  List<Future> futures = new ArrayList<>();
+  for (Record record : registeredRecords) {
+    Future<Void> unregistrationFuture = Future.future();
+    futures.add(unregistrationFuture);
+    discovery.unpublish(record.getRegistration(), unregistrationFuture.completer());
+  }
+
+  if (futures.isEmpty()) {
+    discovery.close();
+    future.complete();
+  } else {
+    CompositeFuture.all(futures)
+      .setHandler(ar -> {
+        discovery.close();
+        if (ar.failed()) {
+          future.fail(ar.cause());
+        } else {
+          future.complete();
+        }
+      });
+  }
+}
+```
+
+在`stop`方法中，我们遍历`registeredRecords`集合并且尝试注销每一个服务，并将异步结果`future`添加至`futures`列表中。之后我们调用`CompositeFuture.all(futures)`来依次获取每个异步结果的状态。`all`方法返回一个组合的`Future`，当列表中的所有Future都成功赋值时方为成功状态，反之只要有一个异步结果失败，它就为失败状态。因此，我们给它绑定一个`Handler`，当所有服务都被注销时，服务发现模块就可以安全地关闭了，否则结束函数会失败。
+
+## REST API Verticle
+
+`RestAPIVerticle`抽象类继承了`BaseMicroserviceVerticle`抽象类。从名字上就可以看出，它提供了诸多的用于REST API开发的辅助方法。我们在其中封装了诸如创建服务端、开启Cookie和Session支持，开启心跳检测支持（通过HTTP），各种各样的路由处理封装以及用于权限验证的路由处理器。在之后的章节中我们将会见到这些方法。
+
+
+好啦，现在我们已经了解了整个蓝图应用中的两个基础Verticle，下面是时候探索各个模块了！在探索逻辑组件之前，我们先来看一下其中最重要的组件之一 —— API Gateway。
+
+# API Gateway
+
+
+我们把API Gateway的内容**单独归为一篇教程**，请见：[Vert.x 蓝图 - Micro Shop 微服务实战 (API Gateway)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/api-gateway.html)。
+
+
+# Event Bus 服务 - 账户、网店及商品服务
+
+## 在Event Bus上进行异步RPC
+
+在之前的 [Vert.x Kue 蓝图教程](http://www.sczyh30.com/vertx-blueprint-job-queue/cn/kue-core/index.html#异步rpc) 中我们已经介绍过Vert.x中的异步RPC（也叫服务代理）了，这里我们再来回顾一下，并且说一说如何利用服务发现模块更方便地进行异步RPC。
+
+传统的RPC有一个缺点：消费者需要阻塞等待生产者的回应。这是一种阻塞模型，和Vert.x推崇的异步开发模式不相符。并且，传统的RPC不是真正面向失败设计的。还好，Vert.x提供了一种高效的、响应式的RPC —— **异步RPC**。我们不需要等待生产者的回应，而只需要传递一个`Handler<AsyncResult<R>>`参数给异步方法。这样当收到生产者结果时，对应的`Handler`就会被调用，非常方便，这与Vert.x的异步开发模式相符。并且，`AsyncResult`也是面向失败设计的。
+
+Vert.x Service Proxy(服务代理组件)可以自动处理含有`@ProxyGen`注解的服务接口，生成相应的服务代理类。生成的服务代理类可以帮我们将数据封装好后发送至Event Bus、从Event Bus接收数据，以及对数据进行编码和解码，因此我们可以省掉不少代码。我们需要做的就是遵循`@ProxyGen`注解的[一些限定](http://vertx.io/docs/vertx-service-proxy/java/#_restrictions_for_service_interface)。
+
+比如，这里有一个Event Bus服务接口：
+
+```java
+@ProxyGen
+public interface MyService {
+  @Fluent
+  MyService retrieveData(String id, Handler<AsyncResult<JsonObject>> resultHandler);
+}
+```
+
+我们可以通过Vert.x Service Proxy组件生成对应的代理类。然后我们就可以通过`ProxyHelper`类的`registerService`方法将此服务注册至Event Bus上：
+
+```java
+MyService myService = MyService.createService(vertx, config);
+ProxyHelper.registerService(MyService.class, vertx, myService, SERVICE_ADDRESS);
+```
+
+有了服务发现组件之后，将服务发布至服务发现层就非常容易了。比如在我们的蓝图应用中我们使用封装好的方法：
+
+```java
+publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, MyService.class)
+```
+
+OK，现在服务已经成功地发布至服务发现模块。现在我们就可以通过`EventBusService`接口的`getProxy`方法来从服务发现层获取发布的Event Bus服务，并且像调用普通异步方法那样进行异步RPC：
+
+```java
+EventBusService.<MyService>getProxy(discovery, new JsonObject().put("name", SERVICE_NAME), ar -> {
+  if (ar.succeeded()) {
+    MyService myService = ar.result();
+    myService.retrieveData(...);
+  }
+});
+```
+
+## 几个服务模块的通用特性
+
+在我们的Micro Shop微服务应用中，账户、网店及商品服务有几个通用的特性及约定。现在我们来解释一下。
+
+在这三个模块中，每个模块都包含：
+
+- 一个Event Bus服务接口。此服务接口定义了对实体存储的各种操作
+- 服务接口的实现
+- REST API Verticle，用于创建服务端并将其发布至服务发现模块
+- Main Verticle，用于部署其它的verticles以及将Event Bus服务和消息源发布至服务发现层
+
+其中，用户账户服务以及商品服务都使用 MySQL 作为后端存储，而网店服务则以 MongoDB 作为后端存储。这里我们只挑两个典型的服务介绍如何通过Vert.x操作不同的数据库：`product-microservice`和`store-microservice`。`account-microservice`的实现与`product-microservice`非常相似，大家可以查阅 [GitHub](https://github.com/sczyh30/vertx-blueprint-microservice/tree/master/account-microservice) 上的代码。
+
+## 基于MySQL的商品服务
+
+商品微服务模块提供了商品的操作功能，包括添加、查询（搜索）、删除与更新商品等。其中最重要的是`ProductService`服务接口以及其实现了。我们先来看一下此服务接口的定义：
+
+```java
+@VertxGen
+@ProxyGen
+public interface ProductService {
+
+  /**
+   * The name of the event bus service.
+   */
+  String SERVICE_NAME = "product-eb-service";
+
+  /**
+   * The address on which the service is published.
+   */
+  String SERVICE_ADDRESS = "service.product";
+
+  /**
+   * Initialize the persistence.
+   */
+  @Fluent
+  ProductService initializePersistence(Handler<AsyncResult<Void>> resultHandler);
+
+  /**
+   * Add a product to the persistence.
+   */
+  @Fluent
+  ProductService addProduct(Product product, Handler<AsyncResult<Void>> resultHandler);
+
+  /**
+   * Retrieve the product with certain `productId`.
+   */
+  @Fluent
+  ProductService retrieveProduct(String productId, Handler<AsyncResult<Product>> resultHandler);
+
+  /**
+   * Retrieve the product price with certain `productId`.
+   */
+  @Fluent
+  ProductService retrieveProductPrice(String productId, Handler<AsyncResult<JsonObject>> resultHandler);
+
+  /**
+   * Retrieve all products.
+   */
+  @Fluent
+  ProductService retrieveAllProducts(Handler<AsyncResult<List<Product>>> resultHandler);
+
+  /**
+   * Retrieve products by page.
+   */
+  @Fluent
+  ProductService retrieveProductsByPage(int page, Handler<AsyncResult<List<Product>>> resultHandler);
+
+  /**
+   * Delete a product from the persistence
+   */
+  @Fluent
+  ProductService deleteProduct(String productId, Handler<AsyncResult<Void>> resultHandler);
+
+  /**
+   * Delete all products from the persistence
+   */
+  @Fluent
+  ProductService deleteAllProducts(Handler<AsyncResult<Void>> resultHandler);
+
+}
+```
+
+正如我们之前所提到的那样，这个服务接口是一个Event Bus服务，所以我们需要给它加上`@ProxyGen`注解。这些方法都是异步的，因此每个方法都需要接受一个`Handler<AsyncResult<T>>`参数。当异步操作完成时，对应的`Handler`会被调用。注意到我们还给此接口加了`@VertxGen`注解。上篇蓝图教程中我们提到过，这是为了开启多语言支持(polyglot language support)。Vert.x Codegen注解处理器会自动处理含有`@VertxGen`注解的类，并生成支持的其它语言的代码，如Ruby、JS等。。。这是非常适合微服务架构的，因为不同的组件可以用不同的语言进行开发！
+
+每个方法的含义都在注释中给出了，这里就不解释了。
+
+商品服务接口的实现位于`ProductServiceImpl`类中。商品信息存储在MySQL中，因此我们可以通过 **Vert.x-JDBC** 对数据库进行操作。我们在 [第一篇蓝图教程](http://sczyh30.github.io/vertx-blueprint-todo-backend/cn) 中已经详细讲述过Vert.x JDBC的使用细节了，因此这里我们就不过多地讨论细节了。这里我们只关注如何减少代码量。因为通常简单数据库操作的过程都是千篇一律的，因此做个封装是很有必要的。
+
+首先来回顾一下每次数据库操作的过程：
+
+1. 从`JDBCClient`中获取数据库连接`SQLConnection`，这是一个异步过程
+2. 执行SQL语句，绑定回调`Handler`
+3. 最后不要忘记关闭数据库连接以释放资源
+
+对于正常的CRUD操作来说，它们的实现都很相似，因此我们封装了一个`JdbcRepositoryWrapper`类来实现这些通用逻辑。它位于`io.vertx.blueprint.microservice.common.service`包中：
+
+![JdbcRepositoryWrapper class structure](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/jdbc-repo-wrapper-class-structure.png)
+
+我们提供了以下的封装方法：
+
+- `executeNoResult`: 执行含参数的SQL语句 (通过`updateWithParams`方法)。执行结果是不需要的，因此只需要接受一个 `Handler<AsyncResult<Void>>` 类型的参数。此方法通常用于`insert`之类的操作。
+- `retrieveOne`: 执行含参数的SQL语句，用于获取某一特定实体（通过 `queryWithParams`方法）。此方法是基于`Future`的，它返回一个`Future<Optional<JsonObject>>`类型的异步结果。如果结果集为空，那么返回一个空的`Optional` monad。如果结果集不为空，则返回第一个结果并用`Optional`进行包装。
+- `retrieveMany`: 获取多个实体，返回`Future<List<JsonObject>>`作为异步结果。
+- `retrieveByPage`: 与`retrieveMany` 方法相似，但包含分页逻辑。
+- `retrieveAll`: similar to `retrieveMany` method but does not require query parameters as it simply executes statement such as `SELECT * FROM xx_table`.
+- `removeOne` and `removeAll`: remove entity from the database.
+
+当然这与Spring JPA相比的不足之处在于SQL语句得自己写，自己封装也不是很方便。。。考虑到Vert.x JDBC底层也只是使用了Worker线程池包装了原生的JDBC（不是真正的异步），我们也可以结合Spring Data的相关组件来简化开发。另外，Vert.x JDBC使用C3P0作为默认的数据库连接池，C3P0的性能我想大家应该都懂。。。因此换成性能更优的HikariCP是很有必要的。
+
+回到`JdbcRepositoryWrapper`中来。这层封装可以大大地减少代码量。比如，我们的`ProductServiceImpl`实现类就可以继承`JdbcRepositoryWrapper`类，然后利用这些封装好的方法。看个例子 —— `retrieveProduct`方法的实现：
+
+```java
+@Override
+public ProductService retrieveProduct(String productId, Handler<AsyncResult<Product>> resultHandler) {
+  this.retrieveOne(productId, FETCH_STATEMENT)
+    .map(option -> option.map(Product::new).orElse(null))
+    .setHandler(resultHandler);
+  return this;
+}
+```
+
+我们唯一需要做的只是将结果变换成需要的类型。是不是很方便呢？
+
+当然这不是唯一方法。在下面的章节中，我们将会讲到一种更Reactive，更Functional的方法 —— 利用Rx版本的Vert.x JDBC。另外，用`vertx-sync`也是一种不错的选择（类似于async/await）。
+
+好啦！看完服务实现，下面轮到REST API了。我们来看看`RestProductAPIVerticle`的实现：
+
+```java
+public class RestProductAPIVerticle extends RestAPIVerticle {
+
+  public static final String SERVICE_NAME = "product-rest-api";
+
+  private static final String API_ADD = "/add";
+  private static final String API_RETRIEVE = "/:productId";
+  private static final String API_RETRIEVE_BY_PAGE = "/products";
+  private static final String API_RETRIEVE_PRICE = "/:productId/price";
+  private static final String API_RETRIEVE_ALL = "/products";
+  private static final String API_DELETE = "/:productId";
+  private static final String API_DELETE_ALL = "/all";
+
+  private final ProductService service;
+
+  public RestProductAPIVerticle(ProductService service) {
+    this.service = service;
+  }
+
+  @Override
+  public void start(Future<Void> future) throws Exception {
+    super.start();
+    final Router router = Router.router(vertx);
+    // body handler
+    router.route().handler(BodyHandler.create());
+    // API route handler
+    router.post(API_ADD).handler(this::apiAdd);
+    router.get(API_RETRIEVE).handler(this::apiRetrieve);
+    router.get(API_RETRIEVE_BY_PAGE).handler(this::apiRetrieveByPage);
+    router.get(API_RETRIEVE_PRICE).handler(this::apiRetrievePrice);
+    router.get(API_RETRIEVE_ALL).handler(this::apiRetrieveAll);
+    router.patch(API_UPDATE).handler(this::apiUpdate);
+    router.delete(API_DELETE).handler(this::apiDelete);
+    router.delete(API_DELETE_ALL).handler(context -> requireLogin(context, this::apiDeleteAll));
+
+    enableHeartbeatCheck(router, config());
+
+    // get HTTP host and port from configuration, or use default value
+    String host = config().getString("product.http.address", "0.0.0.0");
+    int port = config().getInteger("product.http.port", 8082);
+
+    // create HTTP server and publish REST service
+    createHttpServer(router, host, port)
+      .compose(serverCreated -> publishHttpEndpoint(SERVICE_NAME, host, port))
+      .setHandler(future.completer());
+  }
+
+  private void apiAdd(RoutingContext context) {
+    try {
+      Product product = new Product(new JsonObject(context.getBodyAsString()));
+      service.addProduct(product, resultHandler(context, r -> {
+        String result = new JsonObject().put("message", "product_added")
+          .put("productId", product.getProductId())
+          .encodePrettily();
+        context.response().setStatusCode(201)
+          .putHeader("content-type", "application/json")
+          .end(result);
+      }));
+    } catch (DecodeException e) {
+      badRequest(context, e);
+    }
+  }
+
+  private void apiRetrieve(RoutingContext context) {
+    String productId = context.request().getParam("productId");
+    service.retrieveProduct(productId, resultHandlerNonEmpty(context));
+  }
+
+  private void apiRetrievePrice(RoutingContext context) {
+    String productId = context.request().getParam("productId");
+    service.retrieveProductPrice(productId, resultHandlerNonEmpty(context));
+  }
+
+  private void apiRetrieveByPage(RoutingContext context) {
+    try {
+      String p = context.request().getParam("p");
+      int page = p == null ? 1 : Integer.parseInt(p);
+      service.retrieveProductsByPage(page, resultHandler(context, Json::encodePrettily));
+    } catch (Exception ex) {
+      badRequest(context, ex);
+    }
+  }
+
+  private void apiRetrieveAll(RoutingContext context) {
+    service.retrieveAllProducts(resultHandler(context, Json::encodePrettily));
+  }
+
+  private void apiDelete(RoutingContext context) {
+    String productId = context.request().getParam("productId");
+    service.deleteProduct(productId, deleteResultHandler(context));
+  }
+
+  private void apiDeleteAll(RoutingContext context, JsonObject principle) {
+    service.deleteAllProducts(deleteResultHandler(context));
+  }
+
+}
+```
+
+此Verticle继承了`RestAPIVerticle`，因此我们可以利用其中诸多的辅助方法。首先来看一下启动过程，即`start`方法。首先我们先调用`super.start()`来初始化服务发现组件，然后创建`Router`，绑定`BodyHandler`以便操作请求正文，然后创建各个API路由并绑定相应的处理函数。接着我们调用`enableHeartbeatCheck`方法开启简单的心跳检测支持。最后我们通过封装好的`createHttpServer`创建HTTP服务端，并通过`publishHttpEndpoint`方法将HTTP端点发布至服务发现模块。
+
+其中`createHttpServer`方法非常简单，我们只是把`vertx.createHttpServer`方法变成了基于`Future`的：
+
+```java
+protected Future<Void> createHttpServer(Router router, String host, int port) {
+  Future<HttpServer> httpServerFuture = Future.future();
+  vertx.createHttpServer()
+    .requestHandler(router::accept)
+    .listen(port, host, httpServerFuture.completer());
+  return httpServerFuture.map(r -> null);
+}
+```
+
+至于各个路由处理逻辑如何实现，可以参考 [Vert.x Blueprint - Todo Backend Tutorial](http://www.sczyh30.com/vertx-blueprint-todo-backend/cn) 获取相信信息。
+
+最后我们打开此微服务模块中的Main Verticle - `ProductVerticle`类。正如我们之前所提到的，它负责发布服务以及部署REST Verticle。我们来看一下其`start`方法：
+
+```java
+@Override
+public void start(Future<Void> future) throws Exception {
+  super.start();
+
+  // create the service instance
+  ProductService productService = new ProductServiceImpl(vertx, config()); // (1)
+  // register the service proxy on event bus
+  ProxyHelper.registerService(ProductService.class, vertx, productService, SERVICE_ADDRESS); // (2)
+  // publish the service in the discovery infrastructure
+  initProductDatabase(productService) // (3)
+    .compose(databaseOkay -> publishEventBusService(ProductService.SERVICE_NAME, SERVICE_ADDRESS, ProductService.class)) // (4)
+    .compose(servicePublished -> deployRestService(productService)) // (5)
+    .setHandler(future.completer()); // (6)
+}
+```
+
+首先我们创建一个`ProductService`服务实例（1），然后通过`registerService`方法将服务注册至Event Bus（2）。接着我们初始化数据库表（3），将商品服务发布至服务发现层（4）然后部署REST Verticle（5）。这是一系列的异步方法的组合操作，很溜吧！最后我们将`future.completer()`绑定至组合后的`Future`上，这样当所有异步操作都OK的时候，`Future`会自动完成。
+
+当然，不要忘记在配置里指定`api.name`。之前我们在 [API Gateway章节](http://sczyh30.github.io/vertx-blueprint-microservice/cn/api-gateway.html) 提到过，API Gateway的反向代理部分就是通过对应REST服务的 `api.name` 来进行请求分发的。默认情况下`api.name`为`product`:
+
+```json
+{
+  "api.name": "product"
+}
+```
+
+## 基于MongoDB的网店服务
+
+网店服务用于网店的操作，如开店、关闭、更新数据。正常情况下，开店都需要人工申请，不过在本蓝图教程中，我们把这一步简化掉了。网店服务模块的结构和商品服务模块非常相似，所以我们就不细说了。我们这里仅仅瞅一瞅如何使用Vert.x Mongo Client。
+
+使用Vert.x Mongo Client非常简单，首先我们需要创建一个`MongoClient`实例，过程类似于`JDBCClient`：
+
+```java
+private final MongoClient client;
+
+public StoreCRUDServiceImpl(Vertx vertx, JsonObject config) {
+  this.client = MongoClient.createNonShared(vertx, config);
+}
+```
+
+然后我们就可以通过它来操作Mongo了。比如我们想执行存储(save)操作，我们可以这样写：
+
+```java
+@Override
+public void saveStore(Store store, Handler<AsyncResult<Void>> resultHandler) {
+  client.save(COLLECTION, new JsonObject().put("_id", store.getSellerId())
+      .put("name", store.getName())
+      .put("description", store.getDescription())
+      .put("openTime", store.getOpenTime()),
+    ar -> {
+      if (ar.succeeded()) {
+        resultHandler.handle(Future.succeededFuture());
+      } else {
+        resultHandler.handle(Future.failedFuture(ar.cause()));
+      }
+    }
+  );
+}
+```
+
+这些操作都是异步的，因此你一定非常熟悉这种模式！当然如果不喜欢基于回调的异步模式的话，你也可以选择Rx版本的API～
+
+更多关于Vert.x Mongo Client的使用细节，请参考[官方文档](http://vertx.io/docs/vertx-mongo-client/java/)。
+
+# 基于Redis的商品库存服务
+
+商品库存服务负责操作商品的库存数量，比如添加库存、减少库存以及获取当前库存数量。库存使用Redis来存储。
+
+与之前的Event Bus服务不同，我们这里的商品库存服务是基于`Future`的，而不是基于回调的。由于服务代理模块不支持处理基于`Future`的服务接口，因此这里我们就不用异步RPC了，只发布一个REST API端点，所有的调用都通过REST进行。
+
+首先来看一下`InventoryService`服务接口：
+
+```java
+public interface InventoryService {
+
+  /**
+   * Create a new inventory service instance.
+   *
+   * @param vertx  Vertx instance
+   * @param config configuration object
+   * @return a new inventory service instance
+   */
+  static InventoryService createService(Vertx vertx, JsonObject config) {
+    return new InventoryServiceImpl(vertx, config);
+  }
+
+  /**
+   * Increase the inventory amount of a certain product.
+   *
+   * @param productId the id of the product
+   * @param increase  increase amount
+   * @return the asynchronous result of current amount
+   */
+  Future<Integer> increase(String productId, int increase);
+
+  /**
+   * Decrease the inventory amount of a certain product.
+   *
+   * @param productId the id of the product
+   * @param decrease  decrease amount
+   * @return the asynchronous result of current amount
+   */
+  Future<Integer> decrease(String productId, int decrease);
+
+  /**
+   * Retrieve the inventory amount of a certain product.
+   *
+   * @param productId the id of the product
+   * @return the asynchronous result of current amount
+   */
+  Future<Integer> retrieveInventoryForProduct(String productId);
+
+}
+```
+
+接口定义非常简单，含义都在注释中给出了。接着我们再看一下服务的实现类`InventoryServiceImpl`类。在Redis中，所有的库存数量都被存储在`inventory:v1`命名空间中，并以商品号`productId`作为标识。比如商品`A123456`会被存储至`inventory:v1:A123456`键值对中。
+
+Vert.x Redis提供了`incrby`和`decrby`命令，可以很方便地实现库存增加和减少功能，代码类似。这里我们只看库存增加功能：
+
+```java
+@Override
+public Future<Integer> increase(String productId, int increase) {
+  Future<Long> future = Future.future();
+  client.incrby(PREFIX + productId, increase, future.completer());
+  return future.map(Long::intValue);
+}
+```
+
+由于库存数量不会非常大，`Integer`就足够了，因此我们需要通过`Long::intValue`方法引用来将`Long`结果变换成`Integer`类型的。
+
+`retrieveInventoryForProduct`方法的实现也非常短小精悍：
+
+```java
+@Override
+public Future<Integer> retrieveInventoryForProduct(String productId) {
+  Future<String> future = Future.future();
+  client.get(PREFIX + productId, future.completer());
+  return future.map(r -> r == null ? "0" : r)
+    .map(Integer::valueOf);
+}
+```
+
+我们通过`get`命令来获取值。由于结果是`String`类型的，因此我们需要自行将其转换为`Integer`类型。如果结果为空，我们就认为商品没有库存，返回`0`。
+
+至于REST Verticle（在此模块中也为Main Verticle），其实现模式与前面的大同小异，这里就不展开说了。不要忘记在`config.json`中指定`api.name`:
+
+```JSON
+{
+  "api.name": "inventory",
+  "redis.host": "redis",
+  "inventory.http.address": "inventory-microservice",
+  "inventory.http.port": 8086
+}
+```
+
+# 事件溯源 - 购物车服务
+
+好了，现在我们与基础服务模块告一段落了。下面我们来到了另一个重要的服务模块 —— 购物车微服务。此模块负责购物车的获取、购物车事件的添加以及结算功能。与传统的实现不同，这里我们要介绍一种不同的开发模式 —— 事件溯源(**Event Sourcing**)。
+
+## 解道Event Sourcing
+
+在传统的数据存储模式中，我们通常直接将数据本身的状态存储至数据库中。这在一般场景中是没有问题的，但有些时候，我们不仅想获取到数据，还想获取数据操作的过程（即此数据是经过怎样的操作生成的），这时候我们就可以利用事件溯源(Event Sourcing)来解决这个问题。
+
+[事件溯源](http://martinfowler.com/eaaDev/EventSourcing.html)保证了数据状态的变换都以一系列的事件的形式存储在数据库中。所以，我们不仅可以获取每个变换的事件，而且可以通过过去的事件来组合出过去任意时刻的数据状态！这真是极好的～注意，有一点很重要，我们不能更改已经保存的事件以及它们的序列 —— 也就是说，事件存储是只能添加而不能删除的，并且需要不可变。是不是感觉和数据库事务日志的原理差不多呢？
+
+在微服务架构中，事件溯源模式可以带来以下的好处：
+
+- 我们可以从过去的事件序列中组建出任意时刻的数据状态
+- 每个过去的事件都得以保存，因此这使得[补偿事务](https://en.wikipedia.org/wiki/Compensating_transaction)成为可能
+- 我们可以从事件存储中获取事件流，并且以异步、响应式风格对其进行变换和处理
+- 事件存储同样可以当作为数据日志
+
+事件存储的选择也需要好好考虑。**Apache Kafka**非常适合这种场景，在此版本的Micro Shop微服务中，为了简化其实现，我们简单地使用了MySQL作为事件存储。下个版本我们将把Kafka整合进来。
+
+> 注：在实际生产环境中，购物车通常被存储于Session或缓存内。本章节仅为介绍事件溯源而使用事件存储模式。
+
+## 购物车事件
+
+我们来看一下代表购物车事件的`CartEvent`数据对象：
+
+```java
+@DataObject(generateConverter = true)
+public class CartEvent {
+
+  private Long id;
+  private CartEventType cartEventType;
+  private String userId;
+  private String productId;
+  private Integer amount;
+
+  private long createdAt;
+
+  public CartEvent() {
+    this.createdAt = System.currentTimeMillis();
+  }
+
+  public CartEvent(JsonObject json) {
+    CartEventConverter.fromJson(json, this);
+  }
+
+  public CartEvent(CartEventType cartEventType, String userId, String productId, Integer amount) {
+    this.cartEventType = cartEventType;
+    this.userId = userId;
+    this.productId = productId;
+    this.amount = amount;
+    this.createdAt = System.currentTimeMillis();
+  }
+
+  public static CartEvent createCheckoutEvent(String userId) {
+    return new CartEvent(CartEventType.CHECKOUT, userId, "all", 0);
+  }
+
+  public static CartEvent createClearEvent(String userId) {
+    return new CartEvent(CartEventType.CLEAR_CART, userId, "all", 0);
+  }
+
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    CartEventConverter.toJson(this, json);
+    return json;
+  }
+
+  public static boolean isTerminal(CartEventType eventType) {
+    return eventType == CartEventType.CLEAR_CART || eventType == CartEventType.CHECKOUT;
+  }
+}
+```
+
+一个购物车事件存储着事件的类型、发生的时间、操作用户、对应的商品ID以及商品数量变动。在我们的蓝图应用中，购物车事件一共有四种，它们用`CartEventType`枚举类表示：
+
+```java
+public enum CartEventType {
+  ADD_ITEM, // 添加商品至购物车
+  REMOVE_ITEM, // 从购物车中删除商品
+  CHECKOUT, // 结算并清空
+  CLEAR_CART // 清空
+}
+```
+
+其中`CHECKOUT`和`CLEAR_CART`事件是对整个购物车实体进行操作，对应的购物车事件参数类似，因此我们写了两个静态方法来创建这两种事件。
+
+另外我们还注意到一个静态方法`isTerminal`，它用于检测当前购物车事件是否为一个“终结”事件。所谓的“终结”，指的是到此就对整个购物车进行操作（结算或清空）。在从购物车事件流构建出对应的购物车状态的时候，此方法非常有用。
+
+## 购物车实体
+
+看完了购物车事件，我们再来看一下购物车。购物车实体用`ShoppingCart`数据对象表示，它包含着一个商品列表表示当前购物车中的商品即数量：
+
+```java
+private List<ProductTuple> productItems = new ArrayList<>();
+```
+
+其中`ProductTuple`数据对象包含着商品号、商品卖家ID、单价以及当前购物车中次商品的数目`amount`。
+
+为了方便，我们还在`ShoppingCart`类中放了一个`amountMap`用于暂时存储商品数量：
+
+```java
+private Map<String, Integer> amountMap = new HashMap<>();
+```
+
+由于它只是暂时存储，我们不希望在对应的JSON数据中看到它，所以把它的getter和setter方法都注解上`@GenIgnore`。
+
+在事件溯源模式中，我们要从一系列的购物车事件构建对应的购物车状态，因此我们需要一个`incorporate`方法将每个购物车事件“合并”至购物车内以变更对应的商品数目：
+
+```java
+public ShoppingCart incorporate(CartEvent cartEvent) {
+  // 此事件必须为添加或删除事件
+  boolean ifValid = Stream.of(CartEventType.ADD_ITEM, CartEventType.REMOVE_ITEM)
+    .anyMatch(cartEventType ->
+      cartEvent.getCartEventType().equals(cartEventType));
+
+  if (ifValid) {
+    amountMap.put(cartEvent.getProductId(),
+      amountMap.getOrDefault(cartEvent.getProductId(), 0) +
+        (cartEvent.getAmount() * (cartEvent.getCartEventType()
+          .equals(CartEventType.ADD_ITEM) ? 1 : -1)));
+  }
+
+  return this;
+}
+```
+
+实现倒是比较简单，我们首先来检查要合并的事件是不是添加商品或移除商品事件，如果是的话，我们就根据事件类型以及对应的数量变更来改变当前购物车中该商品的数量(`amountMap`)。
+
+## 使用Rx版本的Vert.x JDBC
+
+我们现在已经了解购物车微服务中的实体类了，下面该看看购物车事件存储服务了。
+
+之前用callback-based API写Vert.x JDBC操作总感觉心累，还好Vert.x支持与RxJava进行整合，并且几乎每个Vert.x组件都有对应的Rx版本！是不是瞬间感觉整个人都变得Reactive了呢～(⊙o⊙) 这里我们就来使用Rx版本的Vert.x JDBC来写我们的购物车事件存储服务。也就是说，里面所有的异步方法都将是基于`Observable`的，很有FRP风格！
+
+我们首先定义了一个简单的CRUD接口`SimpleCrudDataSource`：
+
+```java
+public interface SimpleCrudDataSource<T, ID> {
+
+  Observable<Void> save(T entity);
+
+  Observable<T> retrieveOne(ID id);
+
+  Observable<Void> delete(ID id);
+
+}
+```
+
+接着定义了一个`CartEventDataSource`接口，定义了购物车事件获取的相关方法：
+
+```java
+public interface CartEventDataSource extends SimpleCrudDataSource<CartEvent, Long> {
+
+  Observable<CartEvent> streamByUser(String userId);
+
+}
+```
+
+可以看到这个接口只有一个方法 —— `streamByUser`方法会返回某一用户对应的购物车事件流，这样后面我们就可以对其进行流式变换操作了！
+
+下面我们来看一下服务的实现类`CartEventDataSourceImpl`。首先是`save`方法，它将一个事件存储至事件数据库中：
+
+```java
+@Override
+public Observable<Void> save(CartEvent cartEvent) {
+  JsonArray params = new JsonArray().add(cartEvent.getCartEventType().name())
+    .add(cartEvent.getUserId())
+    .add(cartEvent.getProductId())
+    .add(cartEvent.getAmount())
+    .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
+  return client.getConnectionObservable()
+    .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params))
+    .map(r -> null);
+}
+```
+
+看看我们的代码，在对比对比普通的callback-based的Vert.x JDBC，是不是更加简洁，更加Reactive呢？我们可以非常简单地通过`getConnectionObservable`方法获取数据库连接，然后组合`updateWithParamsObservable`方法执行对应的含参SQL语句。只需要两行有木有！而如果用callback-based的风格的话，你只能这么写：
+
+```java
+client.getConnection(ar -> {
+  if (ar.succeeded) {
+    SQLConnection connection = ar.result();
+    connection.updateWithParams(SAVE_STATEMENT, params, ar2 -> {
+      // ...
+    })
+  } else {
+    resultHandler.handle(Future.failedFuture(ar.cause()));
+  }
+})
+```
+
+因此，使用RxJava是非常愉快的一件事！当然`vertx-sync`也是一个不错的选择。
+
+当然，不要忘记返回的`Observable`是 **cold** 的，因此只有在它被`subscribe`的时候，数据才会被发射。
+
+不过话说回来了，Vert.x JDBC底层本质还是阻塞型的调用，要实现真正的异步数据库操作，我们可以利用 Vert.x MySQL / PostgreSQL Client 这个组件，底层使用Scala写的异步数据库操作库，不过目前还不是很稳定，大家可以自己尝尝鲜。
+
+下面我们再来看一下`retrieveOne`方法，它从数据存储中获取特定ID的事件：
+
+```java
+@Override
+public Observable<CartEvent> retrieveOne(Long id) {
+  return client.getConnectionObservable()
+    .flatMap(conn -> conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id)))
+    .map(ResultSet::getRows)
+    .filter(list -> !list.isEmpty())
+    .map(res -> res.get(0))
+    .map(this::wrapCartEvent);
+}
+```
+
+非常简洁明了，就像之前我们的基于`Future`的范式相似，因此这里就不再详细解释了～
+
+下面我们来看一下里面最重要的方法 —— `streamByUser`方法：
+
+```java
+@Override
+public Observable<CartEvent> streamByUser(String userId) {
+  JsonArray params = new JsonArray().add(userId).add(userId);
+  return client.getConnectionObservable()
+    .flatMap(conn -> conn.queryWithParamsObservable(STREAM_STATEMENT, params))
+    .map(ResultSet::getRows)
+    .flatMapIterable(item -> item) // list merge into observable
+    .map(this::wrapCartEvent);
+}
+```
+
+其核心在于它的SQL语句`STREAM_STATEMENT`：
+
+```sql
+SELECT * FROM cart_event c
+WHERE c.user_id = ? AND c.created_at > coalesce(
+    (SELECT created_at FROM cart_event
+	   WHERE user_id = ? AND (`type` = "CHECKOUT" OR `type` = "CLEAR_CART")
+     ORDER BY cart_event.created_at DESC
+     LIMIT 1),
+    0)
+ORDER BY c.created_at ASC;
+```
+
+此SQL语句执行时会获取与当前购物车相关的所有购物车事件。注意到我们有许多用户，每个用户可能会有许多购物车事件，它们属于不同时间的购物车，那么如何来获取相关的事件呢？方法是 —— 首先我们获取最近一次“终结”事件发生对应的时间，那么当前购物车相关的购物车事件就是在此终结事件发生后所有的购物车事件。
+
+明白了这一点，我们再回到`streamByUser`方法中来。既然此方法是从数据库中获取一个事件列表，那么为什么此方法返回`Observable<CartEvent>`而不是`Observable<List<CartEvent>>`呢？我们来看看其中的奥秘 —— `flatMapIterable`算子，它将一个序列变换为一串数据流。所以，这里的`Observable<CartEvent>`与Vert.x中的`Future`以及Java 8中的`CompletableFuture`就有些不同了。`CompletableFuture`更像是RxJava中的`Single`，它仅仅发送一个值或一个错误信息，而`Observable`本身则就像是一个数据流，数据源源不断地从发布者流向订阅者。之前`retrieveOne`和`save`方法中返回的`Observable`的使用更像是一个`Single`，但是在`streamByUser`方法中，`Observable`是真真正正的事件数据流。我们将会在购物车服务`ShoppingCartService`中处理事件流。
+
+哇！现在你一定又被Rx这种函数响应式风格所吸引了～在下面的部分中，我们将探索购物车服务及其实现，基于`Future`，同样非常Reactive！
+
+## 根据购物车事件序列构建对应的购物车状态
+
+我们首先来看一下`ShoppingCartService` —— 购物车服务接口，它也是一个Event Bus服务：
+
+```java
+@VertxGen
+@ProxyGen
+public interface ShoppingCartService {
+
+  /**
+   * The name of the event bus service.
+   */
+  String SERVICE_NAME = "shopping-cart-eb-service";
+
+  /**
+   * The address on which the service is published.
+   */
+  String SERVICE_ADDRESS = "service.shopping.cart";
+
+  @Fluent
+  ShoppingCartService addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler);
+
+  @Fluent
+  ShoppingCartService getShoppingCart(String userId, Handler<AsyncResult<ShoppingCart>> resultHandler);
+
+}
+```
+
+这里我们定义了两个方法：`addCartEvent`用于将购物车事件存储至事件存储中；`getShoppingCart`方法用于获取某个用户当前购物车的状态。
+
+下面我们来看一下其实现类 —— `ShoppingCartServiceImpl`。首先是`addCartEvent`方法，它非常简单：
+
+```java
+@Override
+public ShoppingCartService addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler) {
+  Future<Void> future = Future.future();
+  repository.save(event).toSingle().subscribe(future::complete, future::fail);
+  future.setHandler(resultHand
+  return this;
+}
+```
+
+正如之前我们所提到的，这里`save`方法返回的`Observable`其实更像个`Single`，因此我们将其通过`toSingle`方法变换为`Single`，然后通过`subscribe(future::complete, future::fail)`将其转化为`Future`以便于给其绑定一个`Handler<AsyncResult<Void>>`类型的处理函数。
+
+而`getShoppingCart`方法的逻辑位于`aggregateCartEvents`方法中，此方法非常重要，并且是基于`Future`的。我们先来看一下代码：
+
+```java
+private Future<ShoppingCart> aggregateCartEvents(String userId) {
+  Future<ShoppingCart> future = Future.future();
+  // aggregate cart events into raw shopping cart
+  repository.streamByUser(userId) // (1)
+    .takeWhile(cartEvent -> !CartEvent.isTerminal(cartEvent.getCartEventType())) // (2)
+    .reduce(new ShoppingCart(), ShoppingCart::incorporate) // (3)
+    .toSingle()
+    .subscribe(future::complete, future::fail); // (4)
+
+  return future.compose(cart ->
+    getProductService() // (5)
+      .compose(service -> prepareProduct(service, cart)) // (6) prepare product data
+      .compose(productList -> generateCurrentCartFromStream(cart, productList)) // (7) prepare product items
+  );
+}
+```
+
+我们来详细地解释一下。首先我们先创建个`Future`，然后先通过`repository.streamByUser(userId)`方法获取事件流（1），然后我们使用`takeWhile`算子来获取所有的`ADD_ITEM`和`REMOVE_ITEM`类型的事件（2）。`takeWhile`算子在判定条件变为假时停止发射新的数据，因此当事件流遇到一个终结事件时，新的事件就不再往外发送了，之前的事件将会继续被传递。
+
+下面就是产生购物车状态的过程了！我们通过`reduce`算子将事件流来“聚合”成购物车实体（3）。这个过程可以总结为以下几步：首先我们先创建一个空的购物车，然后依次将各个购物车事件“合并”至购物车实体中。最后聚合而成的购物车实体应该包含一个完整的`amountMap`。
+
+现在此`Observable`已经包含了我们想要的初始状态的购物车了。我们将其转化为`Single`然后通过`subscribe(future::complete, future::fail)`转化为`Future`（4）。
+
+现在我们需要更多的信息以组件一个完整的购物车，所以我们首先组合`getProductService`异步方法来从服务发现层获取商品服务（5），然后通过`prepareProduct`方法来获取需要的商品数据（6），最后通过`generateCurrentCartFromStream`异步方法组合出完整的购物车实体（7）。这里面包含了好几个组合过程，我们来一一解释。
+
+首先来看`getProductService`异步方法。它用于从服务发现层获取商品服务，然后返回其异步结果：
+
+```java
+private Future<ProductService> getProductService() {
+  Future<ProductService> future = Future.future();
+  EventBusService.getProxy(discovery,
+    new JsonObject().put("name", ProductService.SERVICE_NAME),
+    future.completer());
+  return future;
+}
+```
+
+现在我们获取到商品服务了，那么下一步自然是获取需要的商品数据了。这个过程通过`prepareProduct`异步方法实现：
+
+```java
+private Future<List<Product>> prepareProduct(ProductService service, ShoppingCart cart) {
+  List<Future<Product>> futures = cart.getAmountMap().keySet() // (1)
+    .stream()
+    .map(productId -> {
+      Future<Product> future = Future.future();
+      service.retrieveProduct(productId, future.completer());
+      return future; // (2)
+    })
+    .collect(Collectors.toList()); // (3)
+  return Functional.sequenceFuture(futures); // (4)
+}
+```
+
+在此实现中，首先我们从`amountMap`中获取购物车中所有商品的ID（1），然后我们根据每个ID异步调用商品服务的`retrieveProduct`方法并且以`Future`包装（2），然后将此流转化为`List<Future<Product>>`类型的列表（3）。我们这里想获得的是所有商品的异步结果，即`Future<List<Product>>`，那么如何转换呢？这里我写了一个辅助函数`sequenceFuture`来实现这样的变换，它位于`io.vertx.blueprint.microservice.common.functional`包下的`Functional`类中：
+
+```java
+public static <R> Future<List<R>> sequenceFuture(List<Future<R>> futures) {
+  return CompositeFutureImpl.all(futures.toArray(new Future[futures.size()])) // (1)
+    .map(v -> futures.stream()
+        .map(Future::result) // (2)
+        .collect(Collectors.toList()) // (3)
+    );
+}
+```
+
+此方法对于想将一个Future序列变换成单个Future的情况非常有用。这里我们首先调用`CompositeFutureImpl`类的`all`方法（1），它返回一个组合的Future，当且仅当序列中所有的Future都成功完成时，它为成功状态，否则为失败状态。下面我们就对此组合Future做变换：获取每个`Future`对应的结果（因为`all`方法已经强制获取所有结果），然后归结成列表（3）。
+
+回到之前的组合中来！现在我们得到了我们需要的商品信息列表`List<Product>`，接下来就根据这些信息来构建完整的购物车实体了！我们来看一下`generateCurrentCartFromStream`方法的实现：
+
+```java
+private Future<ShoppingCart> generateCurrentCartFromStream(ShoppingCart rawCart, List<Product> productList) {
+  Future<ShoppingCart> future = Future.future();
+  // check if any of the product is invalid
+  if (productList.stream().anyMatch(e -> e == null)) { // (1)
+    future.fail("Error when retrieve products: empty");
+    return future;
+  }
+  // construct the product items
+  List<ProductTuple> currentItems = rawCart.getAmountMap().entrySet() // (2)
+    .stream()
+    .map(item -> new ProductTuple(getProductFromStream(productList, item.getKey()), // (3)
+      item.getValue())) // (4) amount value
+    .filter(item -> item.getAmount() > 0) // (5) amount must be greater than zero
+    .collect(Collectors.toList());
+
+  ShoppingCart cart = rawCart.setProductItems(currentItems); // (6)
+  return Future.succeededFuture(cart); // (7)
+}
+```
+
+看起来非常混乱的样子。。。不要担心，我们慢慢来～注意这个方法本身不是异步的，但我们需要表示此方法成功或失败两种状态(即`AsyncResult`)，所以此方法仍然返回`Future`。首先我们创建一个`Future`，然后通过`anyMatch`方法检查商品列表是否合法（1）。若不合法，返回一个失败的`Future`；若合法，我们对每个商品依次构建出对应的`ProductTuple`。在（3）中，我们通过这个构造函数来构建`ProductTuple`:
+
+```java
+public ProductTuple(Product product, Integer amount) {
+  this.productId = product.getProductId();
+  this.sellerId = product.getSellerId();
+  this.price = product.getPrice();
+  this.amount = amount;
+}
+```
+
+其中第一个参数是对应的商品实体。为了从列表中获取对应的商品实体，我们写了一个`getProductFromStream`方法：
+
+```java
+private Product getProductFromStream(List<Product> productList, String productId) {
+  return productList.stream()
+    .filter(product -> product.getProductId().equals(productId))
+    .findFirst()
+    .get();
+}
+```
+
+当每个商品的`ProductTuple`都构建完毕的时候，我们就可以将列表赋值给对应的购物车实体了（6），并且返回购物车实体结果（7）。现在我们终于整合出一个完整的购物车了！
+
+## 结算 - 根据购物车产生订单
+
+现在我们已经选好了自己喜爱的商品，把购物车填的慢慢当当了，下面是时候进行结算了！我们这里同样定义了一个结算服务接口`CheckoutService`，它只包含一个特定的方法：`checkout`：
+
+```java
+@VertxGen
+@ProxyGen
+public interface CheckoutService {
+
+  /**
+   * The name of the event bus service.
+   */
+  String SERVICE_NAME = "shopping-checkout-eb-service";
+
+  /**
+   * The address on which the service is published.
+   */
+  String SERVICE_ADDRESS = "service.shopping.cart.checkout";
+
+  /**
+   * Order event source address.
+   */
+  String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
+
+  /**
+   * Create a shopping checkout service instance
+   */
+  static CheckoutService createService(Vertx vertx, ServiceDiscovery discovery) {
+    return new CheckoutServiceImpl(vertx, discovery);
+  }
+
+  void checkout(String userId, Handler<AsyncResult<CheckoutResult>> handler);
+
+}
+```
+
+接口非常简单，下面我们来看其实现 —— `CheckoutServiceImpl`类。尽管接口只包含一个`checkout`方法，但我们都知道结算过程可不简单。。。它包含库存检测、付款（这里暂时省掉了）以及生成订单的逻辑。我们先来看看`checkout`方法的源码：
+
+```java
+@Override
+public void checkout(String userId, Handler<AsyncResult<CheckoutResult>> resultHandler) {
+  if (userId == null) { // (1)
+    resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid user")));
+    return;
+  }
+  Future<ShoppingCart> cartFuture = getCurrentCart(userId); // (2)
+  Future<CheckoutResult> orderFuture = cartFuture.compose(cart ->
+    checkAvailableInventory(cart).compose(checkResult -> { // (3)
+      if (checkResult.getBoolean("res")) { // (3)
+        double totalPrice = calculateTotalPrice(cart); // (4)
+        // 创建订单实体
+        Order order = new Order().setBuyerId(userId) // (5)
+          .setPayId("TEST")
+          .setProducts(cart.getProductItems())
+          .setTotalPrice(totalPrice);
+        // 设置订单流水号，然后向订单组件发送订单并等待回应
+        return retrieveCounter("order") // (6)
+          .compose(id -> sendOrderAwaitResult(order.setOrderId(id))) // (7)
+          .compose(result -> saveCheckoutEvent(userId).map(v -> result)); // (8)
+      } else {
+        // 库存不足，结算失败
+        return Future.succeededFuture(new CheckoutResult()
+          .setMessage(checkResult.getString("message"))); // (9)
+      }
+    })
+  );
+
+  orderFuture.setHandler(resultHandler); // (10)
+}
+```
+
+好吧，我们又看到了大量的`compose`。。。是的，这里我们又组合了很多基于`Future`的异步方法。首先我们先来判断给定的`userId`是否合法（1），如果不合法的话立刻让`Future`失败掉；若用户合法，我们就通过`getCurrentCart`方法获取给定用户的当前购物车状态（2）。这个过程是异步的，所以此方法返回`Future<ShoppingCart>`类型的异步结果：
+
+```java
+private Future<ShoppingCart> getCurrentCart(String userId) {
+  Future<ShoppingCartService> future = Future.future();
+  EventBusService.getProxy(discovery,
+    new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
+    future.completer());
+  return future.compose(service -> {
+    Future<ShoppingCart> cartFuture = Future.future();
+    service.getShoppingCart(userId, cartFuture.completer());
+    return cartFuture.compose(c -> {
+      if (c == null || c.isEmpty())
+        return Future.failedFuture(new IllegalStateException("Invalid shopping cart"));
+      else
+        return Future.succeededFuture(c);
+    });
+  });
+}
+```
+
+在`getCurrentCart`方法中，我们通过`EventBusService`接口的`getProxy`方法从服务发现层获取购物车服务；然后我们调用购物车服务的`getShoppingCart`方法获取购物车。这里我们还需要检验购物车是否为空，购物车不为空的话就返回异步结果，为空的话结算显然不合适，返回不合法错误。
+
+你可能已经注意到了`checkout`方法会产生一个`CheckoutResult`类型的异步结果，这代表结算的结果：
+
+```java
+@DataObject(generateConverter = true)
+public class CheckoutResult {
+  private String message; // 结算结果信息
+  private Order order; // 若成功，此项为订单实体
+}
+```
+
+回到我们的`checkout`方法中来。现在我们要从获取到的`cartFuture`进行一系列的操作，最终得到`Future<CheckoutResult>`类型的结算结果。那么进行哪些操作呢？首先我们组合`checkAvailableInventory`异步方法，它用于获取商品库存检测数据，后面我们讲详细讨论其实现。接着我们检查获取到的商品库存数据，判断是否所有库存都充足（3）。如果不充足的话，我们直接返回一个`CheckoutResult`并标记库存不足的信息（9）。如果库存充足，我们就计算出此订单的总价（4）然后生成订单`Order`（5）。订单用`Order`数据对象表示，它包含以下信息：
+
+- 买家ID
+- 每个所选商品的数量、单价以及卖家ID
+- 商品总价
+
+生成初始订单之后，我们需要从计数器服务中生成该订单的流水号（6），接着通过Event Bus向订单组件中发送订单数据，并且等待结账结果`CheckoutResult`（7）。这些都做完以后，我们向事件存储中添加购物车结算事件（8）。最后我们向最终得到的`orderFuture`绑定`resultHandler`处理函数（10）。当结账结果回复过来的时候，处理函数将会被调用。
+
+下面我们来解释一下上面出现过的一些异步过程。首先是最先提到的用于准备库存数据的`checkAvailableInventory`方法：
+
+```java
+private Future<JsonObject> checkAvailableInventory(ShoppingCart cart) {
+  Future<List<JsonObject>> allInventories = getInventoryEndpoint().compose(client -> { // (1)
+    List<Future<JsonObject>> futures = cart.getProductItems() // (2)
+      .stream()
+      .map(product -> getInventory(product, client)) // (3)
+      .collect(Collectors.toList());
+    return Functional.sequenceFuture(futures); // (4)
+  });
+  return allInventories.map(inventories -> {
+    JsonObject result = new JsonObject();
+    // get the list of products whose inventory is lower than the demand amount
+    List<JsonObject> insufficient = inventories.stream()
+      .filter(item -> item.getInteger("inventory") - item.getInteger("amount") < 0) // (5)
+      .collect(Collectors.toList());
+    // insufficient inventory exists
+    if (insufficient.size() > 0) {
+      String insufficientList = insufficient.stream()
+        .map(item -> item.getString("id"))
+        .collect(Collectors.joining(", ")); // (6)
+      result.put("message", String.format("Insufficient inventory available for product %s.", insufficientList))
+        .put("res", false); // (7)
+    } else {
+      result.put("res", true); // (8)
+    }
+    return result;
+  });
+}
+```
+
+有点复杂呢。。。首先我们通过`getInventoryEndpoint`方法来从服务发现层获取商品库存组件对应的REST端点（1）。这是对`HttpEndpoint`接口的`getClient`方法的简单封装：
+
+```java
+private Future<HttpClient> getInventoryEndpoint() {
+  Future<HttpClient> future = Future.future();
+  HttpEndpoint.getClient(discovery,
+    new JsonObject().put("name", "inventory-rest-api"), // service name
+    future.completer());
+  return future;
+}
+```
+
+接着我们又要组合另一个`Future`。在这个过程中，我们从购物车中获取商品列表（2），然后将每个`ProductTuple`都变换成对应的商品ID以及对应库存（3）。之前我们已经获取到库存服务REST端点对应的`HttpClient`了，下面我们就可以通过客户端来获取每个商品的库存。获取库存的过程是在`getInventory`方法中实现的：
+
+```java
+private Future<JsonObject> getInventory(ProductTuple product, HttpClient client) {
+  Future<Integer> future = Future.future(); // (A)
+  client.get("/" + product.getProductId(), response -> { // (B)
+    if (response.statusCode() == 200) { // (C)
+      response.bodyHandler(buffer -> {
+        try {
+          int inventory = Integer.valueOf(buffer.toString()); // (D)
+          future.complete(inventory);
+        } catch (NumberFormatException ex) {
+          future.fail(ex);
+        }
+      });
+    } else {
+      future.fail("not_found:" + product.getProductId()); // (E)
+    }
+  })
+    .exceptionHandler(future::fail)
+    .end();
+  return future.map(inv -> new JsonObject()
+    .put("id", product.getProductId())
+    .put("inventory", inv)
+    .put("amount", product.getAmount())); // (F)
+}
+```
+
+过程非常简洁明了。首先我们先创建一个`Future<Integer>`来保存库存数量异步结果（A）。然后我们调用`client`的`get`方法来发送获取库存的请求（B）。在对回应的处理逻辑`responseHandler`中，如果结果状态为 **200 OK**（C），我们就可以通过`bodyHandler`来解析回应正文并将其转换为`Integer`类型（D）。这几个过程都完成后，对应的future会被赋值为对应的库存数量；如果结果状态不正常（比如400或404），那么我们就可以认为获取失败，将future置为失败状态（E）。
+
+只有库存数量是不够的（因为我们不知道库存对应哪个商品），因此为了方便起见，我们将库存数量和对应的商品号以及购物车中选定的数量都塞进一个`JsonObject`中，最后将`Future<Integer>`变换为`Future<JsonObject>`类型的结果（F）。
+
+再回到`checkAvailableInventory`方法中来。
+
+## 向订单模块发送订单
+
+## 购物车服务REST API
+
+## Cart Verticle
+
+
+# 订单服务
+
+## 消费消息源发送来的数据
+
+## “处理”订单
+
+# Micro Shop SPA整合
+
+# 监控仪表板与统计数据
+
+## SockJS - Event bus bridge
+
+## 将统计数据发送至Event Bus
+
+## 在浏览器端接收Event Bus上的消息
+
+# 展示时间！
+
+# 完结！
+
+不错不错！我们终于到达了微服务旅途的终点！恭喜！我们非常希望你能够喜欢此蓝图教程，并且掌握到关于Vert.x和微服务的知识 :-)
+
+以下是关于微服务和分布式系统的一些推荐阅读材料：
+
+- [Microservices - a definition of this new architectural term](http://martinfowler.com/articles/microservices.html)
+- [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html)
+- [Cloud Design Patterns: Prescriptive Architecture Guidance for Cloud Applications](https://msdn.microsoft.com/en-us/library/dn568099.aspx)
+
+享受微服务狂欢吧！

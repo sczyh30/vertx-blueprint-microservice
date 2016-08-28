@@ -1,0 +1,8 @@
+- [API Gateway是什么？](#api-gateway是什么-)
+- [Circuit Breaker](#circuit-breaker)
+- [用Vert.x实现API Gateway](#用vert-x实现api-gateway)
+	- [总览](#总览)
+	- [面向失败设计 — 基于断路器](#面向失败设计-基于断路器)
+	- [反向代理 - 分发请求](#反向代理-分发请求)
+	- [权限管理](#权限管理)
+	- [简单的心跳检测](#简单的心跳检测)
