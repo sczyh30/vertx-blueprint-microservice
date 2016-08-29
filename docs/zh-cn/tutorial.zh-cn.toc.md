@@ -11,7 +11,7 @@
 	- [Base Microservice Verticle](#base-microservice-verticle)
 	- [REST API Verticle](#rest-api-verticle)
 - [API Gateway](#api-gateway)
-- [Event Bus 服务 - 账户、网店及商品服务](#event-bus-服务-账户网店及商品服务)
+- [Event Bus 服务 - 账户、网店及商品服务](#event-bus-服务-账户-网店及商品服务)
 	- [在Event Bus上进行异步RPC](#在event-bus上进行异步rpc)
 	- [几个服务模块的通用特性](#几个服务模块的通用特性)
 	- [基于MySQL的商品服务](#基于mysql的商品服务)

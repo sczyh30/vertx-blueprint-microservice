@@ -1044,7 +1044,7 @@ Now let's step into the implementation class `ShoppingCartServiceImpl`. First se
 @Override
 public ShoppingCartService addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler) {
   Future<Void> future = Future.future();
-  repository.save(event).subscribe(future::complete, future::fail);
+  repository.save(event).toSingle().subscribe(future::complete, future::fail);
   future.setHandler(resultHandler);
   return this;
 }
@@ -1146,7 +1146,7 @@ private Future<ShoppingCart> generateCurrentCartFromStream(ShoppingCart rawCart,
 }
 ```
 
-Notice that the method doesn't require asynchronous, but we need to demonstrate a failure or success state, so here we still return a `Future`. First we create a `Future`, then we check if any of the products is invalid using `anyMatch` method (2). If invalid, return a failed future. Then we construct the product items `ProductTuple` from the retrieved data. Here we use this constructor of `ProductTuple` class:
+Notice that the method doesn't require asynchronous, but we need to demonstrate a failure or success state, so here we still return a `Future`. First we create a `Future`, then we check if any of the products is invalid using `anyMatch` method (1). If invalid, return a failed future. Then we construct the product items `ProductTuple` from the retrieved data. Here we use this constructor of `ProductTuple` class:
 
 ```java
 public ProductTuple(Product product, Integer amount) {
@@ -1226,9 +1226,9 @@ public void checkout(String userId, Handler<AsyncResult<CheckoutResult>> resultH
           .setProducts(cart.getProductItems())
           .setTotalPrice(totalPrice);
         // set id and then send order, wait for reply
-        return saveCheckoutEvent(userId) // (6)
-          .compose(eventSaved -> retrieveCounter("order")) // (7)
-          .compose(id -> sendOrderAwaitResult(order.setOrderId(id))); // (8)
+        return retrieveCounter("order") // (6)
+          .compose(id -> sendOrderAwaitResult(order.setOrderId(id))) // (7)
+          .compose(result -> saveCheckoutEvent(userId).map(v -> result)); // (8)
       } else {
         // has insufficient inventory, fail
         return Future.succeededFuture(new CheckoutResult()
@@ -1280,7 +1280,7 @@ So we'll generate a `Future<CheckoutResult>` from the retrieved `cartFuture`. We
 - amount, seller, unit price for each selected products
 - total price
 
-Next we save the checkout cart event to the event store (6), retrieve new order id from the global counter (7) and then send the order to order components and await for `CheckoutResult` (8).
+Next, we retrieve new order id from the global counter (6) and then send the order to order components and await for `CheckoutResult` (7). After done, we save the checkout cart event to the event store (8).
 
 Finally we set `resultHandler` on the `orderFuture` (10). When it is assigned, the handler will be called.
 
@@ -1374,26 +1374,9 @@ return cart.getProductItems().stream()
   .reduce(0.0d, (a, b) -> a + b);
 ```
 
-As we've mentioned above in the `checkout` method, after generating new raw order, we have three asynchronous method composition: `saveCheckoutEvent -> retrieveCounter -> sendOrderAwaitResult`. Let's have a look.
+As we've mentioned above in the `checkout` method, after generating new raw order, we have three asynchronous method composition: `retrieveCounter -> sendOrderAwaitResult -> saveCheckoutEvent`. Let's have a look.
 
-The `saveCheckoutEvent` method is quite similar to `getCurrentCart` method as they all get `ShoppingCartService` from the discovery infrastructure and then call an asynchronous method of the service:
-
-```java
-private Future<Void> saveCheckoutEvent(String userId) {
-  Future<ShoppingCartService> future = Future.future();
-  EventBusService.getProxy(discovery,
-    new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
-    future.completer());
-  return future.compose(service -> {
-    Future<Void> resFuture = Future.future();
-    CartEvent event = CartEvent.createCheckoutEvent(userId);
-    service.addCartEvent(event, resFuture.completer());
-    return resFuture;
-  });
-}
-```
-
-Having saved the checkout cart event, we then retrieve the counter of order id from `CounterService` in the `cache-infrastructure`:
+we first retrieve the counter of order id from `CounterService` in the `cache-infrastructure`:
 
 ```java
 private Future<Long> retrieveCounter(String key) {
@@ -1413,6 +1396,23 @@ private Future<Long> retrieveCounter(String key) {
 ```
 
 Of course you can also use the original auto-increment counter in RDBMS but if you have several database nodes, you will have to maintain the consistency of the counter manually.
+
+Then we save the cart checkout event. The `saveCheckoutEvent` method is quite similar to `getCurrentCart` method as they all get `ShoppingCartService` from the discovery infrastructure and then call an asynchronous method of the service:
+
+```java
+private Future<Void> saveCheckoutEvent(String userId) {
+  Future<ShoppingCartService> future = Future.future();
+  EventBusService.getProxy(discovery,
+    new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
+    future.completer());
+  return future.compose(service -> {
+    Future<Void> resFuture = Future.future();
+    CartEvent event = CartEvent.createCheckoutEvent(userId);
+    service.addCartEvent(event, resFuture.completer());
+    return resFuture;
+  });
+}
+```
 
 ## Send orders to order microservice
 
@@ -1458,8 +1458,8 @@ router.get(API_GET_CART).handler(context -> requireLogin(context, this::apiGetCa
 As for implementations, they are very simple and here we only describe one `apiAddCartEvent` method:
 
 ```java
-private void apiAddCartEvent(RoutingContext context, JsonObject principle) {
-  String userId = Optional.ofNullable(principle.getString("userId"))
+private void apiAddCartEvent(RoutingContext context, JsonObject principal) {
+  String userId = Optional.ofNullable(principal.getString("userId"))
     .orElse(TEST_USER); // (1)
   CartEvent cartEvent = new CartEvent(context.getBodyAsJson()); // (2)
   if (validateEvent(cartEvent, userId)) {
@@ -1542,7 +1542,7 @@ private void dispatchOrder(Order order, Message<JsonObject> sender) {
 }
 ```
 
-First we create a future indicating the result of creating an order. Then we call `createOrder` method of `orderService` to save the order into the database (1). As we set `orderCreateFuture.completer()` as the result handler, the `orderCreateFuture` will be assigned as soon as the create procedure is finished (or failed). Then we compose the future with `applyInventoryChanges` method to modify inventory amount changes (2). If the two procedures are successful, we then create a success `CheckoutResult` (3) and reply to the sender with the result by calling `reply` method (4). After that we publish the event to notify the log component (5). If the procedures failed, we should notify the sender of the failure with `fail` method (6).
+First we create a future indicating the result of adding an order into database. Then we call `createOrder` method of `orderService` to save the order into the database (1). As we set `orderCreateFuture.completer()` as the result handler, the `orderCreateFuture` will be assigned as soon as the save procedure is finished (or failed). Then we compose the future with `applyInventoryChanges` method to modify inventory amount changes (2). If the two procedures are successful, we then create a success `CheckoutResult` (3) and reply to the sender with the result by calling `reply` method (4). After that we publish the event to notify the log component (5). If the procedures failed, we should notify the sender of the failure with `fail` method (6).
 
 Very easy yeah? Let's then take a look at `applyInventoryChanges` method:
 
@@ -1719,11 +1719,11 @@ If we run the microservice for the first time, we must configure the **Keycloak*
 0.0.0.0	keycloak-server
 ```
 
-Then we should visit `http://keycloak-server:8080` and enter the admin console. By default the user and password is `admin`. Now we enter into the admin dashboard. First we should create a new realm with any name. Then in this realm, we create a new client like this:
+Then we should visit `http://keycloak-server:8080` and enter the admin console. By default the user and password is all **admin**. Now we enter into the admin dashboard. First we should create a new realm with any name. Then in this realm, we create a new client like this:
 
 ![Keycloak configuration](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/keycloak-client-config.png)
 
-After created, we shep into the **** tab and copy the JSON configuration. Replace the corresponding part of `api-gateway/src/config/docker.json` file with the copied configuration. For example:
+After created, we shep into the **Installation** tab and copy the JSON configuration. Replace the corresponding part of `api-gateway/src/config/docker.json` file with the copied configuration. For example:
 
 ```json
 {

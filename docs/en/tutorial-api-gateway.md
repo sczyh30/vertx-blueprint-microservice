@@ -270,9 +270,7 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
     toReq.putHeader(header.getKey(), header.getValue());
   });
   if (context.user() != null) {
-    toReq.putHeader("user-principle", context.user().principal().encode());
-  } else {
-    toReq.putHeader("redirect-saved", generateAuthRedirectURI());
+    toReq.putHeader("user-principal", context.user().principal().encode());
   }
   // send request
   if (context.getBody() == null) { // (3)

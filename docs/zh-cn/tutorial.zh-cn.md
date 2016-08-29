@@ -1300,32 +1300,418 @@ private Future<JsonObject> getInventory(ProductTuple product, HttpClient client)
 
 只有库存数量是不够的（因为我们不知道库存对应哪个商品），因此为了方便起见，我们将库存数量和对应的商品号以及购物车中选定的数量都塞进一个`JsonObject`中，最后将`Future<Integer>`变换为`Future<JsonObject>`类型的结果（F）。
 
-再回到`checkAvailableInventory`方法中来。
+再回到`checkAvailableInventory`方法中来。在(3)过程之后，我们有的到了一个Future列表，所以我们再次调用`Functional.sequenceFuture`方法将其变换成`Future<List<JsonObject>>`类型（4）。现在我们可以来检查每个库存是否都充足了！我们创建了一个列表`insufficient`专门存储库存不足的商品，这是通过`filter`算子实现的（5）。如果库存不足的商品列表不为空，那就是说有商品库存不足，所以我们需要获取每个库存不足的商品ID并把其归纳成一串信息。这里我们通过`collect`算子实现的：`collect(Collectors.joining(", "))` （6）。这个小trick还是很好使的，比如列表`[TST-0001, TST-0002, BK-16623]`会被归结成 "TST-0001, TST-0002, BK-16623" 这样的字符串。生成库存不足商品的信息以后，我们将此信息置于`JsonObject`中。同时，我们在此`JsonObject`中用一个bool型的`res`来表示商品库存是否充足，因此这里我们将`res`的值设为false（7）。
+
+如果之前获得的库存不足的商品列表为空，那么就代表所有商品余额充足，我们就将`res`的值设为true（8），最后返回异步结果`future`。
+
+再回到那一串组合中。我们接着通过`calculateTotalPrice`方法来计算购物车中商品的总价，以便为订单生成提供信息。这个过程很简单：
+
+```java
+return cart.getProductItems().stream()
+  .map(p -> p.getAmount() * p.getPrice()) // join by product id
+  .reduce(0.0d, (a, b) -> a + b);
+```
+
+正如之前在`checkout`方法中提到的那样，在创建原始订单之后，我们会对结果进行三个组合：`retrieveCounter -> sendOrderAwaitResult -> saveCheckoutEvent`。我们来看一下。
+
+我们首先从缓存组件的计数器服务中生成当前订单的流水号：
+
+```java
+private Future<Long> retrieveCounter(String key) {
+  Future<Long> future = Future.future();
+  EventBusService.<CounterService>getProxy(discovery,
+    new JsonObject().put("name", "counter-eb-service"),
+    ar -> {
+      if (ar.succeeded()) {
+        CounterService service = ar.result();
+        service.addThenRetrieve(key, future.completer());
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+  return future;
+}
+```
+
+当然你也可以直接用数据库自带的`AUTO INCREMENT`计数器，不过当有多台数据库服务器的时候，我们需要保证计数器在集群内的一致性。
+
+接着我们通过`saveCheckoutEvent`方法存储购物车结算事件，其实现和`getCurrentCart`方法非常类似。它们都是先从服务发现层中获取购物车服务，然后再异步调用对应的逻辑：
+
+```java
+private Future<Void> saveCheckoutEvent(String userId) {
+  Future<ShoppingCartService> future = Future.future();
+  EventBusService.getProxy(discovery,
+    new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
+    future.completer());
+  return future.compose(service -> {
+    Future<Void> resFuture = Future.future();
+    CartEvent event = CartEvent.createCheckoutEvent(userId);
+    service.addCartEvent(event, resFuture.completer());
+    return resFuture;
+  });
+}
+```
 
 ## 向订单模块发送订单
 
+生成订单流水号以后，现在我们的订单实体已经是完整的了，可以向下层订单服务组件发送了。我们来看一下其实现 —— `sendOrderAwaitResult`方法：
+
+```java
+private Future<CheckoutResult> sendOrderAwaitResult(Order order) {
+  Future<CheckoutResult> future = Future.future();
+  vertx.eventBus().send(CheckoutService.ORDER_EVENT_ADDRESS, order.toJson(), reply -> {
+    if (reply.succeeded()) {
+      future.complete(new CheckoutResult((JsonObject) reply.result().body()));
+    } else {
+      future.fail(reply.cause());
+    }
+  });
+  return future;
+}
+```
+
+我们将订单实体发送至Event Bus上的一个特定地址中，这样在订单服务组件中，订单服务就能够从Event Bus上获取发送的订单并对其进行处理和分发。注意到我们调用的`send`函数同时还接受一个`Handler<AsyncResult<Message<T>>>`类型的参数，这意味着我们需要等待消息接收者发送回的回复消息。这其实是一种类似于 **请求/回复模式** 的消息模式。如果我们成功地接收到回复消息，我们就将其转化为订单结果`CheckoutResult`并且给`future`赋值；如果我们收到了失败的消息，或者接受消息超时，我们就将`future`标记为失败。
+
+好啦！在经历了一系列的“组合”过程之后，我们终于完成了对`checkout`方法的探索。是不是感觉很Reactive呢？
+
+由于订单服务并不知道我们发送的地址，我们需要向服务发现层中发布一个 **消息源**，这里的消息源其实就是我们将订单发送的位置。订单就可以通过服务发现层获取对应的消费者`MessageConsumer`，然后从此处接受订单。我们将会在`CartVerticle`中发布此消息源，不过在看`CartVerticle`的实现之前，我们先来瞥一眼购物车服务的REST Verticle。
+
 ## 购物车服务REST API
+
+在购物车服务相关的REST Verticle里有三个主要的API：
+
+- GET `/cart` - 获取当前用户的购物车状态
+- POST `/events` - 向购物车事件存储中添加一个新的与当前用户相关的购物车事件
+- POST `/checkout` - 发出购物车结算请求
+
+注意这三个API都需要权限（登录用户），因此它们的路由处理函数都包装着`requireLogin`方法。这一点已经在之前的API Gateway章节中提到过：
+
+```java
+// api route handler
+router.post(API_CHECKOUT).handler(context -> requireLogin(context, this::apiCheckout));
+router.post(API_ADD_CART_EVENT).handler(context -> requireLogin(context, this::apiAddCartEvent));
+router.get(API_GET_CART).handler(context -> requireLogin(context, this::apiGetCart));
+```
+
+它们的路由函数实现倒是非常简单，我们这里只看一个`apiAddCartEvent`方法：
+
+```java
+private void apiAddCartEvent(RoutingContext context, JsonObject principal) {
+  String userId = Optional.ofNullable(principal.getString("userId"))
+    .orElse(TEST_USER); // (1)
+  CartEvent cartEvent = new CartEvent(context.getBodyAsJson()); // (2)
+  if (validateEvent(cartEvent, userId)) {
+    shoppingCartService.addCartEvent(cartEvent, resultVoidHandler(context, 201)); // (3)
+  } else {
+    context.fail(400); // (4)
+  }
+}
+```
+
+首先我们从当前的用户凭证`principal`中获取用户ID。如果当前用户凭证中获取不到ID，那么我们就暂时用`TEST_USER`来替代（1）。然后我们根据请求正文来创建购物车事件`CartEvent`（2）。我们同时需要验证购物车事件中的用户与当前作用域内的用户是否相符。若相符，则调用服务的`addCartEvent`方法将事件添加至事件存储中，并在成功时返回 **201* 状态（3）。如果请求正文中的购物车事件不合法，我们就返回 **400 Bad Request** 状态（4）。
 
 ## Cart Verticle
 
+`CartVerticle`是购物车服务组件的Main Verticle,用于发布各种服务。这里我们会发布三个服务：
+
+- `shopping-checkout-eb-service`: 结算服务，这是一个 **Event Bus 服务**。
+- `shopping-cart-eb-service`: 购物车服务，这是一个 **Event Bus 服务**。
+- `shopping-order-message-source`: 发送订单的消息源，这是一个 **消息源服务**。
+
+同时我们的`CartVerticle`也负责部署`RestShoppingAPIVerticle`。注意不要忘掉设置`api.name`:
+
+```json
+{
+  "api.name": "cart"
+}
+```
+
+这是购物车部分的UI：
+
+![Cart Page](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/spa-cart.png)
 
 # 订单服务
 
+好啦！现在我们已经提交了结算请求，在底层订单已经发送至订单微服务组件中了。所以下一步自然就是订单服务的责任了 —— 分发订单以及处理订单。在当前版本的Micro Shop实现中，我们仅仅将订单存储至数据库中并变更对应的商品库存数额。在正常的生产环境中，我们通常会将订单push到消息队列中，并且在下层服务中从消息队列中pull订单并进行处理。
+
+订单存储服务的实现与之前太类似了，因此这里就不讲`OrderService`及其实现的细节了。大家可以自行查看[相关代码](https://github.com/sczyh30/vertx-blueprint-microservice/blob/master/order-microservice/src/main/java/io/vertx/blueprint/microservice/order/impl/OrderServiceImpl.java)。
+
+我们的订单处理逻辑写在`RawOrderDispatcher`这个verticle中，下面我们就来看一下。
+
 ## 消费消息源发送来的数据
+
+首先我们需要从消息源中根据服务名称获取消息消费者，然后从消费者处获取发送来的订单。这可以通过`MessageSource`接口的`getConsumer`方法实现：
+
+```java
+@Override
+public void start(Future<Void> future) throws Exception {
+  super.start();
+  MessageSource.<JsonObject>getConsumer(discovery,
+    new JsonObject().put("name", "shopping-order-message-source"),
+    ar -> {
+      if (ar.succeeded()) {
+        MessageConsumer<JsonObject> orderConsumer = ar.result();
+        orderConsumer.handler(message -> {
+          Order wrappedOrder = wrapRawOrder(message.body());
+          dispatchOrder(wrappedOrder, message);
+        });
+        future.complete();
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+}
+```
+
+获取到对应的`MessageConsumer`以后，我们就可以通过`handler`方法给其绑定一个`Handler<Message<T>>`类型的处理函数，在此处理函数中我们就可以对获取的消息进行各种操作。这里我们的message body是`JsonObject`类型的，所以我们首先将其转化为订单实体，然后就可以对其进行分发和处理了。对应的逻辑在`dispatchOrder`方法中。
 
 ## “处理”订单
 
+我们来看一下`dispatchOrder`方法中的简单的“分发处理”逻辑:
+
+```java
+private void dispatchOrder(Order order, Message<JsonObject> sender) {
+  Future<Void> orderCreateFuture = Future.future();
+  orderService.createOrder(order, orderCreateFuture.completer()); // (1)
+  orderCreateFuture
+    .compose(orderCreated -> applyInventoryChanges(order)) // (2)
+    .setHandler(ar -> {
+      if (ar.succeeded()) {
+        CheckoutResult result = new CheckoutResult("checkout_success", order); // (3)
+        sender.reply(result.toJson()); // (4)
+        publishLogEvent("checkout", result.toJson(), true); // (5)
+      } else {
+        sender.fail(5000, ar.cause().getMessage()); // (6)
+        ar.cause().printStackTrace();
+      }
+    });
+}
+```
+
+首先我们先创建一个`Future`代表向数据库中添加订单的异步结果。然后我们调用订单服务的`createOrder`方法将订单存储至数据库中（1）。可以看到我们给此方法传递的处理函数是`orderCreateFuture.completer()`，这样当添加操作结束时，对应的`Future`就会被赋值。下一步我们组合一个异步方法 —— `applyInventoryChanges`方法，用于变更商品库存数量（2）。如果这两个过程都成功完成的话，我们就创建一个代表结算成功的`CheckoutResult`实体（3），然后调用`reply`方法向消息发送者回复结算结果（4）。之后我们向Event Bus发送结算事件来通知日志组件记录日志（5）。如果其中有过程失败的话，我们需要对消息发送者`sender`调用`fail`方法来通知操作失败（6）。
+
+很简单吧？下面我们来看一下`applyInventoryChanges`方法的实现，看看如何变更商品库存数量：
+
+```java
+private Future<Void> applyInventoryChanges(Order order) {
+  Future<Void> future = Future.future();
+  // 从服务发现层获取REST端点
+  Future<HttpClient> clientFuture = Future.future();
+  HttpEndpoint.getClient(discovery,
+    new JsonObject().put("name", "inventory-rest-api"), // 服务名称
+    clientFuture.completer());
+  // 通过调用REST API来变更对应的库存
+  return clientFuture.compose(client -> {
+    List<Future> futures = order.getProducts()
+      .stream()
+      .map(item -> { // 变换成对应的异步结果
+        Future<Void> resultFuture = Future.future();
+        String url = String.format("/%s/decrease?n=%d", item.getProductId(), item.getAmount());
+        client.put(url, response -> {
+          if (response.statusCode() == 200) {
+            resultFuture.complete();
+          } else {
+            resultFuture.fail(response.statusMessage());
+          }
+        })
+          .exceptionHandler(resultFuture::fail)
+          .end();
+        return resultFuture;
+      })
+      .collect(Collectors.toList());
+    // 每个Future必须都success，生成的组合Future才会success
+    CompositeFuture.all(futures).setHandler(ar -> {
+      if (ar.succeeded()) {
+        future.complete();
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+    return future;
+  });
+}
+```
+
+相信你一定不会对此方法的实现感到陌生，因为它和我们之前在购物车服务中讲的`getInventory`方法非常类似。我们首先获取库存组件对应的HTTP客户端，接着对订单中每个商品，根据其数额来调用REST API减少对应的库存。调用REST API获取结果的过程是异步的，因此这里我们又得到了一个`List<Future>`。但是这里我们并不需要每个`Future`的实际结果。我们只需要每个`Future`的状态，因此这里仅需调用`CompositeFuture.all`方法获取所有`Future`的组合`Future`。
+
+至于组件中的`OrderVerticle`，它只做了三件微小的事情：发布订单服务、部署用于订单分发处理的`RawOrderDispatcher`以及部署REST Verticle。
+
 # Micro Shop SPA整合
+
+在我们的Micro Shop项目中，我们提供了一个用Angular.js写的简单的SPA前端页面。那么问题来了，如何将其整合至我们的微服务中？
+
+> 注意：当前版本中，为了方便起见，我们将SPA部分整合进了`api-gateway`模块中。在生产环境下UI部分通常要单独部署。
+
+有了Vert.x Web的魔力，我们只需要做的是配置一下路由，让其可以处理静态资源即可！只需要一行：
+
+```java
+router.route("/*").handler(StaticHandler.create());
+```
+
+默认情况下静态资源映射的目录是`webroot`目录，当然你也可以在创建`StaticHandler`的时候来配置映射目录。
 
 # 监控仪表板与统计数据
 
-## SockJS - Event bus bridge
+监控仪表板(Monitor Dashboard)同样也是一个SPA前端应用。在本章节中我们会涉及到以下内容：
+
+- 如何配置SockJS - EventBus bridge
+- 如何在浏览器中接受来自Event Bus的信息
+- 如何利用 **Vert.x Dropwizard Metrics** 来获取Vert.x组件的统计数据
+
+## SockJS - Event Bus Bridge
+
+很多时候我们想要在浏览器中接收来自Event Bus的消息并进行处理。听起来很神奇吧～而且你应该能够想象到，Vert.x支持这么做！Vert.x提供了 [SockJS - Event Bus Bridge](http://vertx.io/docs/vertx-sockjs-service-proxy/java/) 来支持服务的和客户端（通常是浏览器端）通过Event Bus进行通信。
+
+为了开启SockJS - Event Bus Bridge支持，我们需要配置`SockJSHandler`以及对应的路由器：
+
+```java
+// event bus bridge
+SockJSHandler sockJSHandler = SockJSHandler.create(vertx); // (1)
+BridgeOptions options = new BridgeOptions()
+  .addOutboundPermitted(new PermittedOptions().setAddress("microservice.monitor.metrics")) // (2)
+  .addOutboundPermitted(new PermittedOptions().setAddress("events.log"));
+
+sockJSHandler.bridge(options); // (3)
+router.route("/eventbus/*").handler(sockJSHandler); // (4)
+```
+
+首先我们创建一个`SockJSHandler` (1)，它用于处理Event Bus信息。默认情况下，为了安全起见，Vert.x不允许任何消息通过Event Bus传输至浏览器端，因此我们需要对其进行配置。我们可以创建一个`BridgeOptions`然后设定允许单向传输消息的地址。这里有两种地址：**Outbound** 以及 **Inbound**。Outbound地址允许服务端向浏览器端通过Event Bus发送消息，而Inbound地址允许浏览器端向服务端通过Event Bus发送消息。这里我们只需要两个Outbound Address：`microservice.monitor.metrics`用作传输统计数据，`events.log`用作传输日志消息（2）。接着我们就可以将配置好的`BridgeOptions`设置给Bridge（3），最后配置对应的路由。浏览器端的SockJS客户端会使用`/eventbus/*`路由路径来进行通信。
 
 ## 将统计数据发送至Event Bus
 
+在微服务架构中，监控(Monitoring)也是重要的一环。有了Vert.x的各种Metrics组件，如 **Vert.x Dropwizard Metrics** 或 **Vert.x Hawkular Metrics**，我们可以从对应的组件中获取到统计数据。
+
+这里我们使用 **Vert.x Dropwizard Metrics**。使用方法很简单，首先创建一个`MetricsService`实例:
+
+```java
+MetricsService service = MetricsService.create(vertx);
+```
+
+接着我们就可以调用`getMetricsSnapshot`方法获取各种组件的统计数据。此方法接受一个实现了`Measured`接口的类。`Measured`接口定义了获取Metrics Data的一种规范，Vert.x中主要的类，如`Vertx`和`EventBus`都实现了此接口。因此传入不同的`Measured`实现就可以获取不同的数据。这里我们传入了`Vertx`实例来获取更多的统计数据。获取的统计数据的格式为`JsonObject`：
+
+```java
+// send metrics message to the event bus
+vertx.setPeriodic(metricsInterval, t -> {
+  JsonObject metrics = service.getMetricsSnapshot(vertx);
+  vertx.eventBus().publish("microservice.monitor.metrics", metrics);
+});
+```
+
+我们设定了一个定时器，每隔一段时间就向`microservice.monitor.metrics`地址发送当前的统计数据。
+
+如果想了解统计数据都包含什么，请参考 [Vert.x Dropwizard metrics 官方文档](http://vertx.io/docs/vertx-dropwizard-metrics/java/#_the_metrics)。
+
+现在是时候在浏览器端接收并展示统计数据以及日志消息了～
+
 ## 在浏览器端接收Event Bus上的消息
 
+为了在浏览器端接收Event Bus上的消息，我们首先需要这两个库： `vertx3-eventbus-client`以及`sockjs`。你可以通过npm或bower来下载这两个库。然后我们就可以在代码中创建一个`EventBus`实例，然后注册处理函数：
+
+```javascript
+var eventbus = new EventBus('/eventbus');
+
+eventbus.onopen = () => {
+  eventbus.registerHandler('microservice.monitor.metrics', (err, message) => {
+      $scope.metrics = message.body;
+      $scope.$apply();
+  });
+}
+```
+
+我们可以通过`message.body`来获取对应的消息数据。
+
+之后我们将会运行这个仪表板来监视整个微服务应用的状态。
+
 # 展示时间！
+
+哈哈，现在我们已经看完整个Micro Shop微服务的源码了～看源码看的也有些累了，现在到了展示时间了！这里我们使用Docker Compose来编排容器并运行我们的微服务应用，非常方便。
+
+> 注意：建议预留 4GB 内存来运行此微服务应用。
+
+## 构建项目以及容器
+
+在我们构建整个项目之前，我们需要先通过**bower**获取`api-gateway`和`monitor-dashboard`这两个组件中前端代码对应的依赖。它们的`bower.json`文件都在对应的`src/main/resources/webroot`目录中。我们分别进入这两个目录并执行：
+
+```
+bower install
+```
+
+然后我们就可以构建整个项目了：
+
+```
+mvn clean install
+```
+
+构建完项目以后，我们再来构建容器（需要root权限）：
+
+```
+cd docker
+sudo ./build.sh
+```
+
+构建完成后，我们就可以来运行我们的微服务应用了：
+
+```
+sudo ./run.sh
+```
+
+当整个微服务初始化完成的时候，我们就可以在浏览器中浏览网店页面了，默认地址是 [https://localhost:8787](https://localhost:8787)。
+
+## 第一次运行？
+
+如果我们是第一次运行此微服务应用（或之前删除了所有的容器），我们必须手动配置**Keycloak**服务器。首先我们需要在hosts文件中添加一条记录：
+
+```
+0.0.0.0	keycloak-server
+```
+
+然后我们需要访问 [http://keycloak-server:8080](http://keycloak-server:8080)然后进入管理员登录页面。默认情况下用户名和密码都是 **admin**。进入管理台之后，我们需要创建一个 **Realm**，名字随意（实例中给的是`Vert.x`）。然后进入此Realm，并且为我们的应用创建一个**Client**，类似于这样：
+
+![Keycloak configuration](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/keycloak-client-config.png)
+
+创建完以后，我们进入 **Installation** 选项卡中来复制对应的JSON配置文件。我们需要将复制的内容覆盖掉`api-gateway/src/config/docker.json`中对应的配置。比如：
+
+```json
+{
+  "api.gateway.http.port": 8787,
+  "api.gateway.http.address": "localhost",
+  "circuit-breaker": {
+    "name": "api-gateway-cb",
+    "timeout": 10000,
+    "max-failures": 5
+  },
+  // 下面的都是Keycloak相关的配置
+  "realm": "Vert.x",
+  "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkto9ZZm69cmdA9e7X4NUSo8T4CyvrYzlRiJdhr+LMqELdfN3ghEY0EBpaROiOueva//iUc/KViYGiAHVXEQ3nr3kytF6uZs9iwqkshKvltpxkOm2Qpj/FSRsCyHlB8Ahbt5xBmzH2mI1VDIxmVTdEBze4u6tLoi4ieo72b2q/dz09yrEokRm/sSYqzNgfE0i1JY6DI8C7FaKszKTK5DRGMIAib8wURrTyf8au0iiisKEXOHKEjo/g0uHCFGSOKqPOprNNIWYwedV+qaQa9oSah2IpwNgFNRLtHpvbcanftMLQOQIR0iufIJ+bHrNhH0RISZhTzcGX3pSIBw/HaERwQIDAQAB",
+  "auth-server-url": "http://127.0.0.1:8180/auth",
+  "ssl-required": "external",
+  "resource": "vertx-blueprint",
+  "credentials": {
+    "secret": "ea99a8e6-f503-4bdb-afbd-9ae322ee7089"
+  },
+  "use-resource-role-mappings": true
+}
+```
+
+我们还需要创建几个用户(**User**)以便后面通过这些用户来登录。
+
+更详细的Keycloak的配置过程及解释请参考Paulo的教程： [Vertx 3 and Keycloak tutorial](http://vertx.io/blog/vertx-3-and-keycloak-tutorial/)，非常详细。
+
+修改完对应的配置文件之后，我们必须重新构建`api-gateway`模块的容器，然后重新启动此容器。
+
+## 欢乐的购物时间！
+
+完成配置之后，我们就来访问前端页面吧！
+
+![SPA Frontend](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/shopping-spa-index.png)
+
+现在我们可以访问 `https://localhost:8787/login` 进行登录，它会跳转至Keycloak的用户登录页面。如果登陆成功，它会自动跳转回Micro Shop的主页。现在我们可以尽情地享受购物时间了！这真是极好的！
+
+我们也可以来访问Monitor Dashboard，默认地址是 [http://localhost:9100](http://localhost:9100)。
+
+![Monitor Dashboard](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/monitor-dashboard.png)
+
+一颗赛艇！
 
 # 完结！
 
@@ -1337,4 +1723,4 @@ private Future<JsonObject> getInventory(ProductTuple product, HttpClient client)
 - [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html)
 - [Cloud Design Patterns: Prescriptive Architecture Guidance for Cloud Applications](https://msdn.microsoft.com/en-us/library/dn568099.aspx)
 
-享受微服务狂欢吧！
+享受微服务的狂欢吧！
