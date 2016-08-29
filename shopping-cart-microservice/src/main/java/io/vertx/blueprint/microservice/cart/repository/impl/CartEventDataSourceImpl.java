@@ -24,6 +24,7 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
     this.client = JDBCClient.createNonShared(Vertx.newInstance(vertx), json);
     client.getConnectionObservable()
       .flatMap(connection -> connection.executeObservable(INIT_STATEMENT))
+      .toSingle()
       .subscribe();
   }
 

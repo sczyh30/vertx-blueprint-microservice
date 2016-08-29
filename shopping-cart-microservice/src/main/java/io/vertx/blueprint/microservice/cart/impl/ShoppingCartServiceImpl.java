@@ -16,6 +16,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
+import rx.Observable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,7 +41,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
   @Override
   public ShoppingCartService addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler) {
     Future<Void> future = Future.future();
-    repository.save(event).subscribe(future::complete, future::fail);
+    repository.save(event).toSingle().subscribe(future::complete, future::fail);
     future.setHandler(resultHandler);
     return this;
   }
@@ -64,6 +65,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     repository.streamByUser(userId)
       .takeWhile(cartEvent -> !CartEvent.isTerminal(cartEvent.getCartEventType()))
       .reduce(new ShoppingCart(), ShoppingCart::incorporate)
+      .toSingle()
       .subscribe(future::complete, future::fail);
 
     return future.compose(cart ->
