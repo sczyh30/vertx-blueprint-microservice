@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang=en>
 <head>
-  <title>Vert.x 蓝图 - Micro Shop 微服务实战</title>
+  <title>Vert.x 蓝图 - Micro Shop 微服务实战 (Development)</title>
   <meta charset=utf-8>
   <meta http-equiv=X-UA-Compatible content="IE=edge">
   <meta content="width=device-width,initial-scale=1" name=viewport>
@@ -67,7 +67,7 @@
 <div class=page-header id=content>
   <div class=container>
     <div class=row>
-      <div class=col-sm-12><h1>Vert.x 蓝图 - Micro Shop 微服务实战</h1></div>
+      <div class=col-sm-12><h1>Vert.x 蓝图 - Micro-Shop 微服务实战</h1></div>
     </div>
   </div>
 </div>
@@ -132,7 +132,17 @@
       }
     });
 
-    $("#readme").html(marked(readme));
+    var renderer = new marked.Renderer();
+    renderer.image = function(href, title, text) {
+        var out = '<img src="' + href + '" class="img-responsive" alt="' + text + '"';
+      if (title) {
+        out += ' title="' + title + '"';
+      }
+      out += this.options.xhtml ? '/>' : '>';
+      return out;
+    };
+
+    $("#readme").html(marked(readme, { renderer: renderer }));
 
     $.get("https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/zh-cn/tutorial.zh-cn.toc.md", function (toc) {
       $("#sidebar").html(marked(toc));
@@ -192,6 +202,64 @@
       // *************** END BUGFIX
     });
   });
+    $(document).ready(function() {
+    // make sidebar sticky when it hits the top of the viewport
+    var $sidebar = $("#sidebar");
+    $sidebar.affix({
+        offset: {
+            top: $sidebar.offset().top - 20,
+            bottom: $("footer").outerHeight(true) + 20
+        }
+    });
+
+    $(window).resize(function() {
+        $sidebar.affix("checkPosition");
+    });
+
+    // add .nav class to all lists in the sidebar (necessary for scrollspy)
+    $sidebar.find("ul").addClass("nav");
+
+    // enable scrollspy
+    $("body").scrollspy({ target: "#sidebar" });
+
+    // *************** START BUGFIX
+    // Fix position of the sidebar in Safari. See https://github.com/twbs/bootstrap/issues/12126
+    // Safari does not position the sidebar correctly because we use col-md-pull-x on it. We
+    // need to set the position here. There's no clean and direct CSS solution yet.
+    var explicitlySetAffixPosition = function() {
+        $sidebar.css("left", $sidebar.offset().left + "px");
+    };
+    var resetLeftPosition = function() {
+        $sidebar.css("left", "auto");
+    };
+
+    // Before the element becomes affixed, add left CSS that is equal to the
+    // distance of the element from the left of the screen
+    $sidebar.on("affix.bs.affix", function() {
+        explicitlySetAffixPosition();
+    });
+    // Before the element becomes affix-bottom, reset the CSS left property to as it was before
+    $sidebar.on("affix-bottom.bs.affix", function() {
+        resetLeftPosition();
+    });
+    // Do the same for affix-top
+    $sidebar.on("affix-top.bs.affix", function() {
+        resetLeftPosition();
+    });
+
+    // On resize of window, un-affix affixed widget to measure where it
+    // should be located, set the left CSS accordingly, re-affix it
+    $(window).resize(function() {
+        if ($sidebar.hasClass("affix")) {
+            $sidebar.removeClass("affix");
+            explicitlySetAffixPosition();
+            $sidebar.addClass("affix");
+        } else if (stickywidget.hasClass("affix-bottom")) {
+            resetLeftPosition();
+        }
+    });
+    // *************** END BUGFIX
+});
 </script>
 </body>
 </html>
