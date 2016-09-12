@@ -1691,7 +1691,7 @@ bower install
 Then we can build the code:
 
 ```
-mvn clean install
+mvn clean install -Dmaven.test.skip=true
 ```
 
 After that, we build all Docker containers:

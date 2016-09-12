@@ -32,7 +32,7 @@ module VertxBlueprintUserAccount
     # @return [self]
     def add_account(account=nil)
       if account.class == Hash && block_given?
-        @j_del.java_method(:addAccount, [Java::IoVertxBlueprintMicroserviceAccount::Account.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceAccount::Account.new(::Vertx::Util::Utils.to_json_object(account)), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        @j_del.java_method(:addAccount, [Java::IoVertxBlueprintMicroserviceAccount::Account.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceAccount::Account.new(::Vertx::Util::Utils.to_json_object(account)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling add_account(account)"
@@ -43,7 +43,7 @@ module VertxBlueprintUserAccount
     # @return [self]
     def retrieve_account(id=nil)
       if id.class == String && block_given?
-        @j_del.java_method(:retrieveAccount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(id, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:retrieveAccount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_account(id)"
@@ -54,7 +54,7 @@ module VertxBlueprintUserAccount
     # @return [self]
     def retrieve_by_username(username=nil)
       if username.class == String && block_given?
-        @j_del.java_method(:retrieveByUsername, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(username, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:retrieveByUsername, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(username,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_by_username(username)"
@@ -75,7 +75,7 @@ module VertxBlueprintUserAccount
     # @return [self]
     def update_account(account=nil)
       if account.class == Hash && block_given?
-        @j_del.java_method(:updateAccount, [Java::IoVertxBlueprintMicroserviceAccount::Account.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceAccount::Account.new(::Vertx::Util::Utils.to_json_object(account)), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:updateAccount, [Java::IoVertxBlueprintMicroserviceAccount::Account.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceAccount::Account.new(::Vertx::Util::Utils.to_json_object(account)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling update_account(account)"
@@ -86,7 +86,7 @@ module VertxBlueprintUserAccount
     # @return [self]
     def delete_account(id=nil)
       if id.class == String && block_given?
-        @j_del.java_method(:deleteAccount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(id, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        @j_del.java_method(:deleteAccount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling delete_account(id)"

@@ -23,7 +23,7 @@ module VertxBlueprintStore
     # @return [void]
     def save_store(store=nil)
       if store.class == Hash && block_given?
-        return @j_del.java_method(:saveStore, [Java::IoVertxBlueprintMicroserviceStore::Store.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceStore::Store.new(::Vertx::Util::Utils.to_json_object(store)), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        return @j_del.java_method(:saveStore, [Java::IoVertxBlueprintMicroserviceStore::Store.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceStore::Store.new(::Vertx::Util::Utils.to_json_object(store)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
       end
       raise ArgumentError, "Invalid arguments when calling save_store(store)"
     end
@@ -33,7 +33,7 @@ module VertxBlueprintStore
     # @return [void]
     def retrieve_store(sellerId=nil)
       if sellerId.class == String && block_given?
-        return @j_del.java_method(:retrieveStore, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(sellerId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        return @j_del.java_method(:retrieveStore, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(sellerId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_store(sellerId)"
     end
@@ -44,7 +44,7 @@ module VertxBlueprintStore
     # @return [void]
     def remove_store(sellerId=nil)
       if sellerId.class == String && block_given?
-        return @j_del.java_method(:removeStore, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(sellerId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        return @j_del.java_method(:removeStore, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(sellerId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
       end
       raise ArgumentError, "Invalid arguments when calling remove_store(sellerId)"
     end

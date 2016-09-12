@@ -49,6 +49,7 @@ import io.vertx.blueprint.microservice.cart.ShoppingCartService;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ShoppingCartServiceVertxProxyHandler extends ProxyHandler {
 
   public static final long DEFAULT_CONNECTION_TIMEOUT = 5 * 60; // 5 minutes 

@@ -32,7 +32,7 @@ module VertxBlueprintOrder
     # @return [self]
     def retrieve_orders_for_account(accountId=nil)
       if accountId.class == String && block_given?
-        @j_del.java_method(:retrieveOrdersForAccount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(accountId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
+        @j_del.java_method(:retrieveOrdersForAccount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(accountId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_orders_for_account(accountId)"
@@ -43,7 +43,7 @@ module VertxBlueprintOrder
     # @return [self]
     def create_order(order=nil)
       if order.class == Hash && block_given?
-        @j_del.java_method(:createOrder, [Java::IoVertxBlueprintMicroserviceOrder::Order.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceOrder::Order.new(::Vertx::Util::Utils.to_json_object(order)), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        @j_del.java_method(:createOrder, [Java::IoVertxBlueprintMicroserviceOrder::Order.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceOrder::Order.new(::Vertx::Util::Utils.to_json_object(order)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling create_order(order)"
@@ -54,7 +54,7 @@ module VertxBlueprintOrder
     # @return [self]
     def retrieve_order(orderId=nil)
       if orderId.class == Fixnum && block_given?
-        @j_del.java_method(:retrieveOrder, [Java::JavaLang::Long.java_class, Java::IoVertxCore::Handler.java_class]).call(orderId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:retrieveOrder, [Java::JavaLang::Long.java_class,Java::IoVertxCore::Handler.java_class]).call(orderId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_order(orderId)"

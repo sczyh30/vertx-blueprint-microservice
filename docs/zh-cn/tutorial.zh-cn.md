@@ -19,7 +19,7 @@
 
 以及其它的一些东西。。。
 
-本教程是 **Vert.x 蓝图系列** 的第三篇教程，对应的Vert.x版本为 **3.3.2** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-microservice)。
+本教程是 **Vert.x 蓝图系列** 的第三篇教程，对应的Vert.x版本为 **3.3.3** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-microservice)。
 
 # 踏入微服务之门
 
@@ -1630,7 +1630,7 @@ eventbus.onopen = () => {
 
 ## 构建项目以及容器
 
-在我们构建整个项目之前，我们需要先通过**bower**获取`api-gateway`和`monitor-dashboard`这两个组件中前端代码对应的依赖。它们的`bower.json`文件都在对应的`src/main/resources/webroot`目录中。我们分别进入这两个目录并执行：
+在我们构建整个项目之前，我们需要先通过 **bower** 获取`api-gateway`和`monitor-dashboard`这两个组件中前端代码对应的依赖。它们的`bower.json`文件都在对应的`src/main/resources/webroot`目录中。我们分别进入这两个目录并执行：
 
 ```
 bower install
@@ -1639,7 +1639,7 @@ bower install
 然后我们就可以构建整个项目了：
 
 ```
-mvn clean install
+mvn clean install -Dmaven.test.skip=true
 ```
 
 构建完项目以后，我们再来构建容器（需要root权限）：

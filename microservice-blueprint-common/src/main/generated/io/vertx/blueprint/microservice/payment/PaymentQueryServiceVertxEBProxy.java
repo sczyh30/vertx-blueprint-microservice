@@ -40,6 +40,7 @@ import io.vertx.core.Handler;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class PaymentQueryServiceVertxEBProxy implements PaymentQueryService {
 
   private Vertx _vertx;

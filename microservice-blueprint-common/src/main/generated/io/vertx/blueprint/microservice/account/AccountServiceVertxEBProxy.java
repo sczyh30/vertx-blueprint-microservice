@@ -42,6 +42,7 @@ import io.vertx.blueprint.microservice.account.AccountService;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class AccountServiceVertxEBProxy implements AccountService {
 
   private Vertx _vertx;

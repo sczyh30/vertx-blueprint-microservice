@@ -31,7 +31,7 @@ module VertxBlueprintPayment
     # @return [void]
     def add_payment_record(payment=nil)
       if payment.class == Hash && block_given?
-        return @j_del.java_method(:addPaymentRecord, [Java::IoVertxBlueprintMicroservicePayment::Payment.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroservicePayment::Payment.new(::Vertx::Util::Utils.to_json_object(payment)), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        return @j_del.java_method(:addPaymentRecord, [Java::IoVertxBlueprintMicroservicePayment::Payment.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroservicePayment::Payment.new(::Vertx::Util::Utils.to_json_object(payment)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
       end
       raise ArgumentError, "Invalid arguments when calling add_payment_record(payment)"
     end
@@ -41,7 +41,7 @@ module VertxBlueprintPayment
     # @return [void]
     def retrieve_payment_record(payId=nil)
       if payId.class == String && block_given?
-        return @j_del.java_method(:retrievePaymentRecord, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(payId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        return @j_del.java_method(:retrievePaymentRecord, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(payId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_payment_record(payId)"
     end

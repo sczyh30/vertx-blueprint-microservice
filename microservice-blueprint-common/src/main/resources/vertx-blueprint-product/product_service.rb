@@ -32,7 +32,7 @@ module VertxBlueprintProduct
     # @return [self]
     def add_product(product=nil)
       if product.class == Hash && block_given?
-        @j_del.java_method(:addProduct, [Java::IoVertxBlueprintMicroserviceProduct::Product.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceProduct::Product.new(::Vertx::Util::Utils.to_json_object(product)), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        @j_del.java_method(:addProduct, [Java::IoVertxBlueprintMicroserviceProduct::Product.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceProduct::Product.new(::Vertx::Util::Utils.to_json_object(product)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling add_product(product)"
@@ -43,7 +43,7 @@ module VertxBlueprintProduct
     # @return [self]
     def retrieve_product(productId=nil)
       if productId.class == String && block_given?
-        @j_del.java_method(:retrieveProduct, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(productId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:retrieveProduct, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(productId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_product(productId)"
@@ -54,7 +54,7 @@ module VertxBlueprintProduct
     # @return [self]
     def retrieve_product_price(productId=nil)
       if productId.class == String && block_given?
-        @j_del.java_method(:retrieveProductPrice, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(productId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.encode) : nil : nil) }))
+        @j_del.java_method(:retrieveProductPrice, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(productId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_product_price(productId)"
@@ -75,7 +75,7 @@ module VertxBlueprintProduct
     # @return [self]
     def retrieve_products_by_page(page=nil)
       if page.class == Fixnum && block_given?
-        @j_del.java_method(:retrieveProductsByPage, [Java::int.java_class, Java::IoVertxCore::Handler.java_class]).call(page, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
+        @j_del.java_method(:retrieveProductsByPage, [Java::int.java_class,Java::IoVertxCore::Handler.java_class]).call(page,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling retrieve_products_by_page(page)"
@@ -86,7 +86,7 @@ module VertxBlueprintProduct
     # @return [self]
     def delete_product(productId=nil)
       if productId.class == String && block_given?
-        @j_del.java_method(:deleteProduct, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(productId, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        @j_del.java_method(:deleteProduct, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(productId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling delete_product(productId)"

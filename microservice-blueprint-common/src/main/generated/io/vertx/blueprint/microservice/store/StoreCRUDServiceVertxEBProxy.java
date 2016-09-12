@@ -40,6 +40,7 @@ import io.vertx.blueprint.microservice.store.Store;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class StoreCRUDServiceVertxEBProxy implements StoreCRUDService {
 
   private Vertx _vertx;

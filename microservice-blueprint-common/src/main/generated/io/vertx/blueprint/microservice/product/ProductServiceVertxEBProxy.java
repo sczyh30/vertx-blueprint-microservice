@@ -43,6 +43,7 @@ import io.vertx.blueprint.microservice.product.Product;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ProductServiceVertxEBProxy implements ProductService {
 
   private Vertx _vertx;

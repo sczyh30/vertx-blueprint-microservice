@@ -23,7 +23,7 @@
 
 ## 构建/运行
 
-请参考[文档](http://www.sczyh30.com/vertx-blueprint-microservice/index.html#show-time-)来构建并运行此项目。
+请参考[文档](http://www.sczyh30.com/vertx-blueprint-microservice/cn/index.html#展示时间-)来构建并运行此项目。
 
 ## 贡献
 

@@ -43,6 +43,7 @@ import io.vertx.blueprint.microservice.cart.CheckoutResult;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class CheckoutServiceVertxEBProxy implements CheckoutService {
 
   private Vertx _vertx;
