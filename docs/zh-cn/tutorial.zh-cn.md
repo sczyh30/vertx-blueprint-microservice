@@ -876,12 +876,18 @@ public Observable<Void> save(CartEvent cartEvent) {
     .add(cartEvent.getAmount())
     .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
   return client.getConnectionObservable()
-    .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params))
-    .map(r -> null);
+    .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params)
+      .map(r -> (Void) null)
+      .doOnTerminate(conn::close)
+    );
 }
 ```
 
-看看我们的代码，在对比对比普通的callback-based的Vert.x JDBC，是不是更加简洁，更加Reactive呢？我们可以非常简单地通过`getConnectionObservable`方法获取数据库连接，然后组合`updateWithParamsObservable`方法执行对应的含参SQL语句。只需要两行有木有！而如果用callback-based的风格的话，你只能这么写：
+> 及时关闭数据库连接
+
+> 在数据库操作执行结束时，我们要及时调用`close`方法关闭数据库连接以释放资源。在Rx环境下我们可以利用`doOnTerminate`操作执行关闭数据库连接的逻辑。
+
+看看我们的代码，在对比对比普通的callback-based的Vert.x JDBC，是不是更加简洁，更加Reactive呢？我们可以非常简单地通过`getConnectionObservable`方法获取数据库连接，然后组合`updateWithParamsObservable`方法执行对应的含参SQL语句。只需要两行有木有！而如果用 callback-based 的风格的话，你只能这么写：
 
 ```java
 client.getConnection(ar -> {
@@ -889,6 +895,7 @@ client.getConnection(ar -> {
     SQLConnection connection = ar.result();
     connection.updateWithParams(SAVE_STATEMENT, params, ar2 -> {
       // ...
+      connection.close();
     })
   } else {
     resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -896,9 +903,7 @@ client.getConnection(ar -> {
 })
 ```
 
-因此，使用RxJava是非常愉快的一件事！当然`vertx-sync`也是一个不错的选择。
-
-当然，不要忘记返回的`Observable`是 **cold** 的，因此只有在它被`subscribe`的时候，数据才会被发射。
+因此，使用RxJava是非常愉快的一件事！当然，不要忘记返回的`Observable`是 **cold** 的，因此只有在它被`subscribe`的时候，数据才会被发射。
 
 不过话说回来了，Vert.x JDBC底层本质还是阻塞型的调用，要实现真正的异步数据库操作，我们可以利用 Vert.x MySQL / PostgreSQL Client 这个组件，底层使用Scala写的异步数据库操作库，不过目前还不是很稳定，大家可以自己尝尝鲜。
 
@@ -908,11 +913,14 @@ client.getConnection(ar -> {
 @Override
 public Observable<CartEvent> retrieveOne(Long id) {
   return client.getConnectionObservable()
-    .flatMap(conn -> conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id)))
-    .map(ResultSet::getRows)
-    .filter(list -> !list.isEmpty())
-    .map(res -> res.get(0))
-    .map(this::wrapCartEvent);
+    .flatMap(conn ->
+      conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id))
+        .map(ResultSet::getRows)
+        .filter(list -> !list.isEmpty())
+        .map(res -> res.get(0))
+        .map(this::wrapCartEvent)
+        .doOnTerminate(conn::close)
+    );
 }
 ```
 
@@ -925,10 +933,13 @@ public Observable<CartEvent> retrieveOne(Long id) {
 public Observable<CartEvent> streamByUser(String userId) {
   JsonArray params = new JsonArray().add(userId).add(userId);
   return client.getConnectionObservable()
-    .flatMap(conn -> conn.queryWithParamsObservable(STREAM_STATEMENT, params))
-    .map(ResultSet::getRows)
-    .flatMapIterable(item -> item) // list merge into observable
-    .map(this::wrapCartEvent);
+    .flatMap(conn ->
+      conn.queryWithParamsObservable(STREAM_STATEMENT, params)
+        .map(ResultSet::getRows)
+        .flatMapIterable(item -> item) // list merge into observable
+        .map(this::wrapCartEvent)
+        .doOnTerminate(conn::close)
+    );
 }
 ```
 
@@ -947,7 +958,7 @@ ORDER BY c.created_at ASC;
 
 此SQL语句执行时会获取与当前购物车相关的所有购物车事件。注意到我们有许多用户，每个用户可能会有许多购物车事件，它们属于不同时间的购物车，那么如何来获取相关的事件呢？方法是 —— 首先我们获取最近一次“终结”事件发生对应的时间，那么当前购物车相关的购物车事件就是在此终结事件发生后所有的购物车事件。
 
-明白了这一点，我们再回到`streamByUser`方法中来。既然此方法是从数据库中获取一个事件列表，那么为什么此方法返回`Observable<CartEvent>`而不是`Observable<List<CartEvent>>`呢？我们来看看其中的奥秘 —— `flatMapIterable`算子，它将一个序列变换为一串数据流。所以，这里的`Observable<CartEvent>`与Vert.x中的`Future`以及Java 8中的`CompletableFuture`就有些不同了。`CompletableFuture`更像是RxJava中的`Single`，它仅仅发送一个值或一个错误信息，而`Observable`本身则就像是一个数据流，数据源源不断地从发布者流向订阅者。之前`retrieveOne`和`save`方法中返回的`Observable`的使用更像是一个`Single`，但是在`streamByUser`方法中，`Observable`是真真正正的事件数据流。我们将会在购物车服务`ShoppingCartService`中处理事件流。
+明白了这一点，我们再回到`streamByUser`方法中来。既然此方法是从数据库中获取一个事件列表，那么为什么此方法返回`Observable<CartEvent>`而不是`Observable<List<CartEvent>>`呢？我们来看看其中的奥秘 —— `flatMapIterable`操作，它将一个序列变换为一串数据流。所以，这里的`Observable<CartEvent>`与Vert.x中的`Future`以及Java 8中的`CompletableFuture`就有些不同了。`CompletableFuture`更像是RxJava中的`Single`，它仅仅发送一个值或一个错误信息，而`Observable`本身则就像是一个数据流，数据源源不断地从发布者流向订阅者。之前`retrieveOne`和`save`方法中返回的`Observable`的使用更像是一个`Single`，但是在`streamByUser`方法中，`Observable`是真真正正的事件数据流。我们将会在购物车服务`ShoppingCartService`中处理事件流。
 
 哇！现在你一定又被Rx这种函数响应式风格所吸引了～在下面的部分中，我们将探索购物车服务及其实现，基于`Future`，同样非常Reactive！
 

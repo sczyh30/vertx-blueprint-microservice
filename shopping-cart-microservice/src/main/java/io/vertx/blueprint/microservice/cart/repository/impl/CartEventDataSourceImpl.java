@@ -23,7 +23,10 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
   public CartEventDataSourceImpl(io.vertx.core.Vertx vertx, JsonObject json) {
     this.client = JDBCClient.createNonShared(Vertx.newInstance(vertx), json);
     client.getConnectionObservable()
-      .flatMap(connection -> connection.executeObservable(INIT_STATEMENT))
+      .flatMap(connection ->
+        connection.executeObservable(INIT_STATEMENT)
+          .doOnTerminate(connection::close)
+      )
       .toSingle()
       .subscribe();
   }
@@ -32,10 +35,13 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
   public Observable<CartEvent> streamByUser(String userId) {
     JsonArray params = new JsonArray().add(userId).add(userId);
     return client.getConnectionObservable()
-      .flatMap(conn -> conn.queryWithParamsObservable(STREAM_STATEMENT, params))
-      .map(ResultSet::getRows)
-      .flatMapIterable(item -> item) // list merge into observable
-      .map(this::wrapCartEvent);
+      .flatMap(conn ->
+        conn.queryWithParamsObservable(STREAM_STATEMENT, params)
+          .map(ResultSet::getRows)
+          .flatMapIterable(item -> item) // list merge into observable
+          .map(this::wrapCartEvent)
+          .doOnTerminate(conn::close)
+      );
   }
 
   @Override
@@ -46,18 +52,23 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
       .add(cartEvent.getAmount())
       .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
     return client.getConnectionObservable()
-      .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params))
-      .map(r -> null);
+      .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params)
+        .map(r -> (Void) null)
+        .doOnTerminate(conn::close)
+      );
   }
 
   @Override
   public Observable<CartEvent> retrieveOne(Long id) {
     return client.getConnectionObservable()
-      .flatMap(conn -> conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id)))
-      .map(ResultSet::getRows)
-      .filter(list -> !list.isEmpty())
-      .map(res -> res.get(0))
-      .map(this::wrapCartEvent);
+      .flatMap(conn ->
+        conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id))
+          .map(ResultSet::getRows)
+          .filter(list -> !list.isEmpty())
+          .map(res -> res.get(0))
+          .map(this::wrapCartEvent)
+          .doOnTerminate(conn::close)
+      );
   }
 
   @Override

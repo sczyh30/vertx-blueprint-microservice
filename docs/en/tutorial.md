@@ -25,7 +25,7 @@ This is the third part of **Vert.x Blueprint Project**. The entire code is avail
 
 # Introduction to microservice
 
-Aha~ You must be familar -- at least sounds familar with the word "microservice". More and more developers are embracing fine-grained microservice architecture. So what are microservices? In brief:
+Aha~ You must be familiar -- at least sounds familiar with the word "microservice". More and more developers are embracing fine-grained microservice architecture. So what are microservices? In brief:
 
 > Microservices are small, autonomous services that work together.
 
@@ -40,13 +40,13 @@ Microservices*:
 - As components are individual, we can use different language, different technologies in different components -- that is so-called **polyglot support**.
 - Each component is developed, deployed and delivered independently, so it reduces the complexity of deployment.
 - Microservice architecture is usually inseparable from distributed systems, so we need to think of resilience and scaling.
-- Microservices are often designed as **Failure Oriented** as the faliure is more complicated in the distributed systems.
+- Microservices are often designed as **Failure Oriented** as the failure is more complicated in the distributed systems.
 
-Microservices can ensure the cohension between each components and reduce the time to deployment and production. But remember: microservices are not a silver bullet as it increases the complexity of the whole distributed system so you need to think of more circumstances.
+Microservices can ensure the cohesion between each components and reduce the time to deployment and production. But remember: microservices are not a silver bullet as it increases the complexity of the whole distributed system so you need to think of more circumstances.
 
 ## Service discovery
 
-In distributed systems, each components are indivial and they are not aware of the location of other services, but if we want to invoke other services, we need to know their locations. Hardcoded in the code is not a good idea so we need a mechanism to record the location of each services dynamically -- that is **service discovery**. With service discovery, we can publish various kind of services to the discovery infrastructure and other components can consume registered services via discovery infrastructure. We don't need to know the location so it could let your components react smoothly to location or environment changes.
+In distributed systems, each components are individual and they are not aware of the location of other services, but if we want to invoke other services, we need to know their locations. Hardcoded in the code is not a good idea so we need a mechanism to record the location of each services dynamically -- that is **service discovery**. With service discovery, we can publish various kind of services to the discovery infrastructure and other components can consume registered services via discovery infrastructure. We don't need to know the location so it could let your components react smoothly to location or environment changes.
 
 Vert.x provides us a service discovery component to publish and discover various resources. In Vert.x Service Discovery, services are described by a `Record`. Service provider can publish services, and the `Record` can be saved in local map, distributed map or Redis depending on `ServiceDiscoveryBackend`. Service consumer can retrieve service record from the discovery backend and get corresponding service instance. At present Vert.x provides out of box support of several service types such as **event bus service(service proxy)**, **HTTP endpoint**, **message source** and **data source**. And of course we can create our own service types. We'll elaborate the usage of service discovery soon.
 
@@ -65,7 +65,7 @@ Ok, now that you've had a basic understanding of microservice architecture, let'
 - **Shopping cart microservice** - it manages the shopping cart operations (e.g. `add`, `remove` and `checkout`) and generates orders. Shopping carts are stored and retrieved with event sourcing pattern. Orders are sent on the event bus.
 - **Order microservice(dispatcher and processor)** - it receives order requests from the cart service via event bus and then dispatch the orders to the infrastructure services (e.g. processing, storage and logging).
 - **The Micro Shop SPA** - the frontend SPA of the microservice (now integrated with `api-gateway`)
-- **The monitor dashbord** - a simple web UI to monitor the status of the microservice system
+- **The monitor dashboard** - a simple web UI to monitor the status of the microservice system
 - **The API Gateway** - The API gateway is the door of the entire system. Every requests must be first sent to the gateway and then dispatched to each service endpoints (reverse proxy). It is also responsible for authentication, simple load-balancing and failure handling (using Vert.x Circuit Breaker).
 
 ## Online shopping microservice architecture
@@ -933,10 +933,14 @@ public Observable<Void> save(CartEvent cartEvent) {
     .add(cartEvent.getAmount())
     .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
   return client.getConnectionObservable()
-    .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params))
-    .map(r -> null);
+    .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params)
+      .map(r -> (Void) null)
+      .doOnTerminate(conn::close)
+    );
 }
 ```
+
+> Note: Don't forget to close the database connection.
 
 Do you feel it's more concise and reactive by contrast with callback-based common Vert.x JDBC? Of course! Using RxJava can bring us a more reactive way. We can easily get a connection with `getConnectionObservable` method, then use the connection to execute save sql statement with the given parameters. Only two lines! By contrast, you have to write this in the common Vert.x JDBC:
 
@@ -946,6 +950,7 @@ client.getConnection(ar -> {
     SQLConnection connection = ar.result();
     connection.updateWithParams(SAVE_STATEMENT, params, ar2 -> {
       // ...
+      connection.close();
     })
   } else {
     resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -963,11 +968,14 @@ Then let's see the `retrieveOne` method, which retrieves a cart event with certa
 @Override
 public Observable<CartEvent> retrieveOne(Long id) {
   return client.getConnectionObservable()
-    .flatMap(conn -> conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id)))
-    .map(ResultSet::getRows)
-    .filter(list -> !list.isEmpty())
-    .map(res -> res.get(0))
-    .map(this::wrapCartEvent);
+    .flatMap(conn ->
+      conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id))
+        .map(ResultSet::getRows)
+        .filter(list -> !list.isEmpty())
+        .map(res -> res.get(0))
+        .map(this::wrapCartEvent)
+        .doOnTerminate(conn::close)
+    );
 }
 ```
 
@@ -982,10 +990,13 @@ Next let's see another important implementation - `streamByUser`:
 public Observable<CartEvent> streamByUser(String userId) {
   JsonArray params = new JsonArray().add(userId).add(userId);
   return client.getConnectionObservable()
-    .flatMap(conn -> conn.queryWithParamsObservable(STREAM_STATEMENT, params))
-    .map(ResultSet::getRows)
-    .flatMapIterable(item -> item) // list merge into observable
-    .map(this::wrapCartEvent);
+    .flatMap(conn ->
+      conn.queryWithParamsObservable(STREAM_STATEMENT, params)
+        .map(ResultSet::getRows)
+        .flatMapIterable(item -> item) // list merge into observable
+        .map(this::wrapCartEvent)
+        .doOnTerminate(conn::close)
+    );
 }
 ```
 
