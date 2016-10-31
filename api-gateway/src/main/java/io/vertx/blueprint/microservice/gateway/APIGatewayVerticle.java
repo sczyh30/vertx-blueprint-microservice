@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 public class APIGatewayVerticle extends RestAPIVerticle {
 
   private static final int DEFAULT_CHECK_PERIOD = 60000;
+  private static final int DEFAULT_PORT = 8787;
 
   private static final Logger logger = LoggerFactory.getLogger(APIGatewayVerticle.class);
 
@@ -49,7 +50,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
 
     // get HTTP host and port from configuration, or use default value
     String host = config().getString("api.gateway.http.address", "localhost");
-    int port = config().getInteger("api.gateway.http.port", 8787);
+    int port = config().getInteger("api.gateway.http.port", DEFAULT_PORT);
 
     Router router = Router.router(vertx);
     // cookie and session handler
@@ -126,14 +127,13 @@ public class APIGatewayVerticle extends RestAPIVerticle {
           // generate new relative path
           String newPath = path.substring(initialOffset + prefix.length());
           // get one relevant HTTP client, may not exist
-          Optional<HttpClient> client = recordList.stream()
+          Optional<Record> client = recordList.stream()
             .filter(record -> record.getMetadata().getString("api.name") != null)
             .filter(record -> record.getMetadata().getString("api.name").equals(prefix))
-            .map(record -> (HttpClient) discovery.getReference(record).get())
             .findAny(); // simple load balance
 
           if (client.isPresent()) {
-            doDispatch(context, newPath, client.get(), future);
+            doDispatch(context, newPath, discovery.getReference(client.get()).get(), future);
           } else {
             notFound(context);
             future.complete();
@@ -318,10 +318,11 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     if (context.user() != null) {
       JsonObject principal = context.user().principal();
       String username = principal.getString("username");
+      // String username = KeycloakHelper.preferredUsername(principal);
       if (username == null) {
         context.response()
           .putHeader("content-type", "application/json")
-          .end(new Account().setId("TEST666").setUsername("Eric").toString());
+          .end(new Account().setId("TEST666").setUsername("Eric").toString()); // TODO: no username should be an error
       } else {
         Future<AccountService> future = Future.future();
         EventBusService.getProxy(discovery,
@@ -333,7 +334,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
           accountService.retrieveByUsername(username, accountFuture.completer());
           return accountFuture;
         })
-          .setHandler(resultHandler(context));
+          .setHandler(resultHandlerNonEmpty(context)); // if user does not exist, should return 404
       }
     } else {
       context.fail(401);
@@ -356,7 +357,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
   }
 
   private String generateAuthRedirectURI() {
-    int port = config().getInteger("api.gateway.http.port", 8787);
+    int port = config().getInteger("api.gateway.http.port", DEFAULT_PORT);
     return oauth2.authorizeURL(new JsonObject()
       .put("redirect_uri", "https://localhost:" + port + "/callback?redirect_uri=https://localhost:8787")
       .put("scope", "")
@@ -364,7 +365,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
   }
 
   private String generateAuthRedirectURI(String from) {
-    int port = config().getInteger("api.gateway.http.port", 8787);
+    int port = config().getInteger("api.gateway.http.port", DEFAULT_PORT);
     return oauth2.authorizeURL(new JsonObject()
       .put("redirect_uri", "https://localhost:" + port + "/callback?redirect_uri=" + from)
       .put("scope", "")

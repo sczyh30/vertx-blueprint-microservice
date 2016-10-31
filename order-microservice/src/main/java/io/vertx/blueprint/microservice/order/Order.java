@@ -34,15 +34,6 @@ public class Order {
     this.orderId = orderId;
   }
 
-  public Order(Order other) {
-    this.orderId = other.orderId;
-    this.payId = other.payId;
-    this.buyerId = other.buyerId;
-    this.products = new ArrayList<>(other.products);
-    this.createTime = other.createTime;
-    this.totalPrice = other.totalPrice;
-  }
-
   public Order(JsonObject json) {
     OrderConverter.fromJson(json, this);
     if (json.getValue("products") instanceof String) {

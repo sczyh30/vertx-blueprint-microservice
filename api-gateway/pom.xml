@@ -7,7 +7,7 @@
   <parent>
     <groupId>io.vertx.blueprint</groupId>
     <artifactId>vertx-blueprint-microservice</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
 
   <artifactId>api-gateway</artifactId>
@@ -21,6 +21,17 @@
       <groupId>io.vertx.blueprint</groupId>
       <artifactId>microservice-blueprint-common</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx.blueprint</groupId>
+      <artifactId>account-microservice</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-auth-oauth2</artifactId>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 

@@ -1,6 +1,5 @@
 package io.vertx.blueprint.microservice.order;
 
-import io.vertx.blueprint.microservice.cart.CheckoutResult;
 import io.vertx.blueprint.microservice.common.BaseMicroserviceVerticle;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;

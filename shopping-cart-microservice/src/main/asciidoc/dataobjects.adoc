@@ -3,6 +3,10 @@
 [[CartEvent]]
 == CartEvent
 
+++++
+ Cart event state object.
+++++
+'''
 
 [cols=">25%,^25%,50%"]
 [frame="topbot"]
@@ -19,6 +23,10 @@
 [[CheckoutResult]]
 == CheckoutResult
 
+++++
+ Checkout result data object.
+++++
+'''
 
 [cols=">25%,^25%,50%"]
 [frame="topbot"]
@@ -31,6 +39,10 @@
 [[ShoppingCart]]
 == ShoppingCart
 
+++++
+ Shopping cart state object.
+++++
+'''
 
 [cols=">25%,^25%,50%"]
 [frame="topbot"]

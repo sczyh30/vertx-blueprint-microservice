@@ -16,7 +16,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
-import rx.Observable;
 
 import java.util.List;
 import java.util.stream.Collectors;

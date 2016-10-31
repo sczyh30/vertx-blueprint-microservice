@@ -7,7 +7,7 @@
   <parent>
     <groupId>io.vertx.blueprint</groupId>
     <artifactId>vertx-blueprint-microservice</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
 
   <artifactId>microservice-blueprint-common</artifactId>
@@ -16,15 +16,18 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-auth-oauth2</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-jdbc-client</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>6.0.3</version>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 

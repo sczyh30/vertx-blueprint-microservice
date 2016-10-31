@@ -1,5 +1,21 @@
 = Cheatsheets
 
+[[CheckoutResult]]
+== CheckoutResult
+
+++++
+ Checkout result data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[message]]`message`|`String`|-
+|[[order]]`order`|`link:dataobjects.html#Order[Order]`|-
+|===
+
 [[Order]]
 == Order
 
