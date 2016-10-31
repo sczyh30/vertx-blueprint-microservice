@@ -15,15 +15,20 @@
 - 多种存储方式支持 (RDBMS, MongoDB, Redis)
 - API Gateway
 - 微服务权限认证 (OAuth 2 + Keycloak)
+- 微服务监控
 
 ## 文档
 
 - [Vert.x 蓝图 - Micro Shop 微服务实战 (开发篇)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/index.html)
 - [Vert.x 蓝图 - Micro Shop 微服务实战 (API Gateway)](http://sczyh30.github.io/vertx-blueprint-microservice/cn/api-gateway.html)
 
+## 架构
+
+![Microservice Architecture](docs/images/entire-architecture.png)
+
 ## 构建/运行
 
-请参考[文档](http://www.sczyh30.com/vertx-blueprint-microservice/cn/index.html#展示时间-)来构建并运行此项目。
+请参考[相关文档](http://www.sczyh30.com/vertx-blueprint-microservice/cn/index.html#展示时间-)来构建并运行此项目。
 
 ## 贡献
 

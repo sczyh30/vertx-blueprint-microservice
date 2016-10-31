@@ -18,6 +18,7 @@ This repo is intended to be an illustration on how to develop microservice appli
 - Polyglot persistence support
 - API gateway
 - Global authentication (OAuth 2 + Keycloak)
+- Monitoring
 
 ## Documentation
 

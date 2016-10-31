@@ -25,7 +25,7 @@ The API Gateway also has some drawbacks. As the API Gateway has so many importan
 
 [Circuit Breaker](http://martinfowler.com/bliki/CircuitBreaker.html) is very useful pattern to handle failure in a distributed environment. It has three states: **CLOSE**, **OPEN** and **HALF-OPEN**, by default it is closed. We can execute some logic in the circuit breaker and every time an execution fails, the failure counter will increase. Once the failure counter reaches a certain threshold, the circuit breaker will be **open**, and all future calls to the circuit breaker will fail immediately. At the same time, a reset timer will start and wait for the timeout (this period of time is for waiting recovery). Once the timeout reaches, the circuit breaker will turn into **half-open** state. In this state, next call to the circuit breaker is allowed. If the call succeeded, we can think the service has recovered from failure so reset the counter and turn into **close** state. If this try fails, the circuit breaker reverts back to the **open** state and wait for next timeout.
 
-Vert.x provides an out-of-box implementation of Circuit Breakr pattern. In our failure-orinted API Gateway, we'll use Vert.x Circuit Breaker to handle failures.
+Vert.x provides an out-of-box implementation of Circuit Breakr pattern. In our failure-orinted API Gateway, we'll use [Vert.x Circuit Breaker](http://vertx.io/docs/vertx-circuit-breaker/java/) to handle failures.
 
 # Implementing API Gateway with Vert.x
 
@@ -201,16 +201,15 @@ private void dispatchRequests(RoutingContext context) {
         // generate new relative path
         String newPath = path.substring(initialOffset + prefix.length());
         // get one relevant HTTP client, may not exist
-        Optional<HttpClient> client = recordList.stream()
+        Optional<Record> client = recordList.stream()
           .filter(record -> record.getMetadata().getString("api.name") != null)
           .filter(record -> record.getMetadata().getString("api.name").equals(prefix)) // (3)
-          .map(record -> (HttpClient) discovery.getReference(record).get()) // (4)
-          .findAny(); // (5) simple load balance
+          .findAny(); // (4) simple load balance
 
         if (client.isPresent()) {
-          doDispatch(context, newPath, client.get(), future); // (6)
+          doDispatch(context, newPath, discovery.getReference(client.get()).get(), future); // (5)
         } else {
-          notFound(context); // (7)
+          notFound(context); // (6)
           future.complete();
         }
       } else {
@@ -219,7 +218,7 @@ private void dispatchRequests(RoutingContext context) {
     });
   }).setHandler(ar -> {
     if (ar.failed()) {
-      badGateway(ar.cause(), context); // (9)
+      badGateway(ar.cause(), context); // (7)
     }
   });
 }
@@ -240,9 +239,9 @@ private Future<List<Record>> getAllEndpoints() {
 
 Notice that this is asynchronous, when it fails, the `future` should be failed to (8).
 
-Then comes to the logic of getting the api name `prefix` for the path, rebuild the relative path for endpoint client. After that we need to filter the endpoints with the correct api name (3). Then we map each records to the corresponding HTTP client using `discovery.getReference(record).get()` (4). Now we get a stream of clients so we can use `findAny` operator to get one possible client that matches the api (5). The `findAny` can be the entry of simple load-balancing, and we can implement our own load-balancing logic to manipulate the stream and get one client. So now we get an `Optional<HttpClient>`, then we should check whether the client exists. If exists, send request to the service and get response using `doDispatch` method with the client (6). And if the client does not exist, that means there aren't any services matches the API so just return **404** and complete the future (7).
+Then comes to the logic of getting the api name `prefix` for the path, rebuild the relative path for endpoint client. After that we need to filter the endpoints with the correct api name (3). Now we get a stream of service records so we can use `findAny` operator to get one possible service record that matches the API (4). The `findAny` can be the entry of simple load-balancing, and we can implement our own load-balancing logic to manipulate the stream and get one client. So now we get an `Optional<Record>`, then we should check whether the client exists. If exists, we get the HTTP client instance from the record via `discovery.getReference(record).get()`, then send request to the service and get response using `doDispatch` method with the client (5). And if the client does not exist, that means there aren't any services matches the API so just return **404** and complete the future (6).
 
-Then we need to deal with the failure. The `Future` returned by the circuit breaker refers to the result that executed in the circuit breaker, so we just set a handler on it and when the future fails, we call our wrapped `badGateway` method to respond **Bad Gateway** error (9) and record logs.
+Then we need to deal with the failure. The `Future` returned by the circuit breaker refers to the result that executed in the circuit breaker, so we just set a handler on it and when the future fails, we call our wrapped `badGateway` method to respond **Bad Gateway** error (7) and record logs.
 
 OK, now we step into the `doDispatch` method, where requests are dispatched:
 
@@ -285,7 +284,7 @@ The given `client` is the HTTP client for corresponding service and `context` fo
 
 Then we can get the response in the response handler of `request` method. We can get the response body via `response.bodyHandler` method. As is mentioned above, if the status code corresponds to server error (5xx), we consider the request failed so the circuit breaker future should be failed as well (4). If the status code is well, we create a server response, set status code and headers (5), then write response to the user client (6). Don't forget to `complete` the circuit breaker future.
 
-Wow! A simple reverse proxy with failure handling is finished! Next let' see how to manage authentication.
+Wow! A simple reverse proxy with failure handling is finished! Though this is a simple implementation, you may extend it for your concrete demand. Next let's see how to manage authentication.
 
 ## Authentication management
 

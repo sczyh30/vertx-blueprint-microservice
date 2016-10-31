@@ -100,9 +100,11 @@ So these components can interact with each other via HTTP or event bus like this
 
 Now let's start our journey with this blueprint! First we clone the project from GitHub:
 
-  git clone https://github.com/sczyh30/vertx-blueprint-microservice.git
+```
+git clone https://github.com/sczyh30/vertx-blueprint-microservice.git
+```
 
-In this tutorial we use *Maven* as the build tool. Let's first look at the `pom.xml` config file. From it we can see our blueprint is composed of several subprojects:
+In this tutorial we use **Maven** as the build tool. Let's first look at the `pom.xml` config file. From it we can see our blueprint is composed of several subprojects:
 
 ```xml
 <modules>

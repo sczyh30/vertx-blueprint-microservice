@@ -23,8 +23,7 @@
 
 - [ ] With Consul (Discovery, heartbeat check)
 - [ ] With Netflix Hystrix
-- [ ] API gateway with Netflix Eureka and Zuul
-- [ ] Integrate with MQ (Kafka or RabbitMQ)
+- [ ] Integrate with Kafka
 
 ## Container/Deployment
 

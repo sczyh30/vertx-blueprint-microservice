@@ -38,6 +38,8 @@ Vert.x提供了现成的Circuit Breaker实现 —— [Vert.x Circuit Breaker](ht
 - 负载均衡
 - 简单的心跳检测
 
+> 注： 在Chris Richardson的 [Building Microservices: Using an API Gateway](https://www.nginx.com/blog/building-microservices-using-an-api-gateway) 文章中提到，API Gateway还负责服务的编排(orchestration)，即将几个REST API的结果组合成一个。这种观点的争议比较大，我们认为如果加入了服务编排，API Gateway就过于庞大，职责太多，不利于解耦，因此在本文API Gateway实现中我们并没有加入服务编排的内容。
+
 ## 总览
 
 我们首先通过探索其中最重要的方法 - `start`方法来对`APIGatewayVerticle`做个总览：
@@ -204,25 +206,24 @@ private void dispatchRequests(RoutingContext context) {
         // generate new relative path
         String newPath = path.substring(initialOffset + prefix.length());
         // get one relevant HTTP client, may not exist
-        Optional<HttpClient> client = recordList.stream()
+        Optional<Record> client = recordList.stream()
           .filter(record -> record.getMetadata().getString("api.name") != null)
           .filter(record -> record.getMetadata().getString("api.name").equals(prefix)) // (3)
-          .map(record -> (HttpClient) discovery.getReference(record).get()) // (4)
-          .findAny(); // (5) simple load balance
+          .findAny(); // (4) simple load balance
 
         if (client.isPresent()) {
-          doDispatch(context, newPath, client.get(), future); // (6)
+          doDispatch(context, newPath, discovery.getReference(client.get()).get(), future); // (5)
         } else {
-          notFound(context); // (7)
+          notFound(context); // (6)
           future.complete();
         }
       } else {
-        future.fail(ar.cause()); // (8)
+        future.fail(ar.cause());
       }
     });
   }).setHandler(ar -> {
     if (ar.failed()) {
-      badGateway(ar.cause(), context); // (9)
+      badGateway(ar.cause(), context); // (7)
     }
   });
 }
@@ -241,9 +242,9 @@ private Future<List<Record>> getAllEndpoints() {
 }
 ```
 
-之后我们来解析路由path获取对应的API名称`prefix`，然后生成请求REST端点的相对路径。之后我们需要通过`filter`算子过滤出与API名称相符的服务记录（3），然后通过`discovery.getReference(record).get()`方法将服务记录变换成对应的`HttpClient`实例（4）。现在我们得到了一串`HttpClient`流，下面我们就可以通过`findAny`算子获取流中任意的REST端点（5）。`findAny`的使用可以算是一个简单的负载均衡的实现，当然我们也可以实现自己的负载均衡算子来操作流并获取其中的HTTP客户端。注意流中可能不存在对应的端点，因此这里调用`findAny`会返回一个`Optional<HttpClient>`类型的结果。之后我们需要检查端点是否存在，如果存在，我们就调用`doDispatch`方法向对应REST端点转发请求并等待回应（6）。如果不存在任何的客户端对应请求的API，这代表对应的API端点不存在，所以直接返回 **404** 状态并且将`future`置为完成状态（7）。
+之后我们来解析路由path获取对应的API名称`prefix`，然后生成请求REST端点的相对路径。之后我们需要通过`filter`算子过滤出与API名称相符的服务记录（3），然后通过`discovery.getReference(record).get()`方法将服务记录变换成对应的`HttpClient`实例（4）。下面我们就可以通过`findAny`算子获取流中任意的REST端点服务记录（4）。`findAny`的使用可以算是一个简单的负载均衡的实现，当然我们也可以实现自己的负载均衡算子来操作流并获取其中的服务记录。注意流中可能不存在对应的服务记录，因此这里调用`findAny`会返回一个`Optional<Record>`类型的结果。之后我们需要检查端点是否存在，如果存在，我们就通过通过`discovery.getReference(record).get()`方法将服务记录变换成对应的`HttpClient`实例，接着调用`doDispatch`方法向对应REST端点转发请求并等待回应（5）。如果不存在任何的客户端对应请求的API，这代表对应的API端点不存在，所以直接返回 **404** 状态并且将`future`置为完成状态（6）。
 
-`execute`方法的结果即为其接受的lambda中的`future`（代表执行结果），所以我们直接给其设定一个错误处理函数，当对应的`future`失败时，我们就调用封装好的`badGateway`方法来返回 **Bad Gateway** 错误（9）并且记录日志。
+`execute`方法的结果即为其接受的lambda中的`future`（代表执行结果），所以我们直接给其设定一个错误处理函数，当对应的`future`失败时，我们就调用封装好的`badGateway`方法来返回 **Bad Gateway** 错误（7）并且记录日志。
 
 
 现在我们来看看请求是怎么被转发的 —— `doDispatch`方法：
@@ -293,8 +294,8 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
 
 ## 权限管理
 
-请见英文版本：[Authentication management](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#authentication-management)。
+请见英文版本：[Authentication management](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#authentication-management)。此部分在日后可能会有变动。
 
 ## 简单的心跳检测
 
-请见英文版本：[Simple heart beat check](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#simple-heart-beat-check)。
+请见英文版本：[Simple heart beat check](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#simple-heart-beat-check)。此部分在日后可能会有变动。

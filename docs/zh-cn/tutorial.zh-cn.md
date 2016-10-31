@@ -16,6 +16,7 @@
 - 如何利用Vert.x实现API Gateway
 - 如何进行权限认证 (OAuth 2 + Keycloak)
 - 如何配置及使用 SockJS - Event Bus Bridge
+- 如何利用Vert.x Metrics获取监控数据
 
 以及其它的一些东西。。。
 
@@ -104,7 +105,9 @@ API Gateway与其它组件通过HTTP进行通信。
 
 好啦，现在开始我们的微服务蓝图旅程吧！首先我们从GitHub上clone项目：
 
-  git clone https://github.com/sczyh30/vertx-blueprint-microservice.git
+```
+git clone https://github.com/sczyh30/vertx-blueprint-microservice.git
+```
 
 在本蓝图教程中，我们使用 **Maven** 作为构建工具。我们首先来看一下`pom.xml`配置文件。我们可以看到，我们的蓝图应用由许多模块构成：
 
@@ -215,7 +218,7 @@ private Future<Void> publish(Record record) {
 
 在`publish`方法中，我们调用了服务发现实例`discovery`的`publish`方法来将服务发布至服务发现模块。它同样也是一个异步方法，当发布成功时，我们将此服务记录存储至`registeredRecords`中，输出日志然后通知`future`操作已完成。最后返回对应的`future`。
 
-注意，在Vert.x Service Discovery当前版本(3.3.2)的设计中，服务发布者需要在必要时手动注销服务，因此当Verticle结束时，我们需要将注册的服务都注销掉：
+注意，在Vert.x Service Discovery当前版本(3.3.3)的设计中，服务发布者需要在必要时手动注销服务，因此当Verticle结束时，我们需要将注册的服务都注销掉：
 
 ```java
 @Override
@@ -1395,7 +1398,7 @@ private Future<CheckoutResult> sendOrderAwaitResult(Order order) {
 - POST `/events` - 向购物车事件存储中添加一个新的与当前用户相关的购物车事件
 - POST `/checkout` - 发出购物车结算请求
 
-注意这三个API都需要权限（登录用户），因此它们的路由处理函数都包装着`requireLogin`方法。这一点已经在之前的API Gateway章节中提到过：
+注意这三个API都需要权限（登录用户），因此它们的路由处理函数都包装着`requireLogin`方法。这一点已经在之前的 [API Gateway章节](http://sczyh30.github.io/vertx-blueprint-microservice/cn/api-gateway.html) 中提到过：
 
 ```java
 // api route handler
