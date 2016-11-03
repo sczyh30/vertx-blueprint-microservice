@@ -86,14 +86,16 @@ services:
     ports:
       - "9100:9100"
   api-gateway:
-      image: vertx-blueprint/api-gateway
-      ports:
-        - "8787:8787"
-      links:
-        - keycloak-server
-        - inventory-microservice
-        - product-microservice
-        - shopping-cart-microservice
-        - order-microservice
-        - account-microservice
-        - store-microservice
+    image: vertx-blueprint/api-gateway
+    ports:
+      - "8787:8787"
+    links:
+      - keycloak-server
+      - inventory-microservice
+      - product-microservice
+      - shopping-cart-microservice
+      - order-microservice
+      - account-microservice
+      - store-microservice
+    extra_hosts:
+      - "dockernet:${EXTERNAL_IP}"

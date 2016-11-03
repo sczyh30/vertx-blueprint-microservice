@@ -67,7 +67,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
 
     router.route().handler(UserSessionHandler.create(oauth2));
 
-    String hostURI = String.format("https://localhost:%d", port);
+    String hostURI = buildHostURI();
 
     // set auth callback handler
     router.route("/callback").handler(context -> authCallback(oauth2, hostURI, context));
@@ -342,10 +342,8 @@ public class APIGatewayVerticle extends RestAPIVerticle {
   }
 
   private void loginEntryHandler(RoutingContext context) {
-    String from = Optional.ofNullable(context.request().getParam("from"))
-      .orElse("https://localhost:8787");
     context.response()
-      .putHeader("Location", generateAuthRedirectURI(from))
+      .putHeader("Location", generateAuthRedirectURI(buildHostURI()))
       .setStatusCode(302)
       .end();
   }
@@ -356,20 +354,17 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     context.response().setStatusCode(204).end();
   }
 
-  private String generateAuthRedirectURI() {
-    int port = config().getInteger("api.gateway.http.port", DEFAULT_PORT);
+  private String generateAuthRedirectURI(String from) {
     return oauth2.authorizeURL(new JsonObject()
-      .put("redirect_uri", "https://localhost:" + port + "/callback?redirect_uri=https://localhost:8787")
+      .put("redirect_uri", from + "/callback?redirect_uri=" + from)
       .put("scope", "")
       .put("state", ""));
   }
 
-  private String generateAuthRedirectURI(String from) {
+  private String buildHostURI() {
     int port = config().getInteger("api.gateway.http.port", DEFAULT_PORT);
-    return oauth2.authorizeURL(new JsonObject()
-      .put("redirect_uri", "https://localhost:" + port + "/callback?redirect_uri=" + from)
-      .put("scope", "")
-      .put("state", ""));
+    final String host = config().getString("api.gateway.http.address.external", "localhost");
+    return String.format("https://%s:%d", host, port);
   }
 
 }
