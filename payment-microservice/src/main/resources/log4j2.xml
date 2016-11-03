@@ -11,11 +11,15 @@
             <Field name="facility" literal="payment-microservice"/>
         </Gelf>
 
+        <Async name="gelf_async">
+            <AppenderRef ref="gelf"/>
+        </Async>
+
     </Appenders>
     <Loggers>
         <Root level="INFO">
             <!--<AppenderRef ref="console"/>-->
-            <AppenderRef ref="gelf"/>
+            <AppenderRef ref="gelf_async"/>
         </Root>
     </Loggers>
 </Configuration>
