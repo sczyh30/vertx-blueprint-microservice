@@ -48,7 +48,8 @@ Use dockernet or any other name to specify the lookup name for docker-machine ho
 
  - Set docker external IP
  
-Edit `api-gateway/src/config/docker.json` and set `api.gateway.http.address.external` property to `dockernet` (or whatever lookup name you chose). 
+Edit `api-gateway/src/config/docker.json` and set `api.gateway.http.address.external` property to `dockernet`.
+If you choose to use a different lookup name than you'll have to update `docker/docker-compose.yml` line `- "dockernet:${EXTERNAL_IP}"` and replace __dockernet__ with your hostname of choice.   
   
 ## Build/Run
 

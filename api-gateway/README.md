@@ -9,6 +9,7 @@ In current version, the SPA frontend is also integrated in the API gateway.
 ## Configuration
 
 - `api.gateway.http.address`: host of the gateway, by default **0.0.0.0**
+- `api.gateway.http.address.external`: external hostname of the gateway, by default **localhost**
 - `api.gateway.http.port`: port of the gateway, by default **8787**
 - `heartbeat.enable`: flag indicating whether heartbeat check is enabled, by default **true**
 - `heartbeat.period`: interval of the heartbeat check, by default **60 seconds**
