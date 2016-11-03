@@ -35,6 +35,21 @@ Detailed tutorials are available here!
 
 ![Microservice Architecture](docs/images/entire-architecture.png)
 
+## Docker Machine setup for OSX / Windows (cygwin)
+
+ - Add a new entry to /etc/hosts (facilitates configuration):
+
+```
+192.168.99.100 dockernet
+```
+
+Where the IP is your `docker-machine ip`. 
+Use dockernet or any other name to specify the lookup name for docker-machine host.
+
+ - Set docker external IP
+ 
+Edit `api-gateway/src/config/docker.json` and set `api.gateway.http.address.external` property to `dockernet` (or whatever lookup name you chose). 
+  
 ## Build/Run
 
 First, for `api-gateway` and `monitor-dashboard` component, you have to enter the `src/main/resources/webroot` directory and install the frontend dependencies with **bower**:
