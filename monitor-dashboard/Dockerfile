@@ -12,4 +12,4 @@ COPY src/config/docker.json $VERTICLE_HOME/
 
 WORKDIR $VERTICLE_HOME
 ENTRYPOINT ["sh", "-c"]
-CMD ["java -jar monitor-dashboard-fat.jar -Dvertx.metrics.options.enabled=true -cluster -conf docker.json"]
+CMD ["java -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory -jar monitor-dashboard-fat.jar -Dvertx.metrics.options.enabled=true -cluster -conf docker.json"]
