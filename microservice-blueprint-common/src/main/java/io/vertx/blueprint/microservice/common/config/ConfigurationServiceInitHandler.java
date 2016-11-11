@@ -4,5 +4,5 @@ import io.vertx.core.json.JsonObject;
 
 @FunctionalInterface
 public interface ConfigurationServiceInitHandler {
-    void initialize(final JsonObject config);
+  void initialize(final JsonObject config);
 }
