@@ -15,7 +15,7 @@ fi
 export EXTERNAL_IP=$IP
 
 # Get this script directory (to find yml from any directory)
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Stop
 docker-compose -f $DIR/docker-compose.yml stop

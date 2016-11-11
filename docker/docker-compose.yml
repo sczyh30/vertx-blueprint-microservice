@@ -1,5 +1,16 @@
+# The following might be required if using docker-machine:
+# docker-machine ssh
+# sudo sysctl net.ipv4.ip_forward; sudo sysctl -w vm.max_map_count=262144
+# add "192.168.99.100   dockernet" to /etc/hosts
+
 version: "2"
 services:
+  configserver:
+    image: httpd:alpine
+    ports:
+      - "8000:80"
+    volumes:
+      - ${DIR}/config-server:/usr/local/apache2/htdocs:ro
   mysql:
     image: mysql:5.7
     expose:
@@ -54,13 +65,17 @@ services:
   inventory-microservice:
     image: vertx-blueprint/inventory-microservice
     links:
+      - configserver
       - redis
       - logstash
     depends_on:
+      - configserver
       - redis
       - logstash
-    expose:
-      - "8086"
+#    expose:
+#      - "8086"
+    ports:
+      - "8086:8086"
   product-microservice:
     image: vertx-blueprint/product-microservice
     links:
