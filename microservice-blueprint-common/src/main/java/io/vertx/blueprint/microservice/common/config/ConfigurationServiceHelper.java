@@ -31,7 +31,7 @@ public enum ConfigurationServiceHelper {
     return this;
   }
 
-  public ConfigurationServiceHelper start(final Vertx vertx, final Context context) {
+  public ConfigurationServiceHelper start(final Vertx vertx) {
     confSvc = create(vertx, options);
 
     confSvc.getConfiguration(ar -> {
@@ -39,14 +39,14 @@ public enum ConfigurationServiceHelper {
         logger.info("Failed to retrieve configuration...");
       } else {
         final JsonObject config =
-          context.config().mergeIn(ofNullable(ar.result()).orElse(new JsonObject()));
+          vertx.getOrCreateContext().config().mergeIn(ofNullable(ar.result()).orElse(new JsonObject()));
         initializers.forEach(initializer -> initializer.initialize(config));
       }
     });
 
     confSvc.listen(ar -> {
       final JsonObject config =
-        context.config().mergeIn(ofNullable(ar.getNewConfiguration()).orElse(new JsonObject()));
+        vertx.getOrCreateContext().config().mergeIn(ofNullable(ar.getNewConfiguration()).orElse(new JsonObject()));
       updaters.forEach(updater -> updater.update(config));
     });
     return this;
