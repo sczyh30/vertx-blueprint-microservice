@@ -13,4 +13,4 @@ COPY src/config/docker.json $VERTICLE_HOME/
 
 WORKDIR $VERTICLE_HOME
 ENTRYPOINT ["sh", "-c"]
-CMD ["java -jar api-gateway-fat.jar -cluster -ha -conf docker.json"]
+CMD ["java -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory -jar api-gateway-fat.jar -cluster -ha -conf docker.json"]

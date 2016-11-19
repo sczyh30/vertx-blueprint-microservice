@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="error" packages="biz.paluch.logging.gelf.log4j2">
+    <Appenders>
+
+        <!--<Console name="console" target="SYSTEM_OUT">-->
+        <!--<PatternLayout pattern="%d{dd.MM.yyyy HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
+        <!--</Console>-->
+
+        <Gelf name="gelf" host="udp:logstash" port="12201">
+            <Field name="level" pattern="%level"/>
+            <Field name="facility" literal="api-gateway"/>
+        </Gelf>
+
+        <Async name="gelf_async">
+            <AppenderRef ref="gelf"/>
+        </Async>
+
+    </Appenders>
+    <Loggers>
+        <Root level="INFO">
+            <!--<AppenderRef ref="console"/>-->
+            <AppenderRef ref="gelf_async"/>
+        </Root>
+    </Loggers>
+</Configuration>
