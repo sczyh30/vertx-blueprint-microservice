@@ -11,6 +11,7 @@
 - 事件溯源 (Event Sourcing)
 - 通过分布式 Event Bus 进行异步RPC调用
 - 各种各样的服务类型（例如REST、数据源、Event Bus服务等）
+- 如何利用Vert.x Configuration Retriever更灵活地配置微服务
 - 如何使用服务发现模块 (Vert.x Service Discovery)
 - 如何使用断路器模块 (Vert.x Circuit Breaker)
 - 如何利用Vert.x实现API Gateway
@@ -1640,7 +1641,37 @@ eventbus.onopen = () => {
 
 哈哈，现在我们已经看完整个Micro Shop微服务的源码了～看源码看的也有些累了，现在到了展示时间了！这里我们使用Docker Compose来编排容器并运行我们的微服务应用，非常方便。
 
-> 注意：建议预留 4GB 内存来运行此微服务应用。
+> 注意：至少预留 4GB 内存来运行此微服务应用。
+
+## Docker Machine配置(macOS/Windows)
+
+如果你是通过Docker Machine来运行我们的微服务应用的话，你需要进行一些配置。首先向 `hosts` 文件中添加一条记录：
+
+```
+192.168.99.100 dockernet
+```
+
+其中记录对应的IP地址为Docker Machine的IP地址，可以通过`docker-machine ip`命令获取。当然这个地方你也可以用其它的hostname。
+
+接着你需要设定Docker external IP。编辑`api-gateway/src/config/docker.json`配置文件，将`api.gateway.http.address.external`属性设置为`dockernet`。
+
+## 内核属性及内存配置
+
+为了让ELK组件能够正常运作，我们需要更改一些内核属性。首先，`vm.max_map_count`需要大于 **262144**。在Linux下可以用以下命令修改：
+
+```shell
+sudo sysctl -w vm.max_map_count=262144
+```
+
+Docker Machine对应的命令:
+
+```shell
+docker-machine ssh
+sudo sysctl net.ipv4.ip_forward
+sudo sysctl -w vm.max_map_count=262144
+```
+
+另外，正常运行本微服务实例至少需要4GB内存，因此Docker Machine虚拟机对应的内存至少应该为 4096 MB，否则可能会出错。
 
 ## 构建项目以及容器
 
@@ -1669,7 +1700,7 @@ sudo ./build.sh
 sudo ./run.sh
 ```
 
-当整个微服务初始化完成的时候，我们就可以在浏览器中浏览网店页面了，默认地址是 [https://localhost:8787](https://localhost:8787)。
+数据库组件与中间件组件（如MySQL, Keycloak, ELK)会首先启动，因为它们启动的时间比较长。中间件组件初始化完毕以后，各个服务容器就会依次启动。当整个微服务初始化完成的时候，我们就可以在浏览器中浏览网店页面了，默认地址是 [https://localhost:8787](https://localhost:8787)。
 
 ## 第一次运行？
 

@@ -1,51 +1,52 @@
 package io.vertx.blueprint.microservice.common.config;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.configuration.ConfigurationService;
-import io.vertx.ext.configuration.ConfigurationServiceOptions;
+import io.vertx.ext.configuration.ConfigurationRetriever;
+import io.vertx.ext.configuration.ConfigurationRetrieverOptions;
 import io.vertx.ext.configuration.ConfigurationStoreOptions;
 import rx.Observable;
 
-import static io.vertx.ext.configuration.ConfigurationService.create;
-import static java.util.Optional.ofNullable;
+/**
+ * Helper class for configuration retriever.
+ */
+public enum ConfigurationRetrieverHelper {
+  configurationRetriever;
 
-public enum ConfigurationServiceHelper {
-  configurationService;
+  private static final Logger logger = LoggerFactory.getLogger(ConfigurationRetrieverHelper.class);
 
-  private static final Logger logger = LoggerFactory.getLogger(ConfigurationServiceHelper.class);
+  private ConfigurationRetriever confRetriever;
+  private ConfigurationRetrieverOptions options = new ConfigurationRetrieverOptions();
 
-  private ConfigurationService confSvc;
-  private ConfigurationServiceOptions options = new ConfigurationServiceOptions();
-
-  public ConfigurationServiceHelper usingScanPeriod(final long scanPeriod) {
+  public ConfigurationRetrieverHelper usingScanPeriod(final long scanPeriod) {
     options.setScanPeriod(scanPeriod);
     return this;
   }
 
   public Observable<JsonObject> createConfigObservable(final Vertx vertx) {
-    confSvc = create(vertx, options);
+    confRetriever = ConfigurationRetriever.create(vertx, options);
 
     final Observable<JsonObject> configObservable = Observable.create(subscriber -> {
-      confSvc.getConfiguration(ar -> {
+      confRetriever.getConfiguration(ar -> {
         if (ar.failed()) {
           logger.info("Failed to retrieve configuration");
         } else {
           final JsonObject config =
             vertx.getOrCreateContext().config().mergeIn(
-              ofNullable(ar.result()).orElse(new JsonObject()));
+              Optional.ofNullable(ar.result()).orElse(new JsonObject()));
           subscriber.onNext(config);
         }
       });
 
-      confSvc.listen(ar -> {
+      confRetriever.listen(ar -> {
         final JsonObject config =
           vertx.getOrCreateContext().config().mergeIn(
-            ofNullable(ar.getNewConfiguration()).orElse(new JsonObject()));
+            Optional.ofNullable(ar.getNewConfiguration()).orElse(new JsonObject()));
         subscriber.onNext(config);
       });
     });
@@ -58,7 +59,7 @@ public enum ConfigurationServiceHelper {
     return configObservable.filter(Objects::nonNull);
   }
 
-  public ConfigurationServiceHelper withHttpStore(final String host, final int port, final String path) {
+  public ConfigurationRetrieverHelper withHttpStore(final String host, final int port, final String path) {
     ConfigurationStoreOptions httpStore = new ConfigurationStoreOptions()
       .setType("http")
       .setConfig(new JsonObject()

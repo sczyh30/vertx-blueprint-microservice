@@ -2,16 +2,13 @@ package io.vertx.blueprint.microservice.inventory;
 
 import io.vertx.blueprint.microservice.common.RestAPIVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import org.apache.logging.log4j.core.LoggerContext;
-import rx.Observable;
 
-import static io.vertx.blueprint.microservice.common.config.ConfigurationServiceHelper.configurationService;
+import static io.vertx.blueprint.microservice.common.config.ConfigurationRetrieverHelper.configurationRetriever;
 import static io.vertx.blueprint.microservice.common.config.Log4jConfigurationServiceHandler.log4jSubscriber;
 
 /**
@@ -37,9 +34,9 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
   public void start(Future<Void> future) throws Exception {
     super.start();
 
-    configurationService
+    configurationRetriever // TODO: enhance its usage
       .usingScanPeriod(SCAN_PERIOD)
-      .withHttpStore("configserver", 80, "/inventory-microservice/docker.json")
+      .withHttpStore("config-server", 80, "/inventory-microservice/docker.json")
       .createConfigObservable(vertx)
       .subscribe(log4jSubscriber);
 

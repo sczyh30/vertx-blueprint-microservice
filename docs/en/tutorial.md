@@ -14,6 +14,7 @@ What you are going to learn:
 - Asynchronous RPC on the clustered event bus
 - Various type of services (e.g. HTTP endpoint, message source, data source)
 - Service discovery with Vert.x
+- How to configure the microservice more flexibly
 - How to use Vert.x Circuit Breaker
 - How to implement a simple API Gateway
 - How to manage global authentication using OAuth 2 and Keycloak with Vert.x-Auth
@@ -1691,7 +1692,48 @@ Later we'll run the dashboard and inspect the status of the microservices.
 
 # Show time!
 
-Wow, we've explored all of the code of the online shopping microservice, so it's show time! I recommend you run the microservice application with Docker Compose as it's very convenient.
+Wow, we've explored all of the code of the online shopping microservice, so it's show time! We'll run the microservice application with Docker Compose as it's very convenient.
+
+> Note: It's highly recommended to reserve at least 4GB memory for the microservice.
+
+## Docker Machine setup (macOS/Windows)
+
+If you are using Docker Machine on macOS or Windows, there are some configurations required for running the micorservice.
+
+First add a new entry to your `hosts` file (in macOS, the location is `/etc/hosts`):
+
+```
+192.168.99.100 dockernet
+```
+
+Where the IP here is your `docker-machine ip`. You can also use any other hostname to specify the lookup name for docker-machine host.
+
+Then you also need to set Docker external IP for API Gateway. Edit `api-gateway/src/config/docker.json` and set `api.gateway.http.address.external` property to `dockernet`.
+If you choose to use a different lookup name than you'll have to update `docker/docker-compose.yml` line `- "dockernet:${EXTERNAL_IP}"` and replace `dockernet` with your hostname of choice.
+
+## Configuration for ELK stack
+
+To make ELK stack work correctly, we need to modify some kernel properties. First the `vm.max_map_count` should be at least **262144**:
+
+```shell
+sudo sysctl -w vm.max_map_count=262144
+```
+
+Configuration for Docker Machine:
+
+```shell
+docker-machine ssh
+sudo sysctl net.ipv4.ip_forward
+sudo sysctl -w vm.max_map_count=262144
+```
+
+And for Docker Machine users, memory might be an issue as well. If applications start failing because memory could not be allocated, then you'll need to increase your docker-machine memory using the following steps:
+
+1. Stop docker-machine: `docker-machine stop`
+2. Start VirtualBox
+3. Select `default` VM
+4. Choose Settings->System
+5. Increase `Base Memory` (at least **4096** MB)
 
 ## Build the code and containers
 
@@ -1720,9 +1762,9 @@ As soon as the build finished, run the microservice:
 sudo ./run.sh
 ```
 
-The persistence and auth containers (MySQL, MongoDB, Redis and Keycloak) will be started first because it might take some time to initialize. When the persistence is prepared okay, the other services will be started in order.
+The persistence and middleware containers (e.g. MySQL, MongoDB, Redis, Keycloak, ELK) will be started first because it might take some time to initialize. When the initialization has been done, the other services will be started in order.
 
-When the entire microservice is initialized successful, we can visit the shop SPA in browser, by default the URL is [https://localhost:8787](https://localhost:8787).
+When the entire microservice is running successful, we can visit the shop SPA in browser, by default the URL is [https://localhost:8787](https://localhost:8787).
 
 ## Some configuration for the first time
 

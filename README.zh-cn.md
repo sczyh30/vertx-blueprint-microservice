@@ -9,12 +9,14 @@
 - 函数式、响应式编程范式
 - 事件溯源 (Event Sourcing)
 - 通过分布式Event Bus进行异步RPC调用
+- 更加灵活地配置微服务
 - 各种各样的服务类型（例如REST、数据源、Event Bus服务等）
 - 服务发现 (Service Discovery)
-- 断路器 (Circuit Breaker)
+- 熔断器 (Circuit Breaker)
 - 多种存储方式支持 (RDBMS, MongoDB, Redis)
 - API Gateway
 - 微服务权限认证 (OAuth 2 + Keycloak)
+- 集中化日志(ELK整合)
 - 微服务监控
 
 ## 文档
