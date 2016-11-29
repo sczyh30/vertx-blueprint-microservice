@@ -2,9 +2,17 @@ package io.vertx.blueprint.microservice.inventory;
 
 import io.vertx.blueprint.microservice.common.RestAPIVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import org.apache.logging.log4j.core.LoggerContext;
+import rx.Observable;
+
+import static io.vertx.blueprint.microservice.common.config.ConfigurationServiceHelper.configurationService;
+import static io.vertx.blueprint.microservice.common.config.Log4jConfigurationServiceHandler.log4jSubscriber;
 
 /**
  * A verticle supplies HTTP endpoint for inventory service API.
@@ -13,17 +21,27 @@ import io.vertx.ext.web.handler.BodyHandler;
  */
 public class InventoryRestAPIVerticle extends RestAPIVerticle {
 
+  private static final Logger logger = LoggerFactory.getLogger(InventoryRestAPIVerticle.class);
+
   private static final String SERVICE_NAME = "inventory-rest-api";
 
   private static final String API_INCREASE = "/:productId/increase";
   private static final String API_DECREASE = "/:productId/decrease";
   private static final String API_RETRIEVE = "/:productId";
 
+  private static final long SCAN_PERIOD = 20000L;
+
   private InventoryService inventoryService;
 
   @Override
   public void start(Future<Void> future) throws Exception {
     super.start();
+
+    configurationService
+      .usingScanPeriod(SCAN_PERIOD)
+      .withHttpStore("configserver", 80, "/inventory-microservice/docker.json")
+      .createConfigObservable(vertx)
+      .subscribe(log4jSubscriber);
 
     this.inventoryService = InventoryService.createService(vertx, config());
 
@@ -78,9 +96,9 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
   }
 
   private void apiRetrieve(RoutingContext context) {
+    logger.info("Retrieving Product: " + context.request().getParam("productId"));
     String productId = context.request().getParam("productId");
     inventoryService.retrieveInventoryForProduct(productId)
       .setHandler(rawResultHandler(context));
   }
-
 }
