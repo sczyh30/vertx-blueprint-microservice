@@ -60,11 +60,11 @@ services:
   inventory-microservice:
     image: vertx-blueprint/inventory-microservice
     links:
-      - configserver
+      - config-server
       - redis
       - logstash
     depends_on:
-      - configserver
+      - config-server
       - redis
       - logstash
 #    expose:
