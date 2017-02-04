@@ -439,12 +439,11 @@ private Future<Object> sendHeartBeatRequest() {
         .collect(Collectors.toList());
       return Functional.sequenceFuture(statusFutureList); // get all responses
     })
-    .map(List::stream)
     .compose(statusList -> {
-      boolean notHealthy = statusList.anyMatch(status -> !status.getBoolean("status"));
+      boolean notHealthy = statusList.stream().anyMatch(status -> !status.getBoolean("status"));
 
       if (notHealthy) {
-        String issues = statusList.filter(status -> !status.getBoolean("status"))
+        String issues = statusList.stream().filter(status -> !status.getBoolean("status"))
           .map(status -> status.getString("name"))
           .collect(Collectors.joining(", "));
 
