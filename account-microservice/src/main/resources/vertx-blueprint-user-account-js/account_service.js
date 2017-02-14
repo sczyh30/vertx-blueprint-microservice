@@ -19,8 +19,8 @@ var utils = require('vertx-js/util/utils');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JAccountService = io.vertx.blueprint.microservice.account.AccountService;
-var Account = io.vertx.blueprint.microservice.account.Account;
+var JAccountService = Java.type('io.vertx.blueprint.microservice.account.AccountService');
+var Account = Java.type('io.vertx.blueprint.microservice.account.Account');
 
 /**
  A service interface managing user accounts.
@@ -67,7 +67,7 @@ var AccountService = function (j_val) {
   this.addAccount = function (account, resultHandler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_accountService["addAccount(io.vertx.blueprint.microservice.account.Account,io.vertx.core.Handler)"](account != null ? new Account(new JsonObject(JSON.stringify(account))) : null, function (ar) {
+      j_accountService["addAccount(io.vertx.blueprint.microservice.account.Account,io.vertx.core.Handler)"](account != null ? new Account(new JsonObject(Java.asJSONCompatible(account))) : null, function (ar) {
         if (ar.succeeded()) {
           resultHandler(null, null);
         } else {
@@ -154,7 +154,7 @@ var AccountService = function (j_val) {
   this.updateAccount = function (account, resultHandler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_accountService["updateAccount(io.vertx.blueprint.microservice.account.Account,io.vertx.core.Handler)"](account != null ? new Account(new JsonObject(JSON.stringify(account))) : null, function (ar) {
+      j_accountService["updateAccount(io.vertx.blueprint.microservice.account.Account,io.vertx.core.Handler)"](account != null ? new Account(new JsonObject(Java.asJSONCompatible(account))) : null, function (ar) {
         if (ar.succeeded()) {
           resultHandler(utils.convReturnDataObject(ar.result()), null);
         } else {
@@ -214,5 +214,23 @@ var AccountService = function (j_val) {
   this._jdel = j_accountService;
 };
 
-// We export the Constructor function
+AccountService._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.account.AccountService");
+AccountService._jtype = {
+  accept: function (obj) {
+    return AccountService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(AccountService.prototype, {});
+    AccountService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+AccountService._create = function (jdel) {
+  var obj = Object.create(AccountService.prototype, {});
+  AccountService.apply(obj, arguments);
+  return obj;
+}
 module.exports = AccountService;

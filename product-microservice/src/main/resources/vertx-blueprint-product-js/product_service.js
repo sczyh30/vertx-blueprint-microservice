@@ -19,8 +19,8 @@ var utils = require('vertx-js/util/utils');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JProductService = io.vertx.blueprint.microservice.product.ProductService;
-var Product = io.vertx.blueprint.microservice.product.Product;
+var JProductService = Java.type('io.vertx.blueprint.microservice.product.ProductService');
+var Product = Java.type('io.vertx.blueprint.microservice.product.Product');
 
 /**
  A service interface managing products.
@@ -67,7 +67,7 @@ var ProductService = function (j_val) {
   this.addProduct = function (product, resultHandler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_productService["addProduct(io.vertx.blueprint.microservice.product.Product,io.vertx.core.Handler)"](product != null ? new Product(new JsonObject(JSON.stringify(product))) : null, function (ar) {
+      j_productService["addProduct(io.vertx.blueprint.microservice.product.Product,io.vertx.core.Handler)"](product != null ? new Product(new JsonObject(Java.asJSONCompatible(product))) : null, function (ar) {
         if (ar.succeeded()) {
           resultHandler(null, null);
         } else {
@@ -214,5 +214,23 @@ var ProductService = function (j_val) {
   this._jdel = j_productService;
 };
 
-// We export the Constructor function
+ProductService._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.product.ProductService");
+ProductService._jtype = {
+  accept: function (obj) {
+    return ProductService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(ProductService.prototype, {});
+    ProductService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+ProductService._create = function (jdel) {
+  var obj = Object.create(ProductService.prototype, {});
+  ProductService.apply(obj, arguments);
+  return obj;
+}
 module.exports = ProductService;

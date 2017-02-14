@@ -18,6 +18,28 @@ module VertxBlueprintShoppingCart
     def j_del
       @j_del
     end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == CheckoutService
+    end
+
+    def @@j_api_type.wrap(obj)
+      CheckoutService.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroserviceCart::CheckoutService.java_class
+    end
     #  Create a shopping checkout service instance
     # @param [::Vertx::Vertx] vertx 
     # @param [::VertxServiceDiscovery::ServiceDiscovery] discovery 
@@ -26,7 +48,7 @@ module VertxBlueprintShoppingCart
       if vertx.class.method_defined?(:j_del) && discovery.class.method_defined?(:j_del) && !block_given?
         return ::Vertx::Util::Utils.safe_create(Java::IoVertxBlueprintMicroserviceCart::CheckoutService.java_method(:createService, [Java::IoVertxCore::Vertx.java_class,Java::IoVertxServicediscovery::ServiceDiscovery.java_class]).call(vertx.j_del,discovery.j_del),::VertxBlueprintShoppingCart::CheckoutService)
       end
-      raise ArgumentError, "Invalid arguments when calling create_service(vertx,discovery)"
+      raise ArgumentError, "Invalid arguments when calling create_service(#{vertx},#{discovery})"
     end
     #  Shopping cart checkout.
     # @param [String] userId user id
@@ -36,7 +58,7 @@ module VertxBlueprintShoppingCart
       if userId.class == String && block_given?
         return @j_del.java_method(:checkout, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(userId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
       end
-      raise ArgumentError, "Invalid arguments when calling checkout(userId)"
+      raise ArgumentError, "Invalid arguments when calling checkout(#{userId})"
     end
   end
 end

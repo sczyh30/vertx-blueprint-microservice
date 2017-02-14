@@ -16,6 +16,28 @@ module VertxBlueprintUserAccount
     def j_del
       @j_del
     end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == AccountService
+    end
+
+    def @@j_api_type.wrap(obj)
+      AccountService.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroserviceAccount::AccountService.java_class
+    end
     #  Initialize the persistence.
     # @yield the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
     # @return [self]
@@ -35,7 +57,7 @@ module VertxBlueprintUserAccount
         @j_del.java_method(:addAccount, [Java::IoVertxBlueprintMicroserviceAccount::Account.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceAccount::Account.new(::Vertx::Util::Utils.to_json_object(account)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling add_account(account)"
+      raise ArgumentError, "Invalid arguments when calling add_account(#{account})"
     end
     #  Retrieve the user account with certain `id`.
     # @param [String] id user account id
@@ -46,7 +68,7 @@ module VertxBlueprintUserAccount
         @j_del.java_method(:retrieveAccount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_account(id)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_account(#{id})"
     end
     #  Retrieve the user account with certain `username`.
     # @param [String] username username
@@ -57,7 +79,7 @@ module VertxBlueprintUserAccount
         @j_del.java_method(:retrieveByUsername, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(username,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_by_username(username)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_by_username(#{username})"
     end
     #  Retrieve all user accounts.
     # @yield the result handler will be called as soon as the users have been retrieved. The async result indicates whether the operation was successful or not.
@@ -78,7 +100,7 @@ module VertxBlueprintUserAccount
         @j_del.java_method(:updateAccount, [Java::IoVertxBlueprintMicroserviceAccount::Account.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceAccount::Account.new(::Vertx::Util::Utils.to_json_object(account)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling update_account(account)"
+      raise ArgumentError, "Invalid arguments when calling update_account(#{account})"
     end
     #  Delete a user account from the persistence
     # @param [String] id user account id
@@ -89,7 +111,7 @@ module VertxBlueprintUserAccount
         @j_del.java_method(:deleteAccount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling delete_account(id)"
+      raise ArgumentError, "Invalid arguments when calling delete_account(#{id})"
     end
     #  Delete all user accounts from the persistence
     # @yield the result handler will be called as soon as the users have been removed. The async result indicates whether the operation was successful or not.

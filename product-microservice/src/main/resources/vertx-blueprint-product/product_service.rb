@@ -16,6 +16,28 @@ module VertxBlueprintProduct
     def j_del
       @j_del
     end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == ProductService
+    end
+
+    def @@j_api_type.wrap(obj)
+      ProductService.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroserviceProduct::ProductService.java_class
+    end
     #  Initialize the persistence.
     # @yield the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
     # @return [self]
@@ -35,7 +57,7 @@ module VertxBlueprintProduct
         @j_del.java_method(:addProduct, [Java::IoVertxBlueprintMicroserviceProduct::Product.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceProduct::Product.new(::Vertx::Util::Utils.to_json_object(product)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling add_product(product)"
+      raise ArgumentError, "Invalid arguments when calling add_product(#{product})"
     end
     #  Retrieve the product with certain `productId`.
     # @param [String] productId product id
@@ -46,7 +68,7 @@ module VertxBlueprintProduct
         @j_del.java_method(:retrieveProduct, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(productId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_product(productId)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_product(#{productId})"
     end
     #  Retrieve the product price with certain `productId`.
     # @param [String] productId product id
@@ -57,7 +79,7 @@ module VertxBlueprintProduct
         @j_del.java_method(:retrieveProductPrice, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(productId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.encode) : nil : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_product_price(productId)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_product_price(#{productId})"
     end
     #  Retrieve all products.
     # @yield the result handler will be called as soon as the products have been retrieved. The async result indicates whether the operation was successful or not.
@@ -78,7 +100,7 @@ module VertxBlueprintProduct
         @j_del.java_method(:retrieveProductsByPage, [Java::int.java_class,Java::IoVertxCore::Handler.java_class]).call(page,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_products_by_page(page)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_products_by_page(#{page})"
     end
     #  Delete a product from the persistence
     # @param [String] productId product id
@@ -89,7 +111,7 @@ module VertxBlueprintProduct
         @j_del.java_method(:deleteProduct, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(productId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling delete_product(productId)"
+      raise ArgumentError, "Invalid arguments when calling delete_product(#{productId})"
     end
     #  Delete all products from the persistence
     # @yield the result handler will be called as soon as the products have been removed. The async result indicates whether the operation was successful or not.

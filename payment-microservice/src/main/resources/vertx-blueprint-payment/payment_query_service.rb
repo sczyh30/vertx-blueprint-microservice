@@ -16,6 +16,28 @@ module VertxBlueprintPayment
     def j_del
       @j_del
     end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == PaymentQueryService
+    end
+
+    def @@j_api_type.wrap(obj)
+      PaymentQueryService.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroservicePayment::PaymentQueryService.java_class
+    end
     #  Initialize the persistence.
     # @yield the result handler will be called as soon as the initialization has been accomplished. The async result indicates whether the operation was successful or not.
     # @return [void]
@@ -33,7 +55,7 @@ module VertxBlueprintPayment
       if payment.class == Hash && block_given?
         return @j_del.java_method(:addPaymentRecord, [Java::IoVertxBlueprintMicroservicePayment::Payment.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroservicePayment::Payment.new(::Vertx::Util::Utils.to_json_object(payment)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
       end
-      raise ArgumentError, "Invalid arguments when calling add_payment_record(payment)"
+      raise ArgumentError, "Invalid arguments when calling add_payment_record(#{payment})"
     end
     #  Retrieve payment record from backend by payment id.
     # @param [String] payId payment id
@@ -43,7 +65,7 @@ module VertxBlueprintPayment
       if payId.class == String && block_given?
         return @j_del.java_method(:retrievePaymentRecord, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(payId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_payment_record(payId)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_payment_record(#{payId})"
     end
   end
 end

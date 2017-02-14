@@ -18,6 +18,7 @@ package io.vertx.blueprint.microservice.cart.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import rx.Single;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
 import io.vertx.core.AsyncResult;
@@ -34,15 +35,21 @@ import io.vertx.blueprint.microservice.cart.CheckoutResult;
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.cart.CheckoutService original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.microservice.cart.CheckoutService.class)
 public class CheckoutService {
 
-  final io.vertx.blueprint.microservice.cart.CheckoutService delegate;
+  public static final io.vertx.lang.rxjava.TypeArg<CheckoutService> __TYPE_ARG = new io.vertx.lang.rxjava.TypeArg<>(
+    obj -> new CheckoutService((io.vertx.blueprint.microservice.cart.CheckoutService) obj),
+    CheckoutService::getDelegate
+  );
 
+  private final io.vertx.blueprint.microservice.cart.CheckoutService delegate;
+  
   public CheckoutService(io.vertx.blueprint.microservice.cart.CheckoutService delegate) {
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.microservice.cart.CheckoutService getDelegate() {
     return delegate;
   }
 
@@ -53,7 +60,7 @@ public class CheckoutService {
    * @return 
    */
   public static CheckoutService createService(Vertx vertx, ServiceDiscovery discovery) { 
-    CheckoutService ret = CheckoutService.newInstance(io.vertx.blueprint.microservice.cart.CheckoutService.createService((io.vertx.core.Vertx)vertx.getDelegate(), (io.vertx.servicediscovery.ServiceDiscovery)discovery.getDelegate()));
+    CheckoutService ret = CheckoutService.newInstance(io.vertx.blueprint.microservice.cart.CheckoutService.createService(vertx.getDelegate(), discovery.getDelegate()));
     return ret;
   }
 
@@ -71,10 +78,10 @@ public class CheckoutService {
    * @param userId user id
    * @return 
    */
-  public Observable<CheckoutResult> checkoutObservable(String userId) { 
-    io.vertx.rx.java.ObservableFuture<CheckoutResult> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    checkout(userId, handler.toHandler());
-    return handler;
+  public Single<CheckoutResult> rxCheckout(String userId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      checkout(userId, fut);
+    }));
   }
 
 

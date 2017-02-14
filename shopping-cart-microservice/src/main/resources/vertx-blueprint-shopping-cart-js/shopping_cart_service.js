@@ -19,9 +19,9 @@ var utils = require('vertx-js/util/utils');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JShoppingCartService = io.vertx.blueprint.microservice.cart.ShoppingCartService;
-var CartEvent = io.vertx.blueprint.microservice.cart.CartEvent;
-var ShoppingCart = io.vertx.blueprint.microservice.cart.ShoppingCart;
+var JShoppingCartService = Java.type('io.vertx.blueprint.microservice.cart.ShoppingCartService');
+var CartEvent = Java.type('io.vertx.blueprint.microservice.cart.CartEvent');
+var ShoppingCart = Java.type('io.vertx.blueprint.microservice.cart.ShoppingCart');
 
 /**
  A service interface for shopping cart operation.
@@ -47,7 +47,7 @@ var ShoppingCartService = function(j_val) {
   this.addCartEvent = function(event, resultHandler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_shoppingCartService["addCartEvent(io.vertx.blueprint.microservice.cart.CartEvent,io.vertx.core.Handler)"](event != null ? new CartEvent(new JsonObject(JSON.stringify(event))) : null, function(ar) {
+      j_shoppingCartService["addCartEvent(io.vertx.blueprint.microservice.cart.CartEvent,io.vertx.core.Handler)"](event != null ? new CartEvent(new JsonObject(Java.asJSONCompatible(event))) : null, function (ar) {
       if (ar.succeeded()) {
         resultHandler(null, null);
       } else {
@@ -86,5 +86,23 @@ var ShoppingCartService = function(j_val) {
   this._jdel = j_shoppingCartService;
 };
 
-// We export the Constructor function
+ShoppingCartService._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.cart.ShoppingCartService");
+ShoppingCartService._jtype = {
+  accept: function (obj) {
+    return ShoppingCartService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(ShoppingCartService.prototype, {});
+    ShoppingCartService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+ShoppingCartService._create = function (jdel) {
+  var obj = Object.create(ShoppingCartService.prototype, {});
+  ShoppingCartService.apply(obj, arguments);
+  return obj;
+}
 module.exports = ShoppingCartService;

@@ -21,8 +21,8 @@ var ServiceDiscovery = require('vertx-service-discovery-js/service_discovery');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JCheckoutService = io.vertx.blueprint.microservice.cart.CheckoutService;
-var CheckoutResult = io.vertx.blueprint.microservice.cart.CheckoutResult;
+var JCheckoutService = Java.type('io.vertx.blueprint.microservice.cart.CheckoutService');
+var CheckoutResult = Java.type('io.vertx.blueprint.microservice.cart.CheckoutResult');
 
 /**
  A service interface for shopping cart checkout logic.
@@ -63,6 +63,25 @@ var CheckoutService = function(j_val) {
   this._jdel = j_checkoutService;
 };
 
+CheckoutService._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.cart.CheckoutService");
+CheckoutService._jtype = {
+  accept: function (obj) {
+    return CheckoutService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(CheckoutService.prototype, {});
+    CheckoutService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+CheckoutService._create = function (jdel) {
+  var obj = Object.create(CheckoutService.prototype, {});
+  CheckoutService.apply(obj, arguments);
+  return obj;
+}
 /**
  Create a shopping checkout service instance
 
@@ -74,9 +93,8 @@ var CheckoutService = function(j_val) {
 CheckoutService.createService = function(vertx, discovery) {
   var __args = arguments;
   if (__args.length === 2 && typeof __args[0] === 'object' && __args[0]._jdel && typeof __args[1] === 'object' && __args[1]._jdel) {
-    return utils.convReturnVertxGen(JCheckoutService["createService(io.vertx.core.Vertx,io.vertx.servicediscovery.ServiceDiscovery)"](vertx._jdel, discovery._jdel), CheckoutService);
+    return utils.convReturnVertxGen(CheckoutService, JCheckoutService["createService(io.vertx.core.Vertx,io.vertx.servicediscovery.ServiceDiscovery)"](vertx._jdel, discovery._jdel));
   } else throw new TypeError('function invoked with invalid arguments');
 };
 
-// We export the Constructor function
 module.exports = CheckoutService;

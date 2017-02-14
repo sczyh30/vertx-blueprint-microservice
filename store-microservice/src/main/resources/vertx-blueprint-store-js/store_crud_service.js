@@ -19,8 +19,8 @@ var utils = require('vertx-js/util/utils');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JStoreCRUDService = io.vertx.blueprint.microservice.store.StoreCRUDService;
-var Store = io.vertx.blueprint.microservice.store.Store;
+var JStoreCRUDService = Java.type('io.vertx.blueprint.microservice.store.StoreCRUDService');
+var Store = Java.type('io.vertx.blueprint.microservice.store.Store');
 
 /**
  A service interface for online store CURD operation.
@@ -46,7 +46,7 @@ var StoreCRUDService = function (j_val) {
   this.saveStore = function (store, resultHandler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_storeCRUDService["saveStore(io.vertx.blueprint.microservice.store.Store,io.vertx.core.Handler)"](store != null ? new Store(new JsonObject(JSON.stringify(store))) : null, function (ar) {
+      j_storeCRUDService["saveStore(io.vertx.blueprint.microservice.store.Store,io.vertx.core.Handler)"](store != null ? new Store(new JsonObject(Java.asJSONCompatible(store))) : null, function (ar) {
         if (ar.succeeded()) {
           resultHandler(null, null);
         } else {
@@ -103,5 +103,23 @@ var StoreCRUDService = function (j_val) {
   this._jdel = j_storeCRUDService;
 };
 
-// We export the Constructor function
+StoreCRUDService._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.store.StoreCRUDService");
+StoreCRUDService._jtype = {
+  accept: function (obj) {
+    return StoreCRUDService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(StoreCRUDService.prototype, {});
+    StoreCRUDService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+StoreCRUDService._create = function (jdel) {
+  var obj = Object.create(StoreCRUDService.prototype, {});
+  StoreCRUDService.apply(obj, arguments);
+  return obj;
+}
 module.exports = StoreCRUDService;

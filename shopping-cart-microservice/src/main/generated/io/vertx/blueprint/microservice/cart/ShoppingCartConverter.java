@@ -40,11 +40,9 @@ public class ShoppingCartConverter {
   public static void toJson(ShoppingCart obj, JsonObject json) {
     json.put("empty", obj.isEmpty());
     if (obj.getProductItems() != null) {
-      json.put("productItems", new JsonArray(
-          obj.getProductItems().
-              stream().
-              map(item -> item.toJson()).
-              collect(java.util.stream.Collectors.toList())));
+      JsonArray array = new JsonArray();
+      obj.getProductItems().forEach(item -> array.add(item.toJson()));
+      json.put("productItems", array);
     }
   }
 }

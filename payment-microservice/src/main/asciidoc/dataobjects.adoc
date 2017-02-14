@@ -1,0 +1,20 @@
+= Cheatsheets
+
+[[Payment]]
+== Payment
+
+++++
+ Payment data object.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[payAmount]]`payAmount`|`Number (Double)`|-
+|[[payId]]`payId`|`String`|-
+|[[paySource]]`paySource`|`Number (Short)`|-
+|[[paymentTime]]`paymentTime`|`Number (Long)`|-
+|===
+

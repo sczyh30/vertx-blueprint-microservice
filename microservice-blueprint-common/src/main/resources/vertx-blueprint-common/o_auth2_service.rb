@@ -15,6 +15,28 @@ module VertxBlueprintCommon
     def j_del
       @j_del
     end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == OAuth2Service
+    end
+
+    def @@j_api_type.wrap(obj)
+      OAuth2Service.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroserviceCommonDiscovery::OAuth2Service.java_class
+    end
     # @param [String] name 
     # @param [Hash{String => Object}] config 
     # @param [Hash{String => Object}] metadata 
@@ -23,7 +45,7 @@ module VertxBlueprintCommon
       if name.class == String && config.class == Hash && metadata.class == Hash && !block_given?
         return Java::IoVertxBlueprintMicroserviceCommonDiscovery::OAuth2Service.java_method(:createRecord, [Java::java.lang.String.java_class,Java::IoVertxCoreJson::JsonObject.java_class,Java::IoVertxCoreJson::JsonObject.java_class]).call(name,::Vertx::Util::Utils.to_json_object(config),::Vertx::Util::Utils.to_json_object(metadata)) != nil ? JSON.parse(Java::IoVertxBlueprintMicroserviceCommonDiscovery::OAuth2Service.java_method(:createRecord, [Java::java.lang.String.java_class,Java::IoVertxCoreJson::JsonObject.java_class,Java::IoVertxCoreJson::JsonObject.java_class]).call(name,::Vertx::Util::Utils.to_json_object(config),::Vertx::Util::Utils.to_json_object(metadata)).toJson.encode) : nil
       end
-      raise ArgumentError, "Invalid arguments when calling create_record(name,config,metadata)"
+      raise ArgumentError, "Invalid arguments when calling create_record(#{name},#{config},#{metadata})"
     end
     # @param [::VertxServiceDiscovery::ServiceDiscovery] discovery 
     # @param [Hash{String => Object}] filter 
@@ -36,7 +58,7 @@ module VertxBlueprintCommon
       elsif discovery.class.method_defined?(:j_del) && filter.class == Hash && consumerConfiguration.class == Hash && block_given?
         return Java::IoVertxBlueprintMicroserviceCommonDiscovery::OAuth2Service.java_method(:getOAuth2Provider, [Java::IoVertxServicediscovery::ServiceDiscovery.java_class,Java::IoVertxCoreJson::JsonObject.java_class,Java::IoVertxCoreJson::JsonObject.java_class,Java::IoVertxCore::Handler.java_class]).call(discovery.j_del,::Vertx::Util::Utils.to_json_object(filter),::Vertx::Util::Utils.to_json_object(consumerConfiguration),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ::Vertx::Util::Utils.safe_create(ar.result,::VertxAuthOauth2::OAuth2Auth) : nil) }))
       end
-      raise ArgumentError, "Invalid arguments when calling get_o_auth2_provider(discovery,filter,consumerConfiguration)"
+      raise ArgumentError, "Invalid arguments when calling get_o_auth2_provider(#{discovery},#{filter},#{consumerConfiguration})"
     end
   end
 end

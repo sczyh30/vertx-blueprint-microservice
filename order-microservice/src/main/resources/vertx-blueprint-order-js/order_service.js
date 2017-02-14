@@ -19,8 +19,8 @@ var utils = require('vertx-js/util/utils');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JOrderService = io.vertx.blueprint.microservice.order.OrderService;
-var Order = io.vertx.blueprint.microservice.order.Order;
+var JOrderService = Java.type('io.vertx.blueprint.microservice.order.OrderService');
+var Order = Java.type('io.vertx.blueprint.microservice.order.Order');
 
 /**
  A service interface managing order storage operations.
@@ -89,7 +89,7 @@ var OrderService = function (j_val) {
   this.createOrder = function (order, resultHandler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_orderService["createOrder(io.vertx.blueprint.microservice.order.Order,io.vertx.core.Handler)"](order != null ? new Order(new JsonObject(JSON.stringify(order))) : null, function (ar) {
+      j_orderService["createOrder(io.vertx.blueprint.microservice.order.Order,io.vertx.core.Handler)"](order != null ? new Order(new JsonObject(Java.asJSONCompatible(order))) : null, function (ar) {
         if (ar.succeeded()) {
           resultHandler(null, null);
         } else {
@@ -128,5 +128,23 @@ var OrderService = function (j_val) {
   this._jdel = j_orderService;
 };
 
-// We export the Constructor function
+OrderService._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.order.OrderService");
+OrderService._jtype = {
+  accept: function (obj) {
+    return OrderService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(OrderService.prototype, {});
+    OrderService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+OrderService._create = function (jdel) {
+  var obj = Object.create(OrderService.prototype, {});
+  OrderService.apply(obj, arguments);
+  return obj;
+}
 module.exports = OrderService;

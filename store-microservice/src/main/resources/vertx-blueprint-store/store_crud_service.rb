@@ -16,6 +16,28 @@ module VertxBlueprintStore
     def j_del
       @j_del
     end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == StoreCRUDService
+    end
+
+    def @@j_api_type.wrap(obj)
+      StoreCRUDService.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroserviceStore::StoreCRUDService.java_class
+    end
     #  Save an online store to the persistence layer. This is a so called `upsert` operation.
     #  This is used to update store info, or just apply for a new store.
     # @param [Hash] store store object
@@ -25,7 +47,7 @@ module VertxBlueprintStore
       if store.class == Hash && block_given?
         return @j_del.java_method(:saveStore, [Java::IoVertxBlueprintMicroserviceStore::Store.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceStore::Store.new(::Vertx::Util::Utils.to_json_object(store)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
       end
-      raise ArgumentError, "Invalid arguments when calling save_store(store)"
+      raise ArgumentError, "Invalid arguments when calling save_store(#{store})"
     end
     #  Retrieve an online store by seller id.
     # @param [String] sellerId seller id, refers to an independent online store
@@ -35,7 +57,7 @@ module VertxBlueprintStore
       if sellerId.class == String && block_given?
         return @j_del.java_method(:retrieveStore, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(sellerId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_store(sellerId)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_store(#{sellerId})"
     end
     #  Remove an online store whose seller is <code>sellerId</code>.
     #  This is used to close an online store.
@@ -46,7 +68,7 @@ module VertxBlueprintStore
       if sellerId.class == String && block_given?
         return @j_del.java_method(:removeStore, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(sellerId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
       end
-      raise ArgumentError, "Invalid arguments when calling remove_store(sellerId)"
+      raise ArgumentError, "Invalid arguments when calling remove_store(#{sellerId})"
     end
   end
 end

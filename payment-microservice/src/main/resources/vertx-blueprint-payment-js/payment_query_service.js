@@ -19,8 +19,8 @@ var utils = require('vertx-js/util/utils');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JPaymentQueryService = io.vertx.blueprint.microservice.payment.PaymentQueryService;
-var Payment = io.vertx.blueprint.microservice.payment.Payment;
+var JPaymentQueryService = Java.type('io.vertx.blueprint.microservice.payment.PaymentQueryService');
+var Payment = Java.type('io.vertx.blueprint.microservice.payment.Payment');
 
 /**
  A service interface managing payment transactions query.
@@ -64,7 +64,7 @@ var PaymentQueryService = function (j_val) {
   this.addPaymentRecord = function (payment, resultHandler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_paymentQueryService["addPaymentRecord(io.vertx.blueprint.microservice.payment.Payment,io.vertx.core.Handler)"](payment != null ? new Payment(new JsonObject(JSON.stringify(payment))) : null, function (ar) {
+      j_paymentQueryService["addPaymentRecord(io.vertx.blueprint.microservice.payment.Payment,io.vertx.core.Handler)"](payment != null ? new Payment(new JsonObject(Java.asJSONCompatible(payment))) : null, function (ar) {
         if (ar.succeeded()) {
           resultHandler(null, null);
         } else {
@@ -100,5 +100,23 @@ var PaymentQueryService = function (j_val) {
   this._jdel = j_paymentQueryService;
 };
 
-// We export the Constructor function
+PaymentQueryService._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.payment.PaymentQueryService");
+PaymentQueryService._jtype = {
+  accept: function (obj) {
+    return PaymentQueryService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(PaymentQueryService.prototype, {});
+    PaymentQueryService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+PaymentQueryService._create = function (jdel) {
+  var obj = Object.create(PaymentQueryService.prototype, {});
+  PaymentQueryService.apply(obj, arguments);
+  return obj;
+}
 module.exports = PaymentQueryService;

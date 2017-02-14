@@ -21,8 +21,8 @@ var OAuth2Auth = require('vertx-auth-oauth2-js/o_auth2_auth');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JOAuth2Service = io.vertx.blueprint.microservice.common.discovery.OAuth2Service;
-var Record = io.vertx.servicediscovery.Record;
+var JOAuth2Service = Java.type('io.vertx.blueprint.microservice.common.discovery.OAuth2Service');
+var Record = Java.type('io.vertx.servicediscovery.Record');
 
 /**
 
@@ -39,6 +39,25 @@ var OAuth2Service = function (j_val) {
   this._jdel = j_oAuth2Service;
 };
 
+OAuth2Service._jclass = utils.getJavaClass("io.vertx.blueprint.microservice.common.discovery.OAuth2Service");
+OAuth2Service._jtype = {
+  accept: function (obj) {
+    return OAuth2Service._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(OAuth2Service.prototype, {});
+    OAuth2Service.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+OAuth2Service._create = function (jdel) {
+  var obj = Object.create(OAuth2Service.prototype, {});
+  OAuth2Service.apply(obj, arguments);
+  return obj;
+}
 /**
 
  @memberof module:vertx-blueprint-common-js/o_auth2_service
@@ -67,7 +86,7 @@ OAuth2Service.getOAuth2Provider = function () {
   if (__args.length === 3 && typeof __args[0] === 'object' && __args[0]._jdel && (typeof __args[1] === 'object' && __args[1] != null) && typeof __args[2] === 'function') {
     JOAuth2Service["getOAuth2Provider(io.vertx.servicediscovery.ServiceDiscovery,io.vertx.core.json.JsonObject,io.vertx.core.Handler)"](__args[0]._jdel, utils.convParamJsonObject(__args[1]), function (ar) {
       if (ar.succeeded()) {
-        __args[2](utils.convReturnVertxGen(ar.result(), OAuth2Auth), null);
+        __args[2](utils.convReturnVertxGen(OAuth2Auth, ar.result()), null);
       } else {
         __args[2](null, ar.cause());
       }
@@ -75,7 +94,7 @@ OAuth2Service.getOAuth2Provider = function () {
   } else if (__args.length === 4 && typeof __args[0] === 'object' && __args[0]._jdel && (typeof __args[1] === 'object' && __args[1] != null) && (typeof __args[2] === 'object' && __args[2] != null) && typeof __args[3] === 'function') {
     JOAuth2Service["getOAuth2Provider(io.vertx.servicediscovery.ServiceDiscovery,io.vertx.core.json.JsonObject,io.vertx.core.json.JsonObject,io.vertx.core.Handler)"](__args[0]._jdel, utils.convParamJsonObject(__args[1]), utils.convParamJsonObject(__args[2]), function (ar) {
       if (ar.succeeded()) {
-        __args[3](utils.convReturnVertxGen(ar.result(), OAuth2Auth), null);
+        __args[3](utils.convReturnVertxGen(OAuth2Auth, ar.result()), null);
       } else {
         __args[3](null, ar.cause());
       }
@@ -83,5 +102,4 @@ OAuth2Service.getOAuth2Provider = function () {
   } else throw new TypeError('function invoked with invalid arguments');
 };
 
-// We export the Constructor function
 module.exports = OAuth2Service;

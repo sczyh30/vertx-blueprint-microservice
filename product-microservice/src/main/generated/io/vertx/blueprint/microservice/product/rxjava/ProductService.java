@@ -18,6 +18,7 @@ package io.vertx.blueprint.microservice.product.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import rx.Single;
 import java.util.List;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -34,15 +35,21 @@ import io.vertx.blueprint.microservice.product.Product;
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.product.ProductService original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.microservice.product.ProductService.class)
 public class ProductService {
 
-  final io.vertx.blueprint.microservice.product.ProductService delegate;
+  public static final io.vertx.lang.rxjava.TypeArg<ProductService> __TYPE_ARG = new io.vertx.lang.rxjava.TypeArg<>(
+    obj -> new ProductService((io.vertx.blueprint.microservice.product.ProductService) obj),
+    ProductService::getDelegate
+  );
 
+  private final io.vertx.blueprint.microservice.product.ProductService delegate;
+  
   public ProductService(io.vertx.blueprint.microservice.product.ProductService delegate) {
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.microservice.product.ProductService getDelegate() {
     return delegate;
   }
 
@@ -60,10 +67,10 @@ public class ProductService {
    * Initialize the persistence.
    * @return 
    */
-  public Observable<Void> initializePersistenceObservable() { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    initializePersistence(resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxInitializePersistence() { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      initializePersistence(fut);
+    }));
   }
 
   /**
@@ -82,10 +89,10 @@ public class ProductService {
    * @param product a product entity that we want to add
    * @return 
    */
-  public Observable<Void> addProductObservable(Product product) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    addProduct(product, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxAddProduct(Product product) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      addProduct(product, fut);
+    }));
   }
 
   /**
@@ -104,10 +111,10 @@ public class ProductService {
    * @param productId product id
    * @return 
    */
-  public Observable<Product> retrieveProductObservable(String productId) { 
-    io.vertx.rx.java.ObservableFuture<Product> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveProduct(productId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Product> rxRetrieveProduct(String productId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveProduct(productId, fut);
+    }));
   }
 
   /**
@@ -126,10 +133,10 @@ public class ProductService {
    * @param productId product id
    * @return 
    */
-  public Observable<JsonObject> retrieveProductPriceObservable(String productId) { 
-    io.vertx.rx.java.ObservableFuture<JsonObject> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveProductPrice(productId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<JsonObject> rxRetrieveProductPrice(String productId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveProductPrice(productId, fut);
+    }));
   }
 
   /**
@@ -146,10 +153,10 @@ public class ProductService {
    * Retrieve all products.
    * @return 
    */
-  public Observable<List<Product>> retrieveAllProductsObservable() { 
-    io.vertx.rx.java.ObservableFuture<List<Product>> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveAllProducts(resultHandler.toHandler());
-    return resultHandler;
+  public Single<List<Product>> rxRetrieveAllProducts() { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveAllProducts(fut);
+    }));
   }
 
   /**
@@ -168,10 +175,10 @@ public class ProductService {
    * @param page 
    * @return 
    */
-  public Observable<List<Product>> retrieveProductsByPageObservable(int page) { 
-    io.vertx.rx.java.ObservableFuture<List<Product>> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveProductsByPage(page, resultHandler.toHandler());
-    return resultHandler;
+  public Single<List<Product>> rxRetrieveProductsByPage(int page) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveProductsByPage(page, fut);
+    }));
   }
 
   /**
@@ -190,10 +197,10 @@ public class ProductService {
    * @param productId product id
    * @return 
    */
-  public Observable<Void> deleteProductObservable(String productId) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    deleteProduct(productId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxDeleteProduct(String productId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      deleteProduct(productId, fut);
+    }));
   }
 
   /**
@@ -210,10 +217,10 @@ public class ProductService {
    * Delete all products from the persistence
    * @return 
    */
-  public Observable<Void> deleteAllProductsObservable() { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    deleteAllProducts(resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxDeleteAllProducts() { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      deleteAllProducts(fut);
+    }));
   }
 
 

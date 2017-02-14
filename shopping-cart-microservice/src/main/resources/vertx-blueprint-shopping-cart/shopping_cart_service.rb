@@ -11,7 +11,7 @@ module VertxBlueprintShoppingCart
         @j_del.java_method(:addCartEvent, [Java::IoVertxBlueprintMicroserviceCart::CartEvent.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceCart::CartEvent.new(::Vertx::Util::Utils.to_json_object(event)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling add_cart_event(event)"
+      raise ArgumentError, "Invalid arguments when calling add_cart_event(#{event})"
     end
     #  Get shopping cart of a user.
     # @param [String] userId user id
@@ -22,7 +22,7 @@ module VertxBlueprintShoppingCart
         @j_del.java_method(:getShoppingCart, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(userId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling get_shopping_cart(userId)"
+      raise ArgumentError, "Invalid arguments when calling get_shopping_cart(#{userId})"
     end
   end
   class ShoppingCartServiceImpl
@@ -36,6 +36,28 @@ module VertxBlueprintShoppingCart
     # @return [::VertxBlueprintShoppingCart::ShoppingCartService] the underlying java delegate
     def j_del
       @j_del
+    end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == ShoppingCartService
+    end
+
+    def @@j_api_type.wrap(obj)
+      ShoppingCartService.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroserviceCart::ShoppingCartService.java_class
     end
   end
 end

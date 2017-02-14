@@ -16,6 +16,28 @@ module VertxBlueprintOrder
     def j_del
       @j_del
     end
+
+    @@j_api_type = Object.new
+
+    def @@j_api_type.accept?(obj)
+      obj.class == OrderService
+    end
+
+    def @@j_api_type.wrap(obj)
+      OrderService.new(obj)
+    end
+
+    def @@j_api_type.unwrap(obj)
+      obj.j_del
+    end
+
+    def self.j_api_type
+      @@j_api_type
+    end
+
+    def self.j_class
+      Java::IoVertxBlueprintMicroserviceOrder::OrderService.java_class
+    end
     #  Initialize the persistence.
     # @yield async result handler
     # @return [self]
@@ -35,7 +57,7 @@ module VertxBlueprintOrder
         @j_del.java_method(:retrieveOrdersForAccount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(accountId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_orders_for_account(accountId)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_orders_for_account(#{accountId})"
     end
     #  Save an order into the persistence.
     # @param [Hash] order order data object
@@ -46,7 +68,7 @@ module VertxBlueprintOrder
         @j_del.java_method(:createOrder, [Java::IoVertxBlueprintMicroserviceOrder::Order.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintMicroserviceOrder::Order.new(::Vertx::Util::Utils.to_json_object(order)),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling create_order(order)"
+      raise ArgumentError, "Invalid arguments when calling create_order(#{order})"
     end
     #  Retrieve the order with a certain <code>orderId</code>.
     # @param [Fixnum] orderId order id
@@ -57,7 +79,7 @@ module VertxBlueprintOrder
         @j_del.java_method(:retrieveOrder, [Java::JavaLang::Long.java_class,Java::IoVertxCore::Handler.java_class]).call(orderId,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
-      raise ArgumentError, "Invalid arguments when calling retrieve_order(orderId)"
+      raise ArgumentError, "Invalid arguments when calling retrieve_order(#{orderId})"
     end
   end
 end

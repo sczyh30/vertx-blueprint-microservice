@@ -18,6 +18,7 @@ package io.vertx.blueprint.microservice.cart.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import rx.Single;
 import io.vertx.blueprint.microservice.cart.CartEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -33,9 +34,10 @@ import io.vertx.blueprint.microservice.cart.ShoppingCart;
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.cart.ShoppingCartService original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.microservice.cart.ShoppingCartService.class)
 public interface ShoppingCartService {
 
-  Object getDelegate();
+  io.vertx.blueprint.microservice.cart.ShoppingCartService getDelegate();
 
   /**
    * Add cart event to the event source.
@@ -60,13 +62,13 @@ public interface ShoppingCartService {
 }
 
 class ShoppingCartServiceImpl implements ShoppingCartService {
-  final io.vertx.blueprint.microservice.cart.ShoppingCartService delegate;
-
+  private final io.vertx.blueprint.microservice.cart.ShoppingCartService delegate;
+  
   public ShoppingCartServiceImpl(io.vertx.blueprint.microservice.cart.ShoppingCartService delegate) {
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.microservice.cart.ShoppingCartService getDelegate() {
     return delegate;
   }
 
@@ -86,10 +88,10 @@ class ShoppingCartServiceImpl implements ShoppingCartService {
    * @param event cart event
    * @return 
    */
-  public Observable<Void> addCartEventObservable(CartEvent event) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    addCartEvent(event, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxAddCartEvent(CartEvent event) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      addCartEvent(event, fut);
+    }));
   }
 
   /**
@@ -108,10 +110,10 @@ class ShoppingCartServiceImpl implements ShoppingCartService {
    * @param userId user id
    * @return 
    */
-  public Observable<ShoppingCart> getShoppingCartObservable(String userId) { 
-    io.vertx.rx.java.ObservableFuture<ShoppingCart> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    getShoppingCart(userId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<ShoppingCart> rxGetShoppingCart(String userId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      getShoppingCart(userId, fut);
+    }));
   }
 
 }
