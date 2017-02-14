@@ -4,28 +4,28 @@
 
 - [ ] Event sourcing with CQRS
 
-## Recommendation
+## Data Analysis/Distributed Computing
 
-- [ ] Recommendation persistence: **Neo4j** (Graph Database)
-- [ ] Simple recommendation service
-- [ ] Data analysis integration (Apache Spark + HDFS)
+- [ ] Simple recommendation service (e.g. collaborative filtering with machine learning)
+- [ ] Distributed computing integration (e.g. Apache Spark, Apache Flink)
 
 ## Metrics/Monitoring
 
 - [ ] Performance/metrics monitoring and tuning
-- [ ] Log integration with ELK stack
+- [x] Logging integration with ELK stack
 
-## Search
+## Search Engine
 
 - [ ] Full-index search integration (e.g. with Solr or Elasticsearch)
 
 ## Integration
 
-- [ ] With Consul (Discovery, heartbeat check)
+- [ ] With Apache Kafka (message queue/streaming)
+- [ ] With Consul (service discovery/heartbeat check)
 - [ ] With Netflix Hystrix
-- [ ] Integrate with Kafka
 
 ## Container/Deployment
 
 - [ ] Kubernetes
+- [ ] Mesos
 - [ ] Openshift

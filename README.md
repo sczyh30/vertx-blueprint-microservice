@@ -5,6 +5,8 @@
 Vert.x blueprint application - A micro-shop microservice application developed with Vert.x.
 This repo is intended to be an illustration on how to develop microservice applications using Vert.x.
 
+This blueprint works for Vert.x **3.4.0**.
+
 ## Content
 
 - Microservice with Vert.x
