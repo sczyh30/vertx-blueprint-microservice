@@ -13,8 +13,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.net.JksOptions;
+import io.vertx.ext.auth.oauth2.KeycloakHelper;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2FlowType;
+import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -63,7 +65,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     router.get("/api/v").handler(this::apiVersion);
 
     // create OAuth 2 instance for Keycloak
-    oauth2 = OAuth2Auth.createKeycloak(vertx, OAuth2FlowType.AUTH_CODE, config());
+    oauth2 = KeycloakAuth.create(vertx, OAuth2FlowType.AUTH_CODE, config());
 
     router.route().handler(UserSessionHandler.create(oauth2));
 
@@ -315,18 +317,14 @@ public class APIGatewayVerticle extends RestAPIVerticle {
   private void authUaaHandler(RoutingContext context) {
     if (context.user() != null) {
       JsonObject principal = context.user().principal();
-      String username = principal.getString("username");
-      // String username = KeycloakHelper.preferredUsername(principal);
+      String username = KeycloakHelper.preferredUsername(principal);
       if (username == null) {
         context.response()
           .putHeader("content-type", "application/json")
           .end(new Account().setId("TEST666").setUsername("Eric").toString()); // TODO: no username should be an error
       } else {
         Future<AccountService> future = Future.future();
-        EventBusService.getProxy(discovery,
-          new JsonObject().put("name", AccountService.SERVICE_NAME),
-          future.completer()
-        );
+        EventBusService.getProxy(discovery, AccountService.class, future.completer());
         future.compose(accountService -> {
           Future<Account> accountFuture = Future.future();
           accountService.retrieveByUsername(username, accountFuture.completer());

@@ -8,7 +8,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
-import static io.vertx.blueprint.microservice.common.config.ConfigurationRetrieverHelper.configurationRetriever;
+import static io.vertx.blueprint.microservice.common.config.ConfigRetrieverHelper.configurationRetriever;
 import static io.vertx.blueprint.microservice.common.config.Log4jConfigurationServiceHandler.log4jSubscriber;
 
 /**
@@ -37,7 +37,7 @@ public class InventoryRestAPIVerticle extends RestAPIVerticle {
     configurationRetriever // TODO: enhance its usage
       .usingScanPeriod(SCAN_PERIOD)
       .withHttpStore("config-server", 80, "/inventory-microservice/docker.json")
-      .createConfigObservable(vertx)
+      .rxCreateConfig(vertx)
       .subscribe(log4jSubscriber);
 
     this.inventoryService = InventoryService.createService(vertx, config());

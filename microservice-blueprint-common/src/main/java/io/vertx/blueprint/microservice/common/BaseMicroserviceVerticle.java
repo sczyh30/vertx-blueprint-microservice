@@ -136,10 +136,10 @@ public abstract class BaseMicroserviceVerticle extends AbstractVerticle {
   public void stop(Future<Void> future) throws Exception {
     // In current design, the publisher is responsible for removing the service
     List<Future> futures = new ArrayList<>();
-    registeredRecords.stream().forEach(record -> {
-      Future<Void> unregistrationFuture = Future.future();
-      futures.add(unregistrationFuture);
-      discovery.unpublish(record.getRegistration(), unregistrationFuture.completer());
+    registeredRecords.forEach(record -> {
+      Future<Void> cleanupFuture = Future.future();
+      futures.add(cleanupFuture);
+      discovery.unpublish(record.getRegistration(), cleanupFuture.completer());
     });
 
     if (futures.isEmpty()) {

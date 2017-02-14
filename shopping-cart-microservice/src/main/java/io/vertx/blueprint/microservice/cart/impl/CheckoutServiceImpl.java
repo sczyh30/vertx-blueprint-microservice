@@ -76,8 +76,7 @@ public class CheckoutServiceImpl implements CheckoutService {
    */
   private Future<Long> retrieveCounter(String key) {
     Future<Long> future = Future.future();
-    EventBusService.<CounterService>getProxy(discovery,
-      new JsonObject().put("name", "counter-eb-service"),
+    EventBusService.getProxy(discovery, CounterService.class,
       ar -> {
         if (ar.succeeded()) {
           CounterService service = ar.result();
@@ -109,9 +108,7 @@ public class CheckoutServiceImpl implements CheckoutService {
 
   private Future<ShoppingCart> getCurrentCart(String userId) {
     Future<ShoppingCartService> future = Future.future();
-    EventBusService.getProxy(discovery,
-      new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
-      future.completer());
+    EventBusService.getProxy(discovery, ShoppingCartService.class, future.completer());
     return future.compose(service -> {
       Future<ShoppingCart> cartFuture = Future.future();
       service.getShoppingCart(userId, cartFuture.completer());
@@ -204,9 +201,7 @@ public class CheckoutServiceImpl implements CheckoutService {
    */
   private Future<Void> saveCheckoutEvent(String userId) {
     Future<ShoppingCartService> future = Future.future();
-    EventBusService.getProxy(discovery,
-      new JsonObject().put("name", ShoppingCartService.SERVICE_NAME),
-      future.completer());
+    EventBusService.getProxy(discovery, ShoppingCartService.class, future.completer());
     return future.compose(service -> {
       Future<Void> resFuture = Future.future();
       CartEvent event = CartEvent.createCheckoutEvent(userId);

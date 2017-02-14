@@ -18,6 +18,7 @@ import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -28,11 +29,9 @@ import java.util.stream.Collectors;
 public class ShoppingCartServiceImpl implements ShoppingCartService {
 
   private final CartEventDataSource repository;
-  private final Vertx vertx;
   private final ServiceDiscovery discovery;
 
   public ShoppingCartServiceImpl(Vertx vertx, ServiceDiscovery discovery, JsonObject config) {
-    this.vertx = vertx;
     this.discovery = discovery;
     this.repository = new CartEventDataSourceImpl(vertx, config);
   }
@@ -40,7 +39,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
   @Override
   public ShoppingCartService addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler) {
     Future<Void> future = Future.future();
-    repository.save(event).toSingle().subscribe(future::complete, future::fail);
+    repository.save(event).subscribe(future::complete, future::fail);
     future.setHandler(resultHandler);
     return this;
   }
@@ -104,7 +103,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
   private Future<ShoppingCart> generateCurrentCartFromStream(ShoppingCart rawCart, List<Product> productList) {
     Future<ShoppingCart> future = Future.future();
     // check if any of the product is invalid
-    if (productList.stream().anyMatch(e -> e == null)) {
+    if (productList.stream().anyMatch(Objects::isNull)) {
       future.fail("Error when retrieve products: empty");
       return future;
     }
@@ -141,9 +140,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
    */
   private Future<ProductService> getProductService() {
     Future<ProductService> future = Future.future();
-    EventBusService.getProxy(discovery,
-      new JsonObject().put("name", ProductService.SERVICE_NAME),
-      future.completer());
+    EventBusService.getProxy(discovery, ProductService.class, future.completer());
     return future;
   }
 }

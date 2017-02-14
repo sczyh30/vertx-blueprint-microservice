@@ -16,6 +16,7 @@ import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.types.JDBCDataSource;
 import io.vertx.servicediscovery.types.MessageSource;
 import rx.Observable;
+import rx.Single;
 
 import java.util.Set;
 
@@ -46,31 +47,31 @@ public class BaseMicroserviceRxVerticle extends AbstractVerticle {
     );
   }
 
-  protected Observable<Void> publishHttpEndpoint(String name, String host, int port) {
+  protected Single<Void> publishHttpEndpoint(String name, String host, int port) {
     Record record = HttpEndpoint.createRecord(name, host, port, "/",
       new JsonObject().put("api.name", config().getString("api.name", ""))
     );
     return publish(record);
   }
 
-  protected Observable<Void> publishMessageSource(String name, String address) {
+  protected Single<Void> publishMessageSource(String name, String address) {
     Record record = MessageSource.createRecord(name, address);
     return publish(record);
   }
 
-  protected Observable<Void> publishJDBCDataSource(String name, JsonObject location) {
+  protected Single<Void> publishJDBCDataSource(String name, JsonObject location) {
     Record record = JDBCDataSource.createRecord(name, location, new JsonObject());
     return publish(record);
   }
 
-  protected Observable<Void> publishEventBusService(String name, String address, Class serviceClass) {
+  protected Single<Void> publishEventBusService(String name, String address, Class serviceClass) {
     Record record = EventBusService.createRecord(name, address, serviceClass);
     return publish(record);
   }
 
-  private Observable<Void> publish(Record record) {
-    return discovery.publishObservable(record)
-      .doOnNext(rec -> {
+  private Single<Void> publish(Record record) {
+    return discovery.rxPublish(record)
+      .doOnSuccess(rec -> {
         registeredRecords.add(record);
         logger.info("Service <" + rec.getName() + "> published");
       })
@@ -79,8 +80,9 @@ public class BaseMicroserviceRxVerticle extends AbstractVerticle {
 
   @Override
   public void stop(Future<Void> future) throws Exception {
+    // TODO: to optimize.
     Observable.from(registeredRecords)
-      .flatMap(record -> discovery.unpublishObservable(record.getRegistration()))
+      .flatMap(record -> discovery.rxUnpublish(record.getRegistration()).toObservable())
       .reduce((Void) null, (a, b) -> null)
       .subscribe(future::complete, future::fail);
   }

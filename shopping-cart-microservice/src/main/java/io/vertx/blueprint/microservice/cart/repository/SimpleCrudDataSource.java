@@ -1,11 +1,13 @@
 package io.vertx.blueprint.microservice.cart.repository;
 
-import rx.Observable;
+import rx.Single;
+
+import java.util.Optional;
 
 /**
  * Simple Rx-fied data source service interface for CRUD.
  *
- * @param <T> Type of the entity
+ * @param <T>  Type of the entity
  * @param <ID> Type of the persistence key
  */
 public interface SimpleCrudDataSource<T, ID> {
@@ -16,7 +18,7 @@ public interface SimpleCrudDataSource<T, ID> {
    * @param entity entity object
    * @return an observable async result
    */
-  Observable<Void> save(T entity);
+  Single<Void> save(T entity);
 
   /**
    * Retrieve one certain entity by `id`.
@@ -24,7 +26,7 @@ public interface SimpleCrudDataSource<T, ID> {
    * @param id id of the entity
    * @return an observable async result
    */
-  Observable<T> retrieveOne(ID id);
+  Single<Optional<T>> retrieveOne(ID id);
 
   /**
    * Delete the entity by `id`.
@@ -32,6 +34,6 @@ public interface SimpleCrudDataSource<T, ID> {
    * @param id id of the entity
    * @return an observable async result
    */
-  Observable<Void> delete(ID id);
+  Single<Void> delete(ID id);
 
 }
