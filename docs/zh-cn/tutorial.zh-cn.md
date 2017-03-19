@@ -4,28 +4,30 @@
 
 通过本教程，你将会学习到以下内容：
 
-- 微服务架构
+- 如何设计微服务架构
 - 如何利用Vert.x来开发微服务应用
 - 异步开发模式
 - 响应式、函数式编程
 - 事件溯源 (Event Sourcing)
 - 通过分布式 Event Bus 进行异步RPC调用
 - 各种各样的服务类型（例如REST、数据源、Event Bus服务等）
-- 如何利用Vert.x Configuration Retriever更灵活地配置微服务
+- 如何更灵活地配置Vert.x应用
 - 如何使用服务发现模块 (Vert.x Service Discovery)
 - 如何使用断路器模块 (Vert.x Circuit Breaker)
 - 如何利用Vert.x实现API Gateway
-- 如何进行权限认证 (OAuth 2 + Keycloak)
+- 如何进行微服务权限认证 (OAuth 2)
 - 如何配置及使用 SockJS - Event Bus Bridge
 - 如何利用Vert.x Metrics获取监控数据
 
 以及其它的一些东西。。。
 
-本教程是 **Vert.x 蓝图系列** 的第三篇教程，对应的Vert.x版本为 **3.3.3** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-microservice)。
+本教程是 [**Vert.x 蓝图系列**](http://vertx.io/blog/vert-x-blueprint-tutorials/) 的第三篇教程，对应的Vert.x版本为 **3.4.1** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-microservice)。
+
+> 注：本项目微服务架构正在重构，重构后的架构将支持高可用、高容错性、可靠消息驱动等，敬请期待！
 
 # 踏入微服务之门
 
-哈～你一定对“微服务”这个词很熟悉——至少听起来很熟悉～越来越多的开发者开始拥抱微服务架构，那么微服务究竟是什么呢？一句话总结一下：
+哈～你一定对“微服务”这个词很熟悉——至少听起来很熟悉！越来越多的开发者开始拥抱微服务架构，那么微服务究竟是什么呢？一句话总结一下：
 
 > Microservices are small, autonomous services that work together.
 
@@ -580,45 +582,9 @@ public void start(Future<Void> future) throws Exception {
 }
 ```
 
-## 基于MongoDB的网店服务
-
-网店服务用于网店的操作，如开店、关闭、更新数据。正常情况下，开店都需要人工申请，不过在本蓝图教程中，我们把这一步简化掉了。网店服务模块的结构和商品服务模块非常相似，所以我们就不细说了。我们这里仅仅瞅一瞅如何使用Vert.x Mongo Client。
-
-使用Vert.x Mongo Client非常简单，首先我们需要创建一个`MongoClient`实例，过程类似于`JDBCClient`：
-
-```java
-private final MongoClient client;
-
-public StoreCRUDServiceImpl(Vertx vertx, JsonObject config) {
-  this.client = MongoClient.createNonShared(vertx, config);
-}
-```
-
-然后我们就可以通过它来操作Mongo了。比如我们想执行存储(save)操作，我们可以这样写：
-
-```java
-@Override
-public void saveStore(Store store, Handler<AsyncResult<Void>> resultHandler) {
-  client.save(COLLECTION, new JsonObject().put("_id", store.getSellerId())
-      .put("name", store.getName())
-      .put("description", store.getDescription())
-      .put("openTime", store.getOpenTime()),
-    ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    }
-  );
-}
-```
-
-这些操作都是异步的，因此你一定非常熟悉这种模式！当然如果不喜欢基于回调的异步模式的话，你也可以选择Rx版本的API～
-
-更多关于Vert.x Mongo Client的使用细节，请参考[官方文档](http://vertx.io/docs/vertx-mongo-client/java/)。
-
 # 基于Redis的商品库存服务
+
+> TODO: Redis + MySQL高可用架构
 
 商品库存服务负责操作商品的库存数量，比如添加库存、减少库存以及获取当前库存数量。库存使用Redis来存储。
 
@@ -841,23 +807,23 @@ public ShoppingCart incorporate(CartEvent cartEvent) {
 
 我们现在已经了解购物车微服务中的实体类了，下面该看看购物车事件存储服务了。
 
-之前用callback-based API写Vert.x JDBC操作总感觉心累，还好Vert.x支持与RxJava进行整合，并且几乎每个Vert.x组件都有对应的Rx版本！是不是瞬间感觉整个人都变得Reactive了呢～(⊙o⊙) 这里我们就来使用Rx版本的Vert.x JDBC来写我们的购物车事件存储服务。也就是说，里面所有的异步方法都将是基于`Observable`的，很有FRP风格！
+之前用callback-based API写Vert.x JDBC操作总感觉心累，还好Vert.x支持与RxJava进行整合，并且几乎每个Vert.x组件都有对应的Rx版本！是不是瞬间感觉整个人都变得Reactive了呢～(⊙o⊙) 这里我们就来使用Rx版本的Vert.x JDBC来写我们的购物车事件存储服务。也就是说，里面所有的异步方法都将是基于`Single`/`Observable`的，很有FRP风格！
 
 我们首先定义了一个简单的CRUD接口`SimpleCrudDataSource`：
 
 ```java
 public interface SimpleCrudDataSource<T, ID> {
 
-  Observable<Void> save(T entity);
+  Single<Void> save(T entity);
 
-  Observable<T> retrieveOne(ID id);
+  Single<Optional<T>> retrieveOne(ID id);
 
-  Observable<Void> delete(ID id);
+  Single<Void> delete(ID id);
 
 }
 ```
 
-接着定义了一个`CartEventDataSource`接口，定义了购物车事件获取的相关方法：
+这里的`Single`和我们平常所用的`Future`语义类似。接着我们定义了一个`CartEventDataSource`接口，定义了购物车事件获取的相关方法：
 
 ```java
 public interface CartEventDataSource extends SimpleCrudDataSource<CartEvent, Long> {
@@ -867,31 +833,29 @@ public interface CartEventDataSource extends SimpleCrudDataSource<CartEvent, Lon
 }
 ```
 
-可以看到这个接口只有一个方法 —— `streamByUser`方法会返回某一用户对应的购物车事件流，这样后面我们就可以对其进行流式变换操作了！
+可以看到这个接口只有一个方法 —— `streamByUser`方法。它会返回某一用户对应的购物车事件流，这样后面我们就可以对其进行流式变换操作了！
 
 下面我们来看一下服务的实现类`CartEventDataSourceImpl`。首先是`save`方法，它将一个事件存储至事件数据库中：
 
 ```java
 @Override
-public Observable<Void> save(CartEvent cartEvent) {
+public Single<Void> save(CartEvent cartEvent) {
   JsonArray params = new JsonArray().add(cartEvent.getCartEventType().name())
     .add(cartEvent.getUserId())
     .add(cartEvent.getProductId())
     .add(cartEvent.getAmount())
     .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
-  return client.getConnectionObservable()
-    .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params)
+  return client.rxGetConnection()
+    .flatMap(conn -> conn.rxUpdateWithParams(SAVE_STATEMENT, params)
       .map(r -> (Void) null)
-      .doOnTerminate(conn::close)
+      .doAfterTerminate(conn::close)
     );
 }
 ```
 
-> 及时关闭数据库连接
+> **注意**：在数据库操作执行结束时，我们要及时调用`close`方法关闭数据库连接以释放资源。在RxJava中我们可以利用`doOnTerminate`和`doAfterTerminate`操作执行关闭数据库连接的逻辑。
 
-> 在数据库操作执行结束时，我们要及时调用`close`方法关闭数据库连接以释放资源。在Rx环境下我们可以利用`doOnTerminate`操作执行关闭数据库连接的逻辑。
-
-看看我们的代码，在对比对比普通的callback-based的Vert.x JDBC，是不是更加简洁，更加Reactive呢？我们可以非常简单地通过`getConnectionObservable`方法获取数据库连接，然后组合`updateWithParamsObservable`方法执行对应的含参SQL语句。只需要两行有木有！而如果用 callback-based 的风格的话，你只能这么写：
+看看我们的代码，在对比对比普通的callback-based的Vert.x JDBC，是不是更加简洁，更加reactive呢？我们可以非常简单地通过`rxGetConnection`方法获取数据库连接，然后组合`rxUpdateWithParams`方法执行对应的含参SQL语句。只需要两行有木有！而如果用 callback-based 的风格的话，你只能这么写：
 
 ```java
 client.getConnection(ar -> {
@@ -907,23 +871,28 @@ client.getConnection(ar -> {
 })
 ```
 
-因此，使用RxJava是非常愉快的一件事！当然，不要忘记返回的`Observable`是 **cold** 的，因此只有在它被`subscribe`的时候，数据才会被发射。
+因此，使用RxJava是非常愉快的一件事！当然，不要忘记返回的`Single`/`Observable`是 **cold** 的，因此只有在它被`subscribe`的时候，数据才会被消费。
 
-不过话说回来了，Vert.x JDBC底层本质还是阻塞型的调用，要实现真正的异步数据库操作，我们可以利用 Vert.x MySQL / PostgreSQL Client 这个组件，底层使用Scala写的异步数据库操作库，不过目前还不是很稳定，大家可以自己尝尝鲜。
+不过话说回来了，Vert.x JDBC底层本质还是阻塞型的调用。要实现真正的异步数据库操作，我们可以利用 [Vert.x MySQL / PostgreSQL Client](http://vertx.io/docs/vertx-mysql-postgresql-client/java/) 这个组件，底层使用Scala写的异步数据库操作库，不过目前功能还不是非常全，大家可以自己尝尝鲜。
 
 下面我们再来看一下`retrieveOne`方法，它从数据存储中获取特定ID的事件：
 
 ```java
 @Override
-public Observable<CartEvent> retrieveOne(Long id) {
-  return client.getConnectionObservable()
+public Single<Optional<CartEvent>> retrieveOne(Long id) {
+  return client.rxGetConnection()
     .flatMap(conn ->
-      conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id))
+      conn.rxQueryWithParams(RETRIEVE_STATEMENT, new JsonArray().add(id))
         .map(ResultSet::getRows)
-        .filter(list -> !list.isEmpty())
-        .map(res -> res.get(0))
-        .map(this::wrapCartEvent)
-        .doOnTerminate(conn::close)
+        .map(list -> {
+          if (list.isEmpty()) {
+            return Optional.<CartEvent>empty();
+          } else {
+            return Optional.of(list.get(0))
+              .map(this::wrapCartEvent);
+          }
+        })
+        .doAfterTerminate(conn::close)
     );
 }
 ```
@@ -936,11 +905,11 @@ public Observable<CartEvent> retrieveOne(Long id) {
 @Override
 public Observable<CartEvent> streamByUser(String userId) {
   JsonArray params = new JsonArray().add(userId).add(userId);
-  return client.getConnectionObservable()
-    .flatMap(conn ->
-      conn.queryWithParamsObservable(STREAM_STATEMENT, params)
+  return client.rxGetConnection()
+    .flatMapObservable(conn ->
+      conn.rxQueryWithParams(STREAM_STATEMENT, params)
         .map(ResultSet::getRows)
-        .flatMapIterable(item -> item) // list merge into observable
+        .flatMapObservable(Observable::from)
         .map(this::wrapCartEvent)
         .doOnTerminate(conn::close)
     );
@@ -962,9 +931,9 @@ ORDER BY c.created_at ASC;
 
 此SQL语句执行时会获取与当前购物车相关的所有购物车事件。注意到我们有许多用户，每个用户可能会有许多购物车事件，它们属于不同时间的购物车，那么如何来获取相关的事件呢？方法是 —— 首先我们获取最近一次“终结”事件发生对应的时间，那么当前购物车相关的购物车事件就是在此终结事件发生后所有的购物车事件。
 
-明白了这一点，我们再回到`streamByUser`方法中来。既然此方法是从数据库中获取一个事件列表，那么为什么此方法返回`Observable<CartEvent>`而不是`Observable<List<CartEvent>>`呢？我们来看看其中的奥秘 —— `flatMapIterable`操作，它将一个序列变换为一串数据流。所以，这里的`Observable<CartEvent>`与Vert.x中的`Future`以及Java 8中的`CompletableFuture`就有些不同了。`CompletableFuture`更像是RxJava中的`Single`，它仅仅发送一个值或一个错误信息，而`Observable`本身则就像是一个数据流，数据源源不断地从发布者流向订阅者。之前`retrieveOne`和`save`方法中返回的`Observable`的使用更像是一个`Single`，但是在`streamByUser`方法中，`Observable`是真真正正的事件数据流。我们将会在购物车服务`ShoppingCartService`中处理事件流。
+明白了这一点，我们再回到`streamByUser`方法中来。既然此方法是从数据库中获取一个事件列表，那么为什么此方法返回`Observable<CartEvent>`而不是`Observable<List<CartEvent>>`呢？我们来看看其中的奥秘 —— `flatMapIterable`操作，它将一个序列变换为一串数据流。你可以把`Observable`看作管道，数据源源不断地流入并被消费。所以，这里的`Observable<CartEvent>`与Java 8的`CompletableFuture`以及RxJava的`Single`就有些不同了。`CompletableFuture`更像是RxJava中的`Single`，它仅仅发送一个值或一个错误信息，而`Observable`本身则就像是一个数据流，数据源源不断地从发布者流向订阅者。我们将会在购物车服务`ShoppingCartService`中处理事件流。
 
-哇！现在你一定又被Rx这种函数响应式风格所吸引了～在下面的部分中，我们将探索购物车服务及其实现，基于`Future`，同样非常Reactive！
+现在你一定又被Rx这种函数响应式风格所吸引了～在下面的部分中，我们将探索购物车服务及其实现，基于`Future`，同样非常Reactive！
 
 ## 根据购物车事件序列构建对应的购物车状态
 

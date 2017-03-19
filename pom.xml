@@ -6,7 +6,7 @@
 
   <groupId>io.vertx.blueprint</groupId>
   <artifactId>vertx-blueprint-microservice</artifactId>
-  <version>1.0</version>
+  <version>3.4.1</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -26,7 +26,9 @@
   </modules>
 
   <properties>
-    <vertx.version>3.3.3</vertx.version>
+    <vertx.version>3.4.1</vertx.version>
+    <mysql.conn.version>6.0.5</mysql.conn.version>
+    <log4j.version>2.8</log4j.version>
 
     <!--overridden in each project packaged as a fat jar -->
     <main.verticle/>
@@ -55,21 +57,11 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
+      <artifactId>vertx-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
       <artifactId>vertx-service-proxy</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-lang-js</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-lang-ruby</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-codegen</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -78,11 +70,18 @@
 
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-web</artifactId>
+      <artifactId>vertx-codegen</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-hazelcast</artifactId>
+      <artifactId>vertx-lang-js</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-zookeeper</artifactId>
     </dependency>
 
     <!-- Microservice toolbox -->
@@ -94,27 +93,35 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-circuit-breaker</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-health-check</artifactId>
+    </dependency>
 
     <!-- Logging dependencies -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.12</version>
+      <version>1.7.22</version>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
-      <version>2.3</version>
+      <version>${log4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
-      <version>2.3</version>
+      <version>${log4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j-impl</artifactId>
-      <version>2.3</version>
+      <version>${log4j.version}</version>
     </dependency>
     <dependency>
       <groupId>biz.paluch.logging</groupId>
@@ -137,7 +144,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.3.0</version>
+      <version>3.6.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -149,7 +156,7 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
-      <version>3.0.0</version>
+      <version>3.0.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -171,7 +178,7 @@
               </annotationProcessors>
               <generatedSourcesDirectory>src/main/generated</generatedSourcesDirectory>
               <compilerArgs>
-                <arg>-AoutputDirectory=${project.basedir}/src/main</arg>
+                <arg>-Acodegen.output=${project.basedir}/src/main</arg>
               </compilerArgs>
             </configuration>
           </execution>
@@ -183,7 +190,7 @@
               </annotationProcessors>
               <generatedTestSourcesDirectory>src/test/generated</generatedTestSourcesDirectory>
               <compilerArgs>
-                <arg>-AoutputDirectory=${project.basedir}/src/test</arg>
+                <arg>-Acodegen.output=${project.basedir}/src/test</arg>
               </compilerArgs>
             </configuration>
           </execution>
@@ -195,7 +202,7 @@
       <plugins>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.1</version>
+          <version>3.6.1</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -205,7 +212,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>2.3</version>
+          <version>3.0.0</version>
           <executions>
             <execution>
               <phase>package</phase>

@@ -9,6 +9,9 @@ import io.vertx.ext.sql.ResultSet;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.jdbc.JDBCClient;
 import rx.Observable;
+import rx.Single;
+
+import java.util.Optional;
 
 
 /**
@@ -22,59 +25,64 @@ public class CartEventDataSourceImpl implements CartEventDataSource {
 
   public CartEventDataSourceImpl(io.vertx.core.Vertx vertx, JsonObject json) {
     this.client = JDBCClient.createNonShared(Vertx.newInstance(vertx), json);
-    client.getConnectionObservable()
+    // TODO: Should not init the table here.
+    client.rxGetConnection()
       .flatMap(connection ->
-        connection.executeObservable(INIT_STATEMENT)
-          .doOnTerminate(connection::close)
+        connection.rxExecute(INIT_STATEMENT)
+          .doAfterTerminate(connection::close)
       )
-      .toSingle()
       .subscribe();
   }
 
   @Override
   public Observable<CartEvent> streamByUser(String userId) {
     JsonArray params = new JsonArray().add(userId).add(userId);
-    return client.getConnectionObservable()
-      .flatMap(conn ->
-        conn.queryWithParamsObservable(STREAM_STATEMENT, params)
+    return client.rxGetConnection()
+      .flatMapObservable(conn ->
+        conn.rxQueryWithParams(STREAM_STATEMENT, params)
           .map(ResultSet::getRows)
-          .flatMapIterable(item -> item) // list merge into observable
+          .flatMapObservable(Observable::from)
           .map(this::wrapCartEvent)
           .doOnTerminate(conn::close)
       );
   }
 
   @Override
-  public Observable<Void> save(CartEvent cartEvent) {
+  public Single<Void> save(CartEvent cartEvent) {
     JsonArray params = new JsonArray().add(cartEvent.getCartEventType().name())
       .add(cartEvent.getUserId())
       .add(cartEvent.getProductId())
       .add(cartEvent.getAmount())
       .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
-    return client.getConnectionObservable()
-      .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params)
+    return client.rxGetConnection()
+      .flatMap(conn -> conn.rxUpdateWithParams(SAVE_STATEMENT, params)
         .map(r -> (Void) null)
-        .doOnTerminate(conn::close)
+        .doAfterTerminate(conn::close)
       );
   }
 
   @Override
-  public Observable<CartEvent> retrieveOne(Long id) {
-    return client.getConnectionObservable()
+  public Single<Optional<CartEvent>> retrieveOne(Long id) {
+    return client.rxGetConnection()
       .flatMap(conn ->
-        conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id))
+        conn.rxQueryWithParams(RETRIEVE_STATEMENT, new JsonArray().add(id))
           .map(ResultSet::getRows)
-          .filter(list -> !list.isEmpty())
-          .map(res -> res.get(0))
-          .map(this::wrapCartEvent)
-          .doOnTerminate(conn::close)
+          .map(list -> {
+            if (list.isEmpty()) {
+              return Optional.<CartEvent>empty();
+            } else {
+              return Optional.of(list.get(0))
+                .map(this::wrapCartEvent);
+            }
+          })
+          .doAfterTerminate(conn::close)
       );
   }
 
   @Override
-  public Observable<Void> delete(Long id) {
-    // This service is an append-only service, so delete is not allowed
-    return Observable.error(new RuntimeException("Delete is not allowed"));
+  public Single<Void> delete(Long id) {
+    // This service is an append-only service, so delete is not allowed.
+    return Single.error(new RuntimeException("Delete is not allowed"));
   }
 
   /**

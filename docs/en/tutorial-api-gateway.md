@@ -284,9 +284,13 @@ The given `client` is the HTTP client for corresponding service and `context` fo
 
 Then we can get the response in the response handler of `request` method. We can get the response body via `response.bodyHandler` method. As is mentioned above, if the status code corresponds to server error (5xx), we consider the request failed so the circuit breaker future should be failed as well (4). If the status code is well, we create a server response, set status code and headers (5), then write response to the user client (6). Don't forget to `complete` the circuit breaker future.
 
-Wow! A simple reverse proxy with failure handling is finished! Though this is a simple implementation, you may extend it for your concrete demand. Next let's see how to manage authentication.
+Wow! A simple reverse proxy with failure handling is finished! Though this is a simple implementation, you may extend it for your concrete demand. And of course you can use Nginx for reverse proxy and load balancing if you like!
+
+Next let's see how to manage authentication in the API Gateway.
 
 ## Authentication management
+
+> Note: this part will have a big change in next version.
 
 In this microservice blueprint, we use Keycloak as the security component. And with the help of Vert.x OAuth2, we can easily handle authentication with Keycloak in the routing context.
 
@@ -394,6 +398,8 @@ private void logoutHandler(RoutingContext context) {
 We just clear the context user with `clearUser` method, then destroy the current session and respond with *204* status.
 
 ## Simple heart beat check
+
+> Note: this part will have a big change in next version.
 
 In this API Gateway implementation, we have a very, very simple heart-beat check mechanism. Every REST endpoints have a route `/health` for health check (simply returns the status). The API Gateway send check requests to all REST endpoints for every `period`. In normal situations, health components will respond with **200 OK** status. If any of the endpoints fails, we consider this time of the health check failed and returns the failed services name.
 

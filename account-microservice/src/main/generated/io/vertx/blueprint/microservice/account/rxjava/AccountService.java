@@ -18,6 +18,7 @@ package io.vertx.blueprint.microservice.account.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import rx.Single;
 import java.util.List;
 import io.vertx.core.AsyncResult;
 import io.vertx.blueprint.microservice.account.Account;
@@ -33,15 +34,21 @@ import io.vertx.core.Handler;
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.account.AccountService original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.microservice.account.AccountService.class)
 public class AccountService {
 
-  final io.vertx.blueprint.microservice.account.AccountService delegate;
+  public static final io.vertx.lang.rxjava.TypeArg<AccountService> __TYPE_ARG = new io.vertx.lang.rxjava.TypeArg<>(
+    obj -> new AccountService((io.vertx.blueprint.microservice.account.AccountService) obj),
+    AccountService::getDelegate
+  );
 
+  private final io.vertx.blueprint.microservice.account.AccountService delegate;
+  
   public AccountService(io.vertx.blueprint.microservice.account.AccountService delegate) {
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.microservice.account.AccountService getDelegate() {
     return delegate;
   }
 
@@ -59,10 +66,10 @@ public class AccountService {
    * Initialize the persistence.
    * @return 
    */
-  public Observable<Void> initializePersistenceObservable() { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    initializePersistence(resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxInitializePersistence() { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      initializePersistence(fut);
+    }));
   }
 
   /**
@@ -81,10 +88,10 @@ public class AccountService {
    * @param account a account entity that we want to add
    * @return 
    */
-  public Observable<Void> addAccountObservable(Account account) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    addAccount(account, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxAddAccount(Account account) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      addAccount(account, fut);
+    }));
   }
 
   /**
@@ -103,10 +110,10 @@ public class AccountService {
    * @param id user account id
    * @return 
    */
-  public Observable<Account> retrieveAccountObservable(String id) { 
-    io.vertx.rx.java.ObservableFuture<Account> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveAccount(id, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Account> rxRetrieveAccount(String id) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveAccount(id, fut);
+    }));
   }
 
   /**
@@ -125,10 +132,10 @@ public class AccountService {
    * @param username username
    * @return 
    */
-  public Observable<Account> retrieveByUsernameObservable(String username) { 
-    io.vertx.rx.java.ObservableFuture<Account> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveByUsername(username, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Account> rxRetrieveByUsername(String username) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveByUsername(username, fut);
+    }));
   }
 
   /**
@@ -145,10 +152,10 @@ public class AccountService {
    * Retrieve all user accounts.
    * @return 
    */
-  public Observable<List<Account>> retrieveAllAccountsObservable() { 
-    io.vertx.rx.java.ObservableFuture<List<Account>> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveAllAccounts(resultHandler.toHandler());
-    return resultHandler;
+  public Single<List<Account>> rxRetrieveAllAccounts() { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveAllAccounts(fut);
+    }));
   }
 
   /**
@@ -167,10 +174,10 @@ public class AccountService {
    * @param account a account entity that we want to update
    * @return 
    */
-  public Observable<Account> updateAccountObservable(Account account) { 
-    io.vertx.rx.java.ObservableFuture<Account> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    updateAccount(account, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Account> rxUpdateAccount(Account account) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      updateAccount(account, fut);
+    }));
   }
 
   /**
@@ -189,10 +196,10 @@ public class AccountService {
    * @param id user account id
    * @return 
    */
-  public Observable<Void> deleteAccountObservable(String id) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    deleteAccount(id, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxDeleteAccount(String id) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      deleteAccount(id, fut);
+    }));
   }
 
   /**
@@ -209,10 +216,10 @@ public class AccountService {
    * Delete all user accounts from the persistence
    * @return 
    */
-  public Observable<Void> deleteAllAccountsObservable() { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    deleteAllAccounts(resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxDeleteAllAccounts() { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      deleteAllAccounts(fut);
+    }));
   }
 
 

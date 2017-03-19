@@ -66,11 +66,9 @@ public class OrderConverter {
       json.put("payId", obj.getPayId());
     }
     if (obj.getProducts() != null) {
-      json.put("products", new JsonArray(
-          obj.getProducts().
-              stream().
-              map(item -> item.toJson()).
-              collect(java.util.stream.Collectors.toList())));
+      JsonArray array = new JsonArray();
+      obj.getProducts().forEach(item -> array.add(item.toJson()));
+      json.put("products", array);
     }
     if (obj.getTotalPrice() != null) {
       json.put("totalPrice", obj.getTotalPrice());

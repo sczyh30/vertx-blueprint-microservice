@@ -18,6 +18,7 @@ package io.vertx.blueprint.microservice.order.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import rx.Single;
 import java.util.List;
 import io.vertx.blueprint.microservice.order.Order;
 import io.vertx.core.AsyncResult;
@@ -33,15 +34,21 @@ import io.vertx.core.Handler;
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.order.OrderService original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.microservice.order.OrderService.class)
 public class OrderService {
 
-  final io.vertx.blueprint.microservice.order.OrderService delegate;
+  public static final io.vertx.lang.rxjava.TypeArg<OrderService> __TYPE_ARG = new io.vertx.lang.rxjava.TypeArg<>(
+    obj -> new OrderService((io.vertx.blueprint.microservice.order.OrderService) obj),
+    OrderService::getDelegate
+  );
 
+  private final io.vertx.blueprint.microservice.order.OrderService delegate;
+  
   public OrderService(io.vertx.blueprint.microservice.order.OrderService delegate) {
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.microservice.order.OrderService getDelegate() {
     return delegate;
   }
 
@@ -59,10 +66,10 @@ public class OrderService {
    * Initialize the persistence.
    * @return 
    */
-  public Observable<Void> initializePersistenceObservable() { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    initializePersistence(resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxInitializePersistence() { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      initializePersistence(fut);
+    }));
   }
 
   /**
@@ -81,10 +88,10 @@ public class OrderService {
    * @param accountId account id
    * @return 
    */
-  public Observable<List<Order>> retrieveOrdersForAccountObservable(String accountId) { 
-    io.vertx.rx.java.ObservableFuture<List<Order>> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveOrdersForAccount(accountId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<List<Order>> rxRetrieveOrdersForAccount(String accountId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveOrdersForAccount(accountId, fut);
+    }));
   }
 
   /**
@@ -103,10 +110,10 @@ public class OrderService {
    * @param order order data object
    * @return 
    */
-  public Observable<Void> createOrderObservable(Order order) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    createOrder(order, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxCreateOrder(Order order) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      createOrder(order, fut);
+    }));
   }
 
   /**
@@ -125,10 +132,10 @@ public class OrderService {
    * @param orderId order id
    * @return 
    */
-  public Observable<Order> retrieveOrderObservable(Long orderId) { 
-    io.vertx.rx.java.ObservableFuture<Order> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveOrder(orderId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Order> rxRetrieveOrder(Long orderId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveOrder(orderId, fut);
+    }));
   }
 
 

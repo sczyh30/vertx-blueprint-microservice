@@ -21,7 +21,7 @@ public class ShoppingCart {
   private Map<String, Integer> amountMap = new HashMap<>();
 
   public ShoppingCart() {
-    // Empty constructor
+    // Empty constructor.
   }
 
   public ShoppingCart(JsonObject json) {
@@ -53,7 +53,7 @@ public class ShoppingCart {
   }
 
   public ShoppingCart incorporate(CartEvent cartEvent) {
-    // the cart event must be a add or remove command event
+    // The cart event must be a add or remove command event.
     boolean ifValid = Stream.of(CartEventType.ADD_ITEM, CartEventType.REMOVE_ITEM)
       .anyMatch(cartEventType ->
         cartEvent.getCartEventType().equals(cartEventType));

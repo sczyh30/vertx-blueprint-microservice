@@ -18,6 +18,7 @@ package io.vertx.blueprint.microservice.store.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import rx.Single;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.blueprint.microservice.store.Store;
@@ -32,15 +33,21 @@ import io.vertx.blueprint.microservice.store.Store;
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.microservice.store.StoreCRUDService original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.microservice.store.StoreCRUDService.class)
 public class StoreCRUDService {
 
-  final io.vertx.blueprint.microservice.store.StoreCRUDService delegate;
+  public static final io.vertx.lang.rxjava.TypeArg<StoreCRUDService> __TYPE_ARG = new io.vertx.lang.rxjava.TypeArg<>(
+    obj -> new StoreCRUDService((io.vertx.blueprint.microservice.store.StoreCRUDService) obj),
+    StoreCRUDService::getDelegate
+  );
 
+  private final io.vertx.blueprint.microservice.store.StoreCRUDService delegate;
+  
   public StoreCRUDService(io.vertx.blueprint.microservice.store.StoreCRUDService delegate) {
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.microservice.store.StoreCRUDService getDelegate() {
     return delegate;
   }
 
@@ -60,10 +67,10 @@ public class StoreCRUDService {
    * @param store store object
    * @return 
    */
-  public Observable<Void> saveStoreObservable(Store store) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    saveStore(store, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxSaveStore(Store store) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      saveStore(store, fut);
+    }));
   }
 
   /**
@@ -80,10 +87,10 @@ public class StoreCRUDService {
    * @param sellerId seller id, refers to an independent online store
    * @return 
    */
-  public Observable<Store> retrieveStoreObservable(String sellerId) { 
-    io.vertx.rx.java.ObservableFuture<Store> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    retrieveStore(sellerId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Store> rxRetrieveStore(String sellerId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      retrieveStore(sellerId, fut);
+    }));
   }
 
   /**
@@ -102,10 +109,10 @@ public class StoreCRUDService {
    * @param sellerId seller id, refers to an independent online store
    * @return 
    */
-  public Observable<Void> removeStoreObservable(String sellerId) { 
-    io.vertx.rx.java.ObservableFuture<Void> resultHandler = io.vertx.rx.java.RxHelper.observableFuture();
-    removeStore(sellerId, resultHandler.toHandler());
-    return resultHandler;
+  public Single<Void> rxRemoveStore(String sellerId) { 
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      removeStore(sellerId, fut);
+    }));
   }
 
 

@@ -3,7 +3,9 @@
 [![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-microservice.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-microservice)
 
 Vert.x blueprint application - A micro-shop microservice application developed with Vert.x.
-This repo is intended to be an illustration on how to develop microservice applications using Vert.x.
+This repo is intended to be an illustration on how to design microservice architecture and develop microservice applications using Vert.x.
+
+This blueprint works with Vert.x **3.4.1**.
 
 ## Content
 
@@ -18,7 +20,7 @@ This repo is intended to be an illustration on how to develop microservice appli
 - Circuit breaker
 - Polyglot persistence support
 - API gateway
-- Global authentication (OAuth 2 + Keycloak)
+- Global authentication (Local/OAuth 2)
 - Centralized logging using ELK stack
 - Monitoring
 

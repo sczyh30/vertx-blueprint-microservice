@@ -288,14 +288,10 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
 
 下面我们就可以在`request`方法的回应处理器(response handler)中获取请求回应。我们可以通过`response.bodyHandler`方法来获取response body。之前提到过，如果回应的状态对应服务器错误(5xx)，那么我们就认为请求失败，所以Circuit Breaker中的`future`也要标记为失败状态（4）。如果回应状态正常，那么我们就从`context`创建一个server response，设定状态以及HTTP Headers（5），然后调用`end`方法将结果回应至用户端（6）。最后不要忘记将`future`标记为完成状态。
 
-这样，一个带有错误处理功能的反向代理模块就完成了！当然这个反向代理实现的很简单，大家可以自行扩展让它支持任意的模式。当然也可以直接用Nginx做负载均衡和反向代理。
+这样，一个带有错误处理功能的反向代理模块就完成了！当然这个反向代理实现的很简单，大家可以自行扩展让它支持任意的模式，并且优化一下它的性能。当然我们也可以直接用Nginx做负载均衡和反向代理。
 
 下面我们来看一下如何进行权限管理。
 
 ## 权限管理
 
 请见英文版本：[Authentication management](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#authentication-management)。此部分在日后可能会有变动。
-
-## 简单的心跳检测
-
-请见英文版本：[Simple heart beat check](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#simple-heart-beat-check)。此部分在日后可能会有变动。

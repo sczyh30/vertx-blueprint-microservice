@@ -8,7 +8,7 @@ In this tutorial, we are going to explore a complete online shopping microservic
 What you are going to learn:
 
 - How to develop microservices with Vert.x
-- Asynchronous development model
+- Asynchronous development pattern
 - Reactive and functional pattern
 - Event sourcing pattern
 - Asynchronous RPC on the clustered event bus
@@ -17,12 +17,12 @@ What you are going to learn:
 - How to configure the microservice more flexibly
 - How to use Vert.x Circuit Breaker
 - How to implement a simple API Gateway
-- How to manage global authentication using OAuth 2 and Keycloak with Vert.x-Auth
+- How to manage global authentication using OAuth 2
 - How to configure and use SockJS - Event Bus Bridge
 
 And many more things too...
 
-This is the third part of **Vert.x Blueprint Project**. The entire code is available on [GitHub](https://github.com/sczyh30/vertx-blueprint-microservice/tree/master).
+This is the third part of [**Vert.x Blueprint Project**](http://vertx.io/blog/vert-x-blueprint-tutorials/). The entire code is available on [GitHub](https://github.com/sczyh30/vertx-blueprint-microservice/tree/master).
 
 # Introduction to microservice
 
@@ -897,18 +897,18 @@ First we judge the cart event type. If it is an `ADD_ITEM` or `REMOVE_ITEM` comm
 
 As we've created relevant data objects, it's time to see shopping cart event persistence service.
 
-Vert.x supports RxJava, and most of the components provide a Rx version. So here we implement the persistence service with Rx version of Vert.x JDBC. That is - the service is `Observable` based, so more reactive and functional!
+Vert.x supports RxJava, and most of the components provide a Rx version. So here we implement the persistence service with Rx version of Vert.x JDBC. That is - the service is `Single`/`Observable` based, so more reactive and functional!
 
 In our implementation, We designed a `SimpleCrudDataSource` interface as the base interface:
 
 ```java
 public interface SimpleCrudDataSource<T, ID> {
 
-  Observable<Void> save(T entity);
+  Single<Void> save(T entity);
 
-  Observable<T> retrieveOne(ID id);
+  Single<Optional<T>> retrieveOne(ID id);
 
-  Observable<Void> delete(ID id);
+  Single<Void> delete(ID id);
 
 }
 ```
@@ -929,23 +929,23 @@ Now let's see the implementation of the `CartEventDataSource` interface. First i
 
 ```java
 @Override
-public Observable<Void> save(CartEvent cartEvent) {
+public Single<Void> save(CartEvent cartEvent) {
   JsonArray params = new JsonArray().add(cartEvent.getCartEventType().name())
     .add(cartEvent.getUserId())
     .add(cartEvent.getProductId())
     .add(cartEvent.getAmount())
     .add(cartEvent.getCreatedAt() > 0 ? cartEvent.getCreatedAt() : System.currentTimeMillis());
-  return client.getConnectionObservable()
-    .flatMap(conn -> conn.updateWithParamsObservable(SAVE_STATEMENT, params)
+  return client.rxGetConnection()
+    .flatMap(conn -> conn.rxUpdateWithParams(SAVE_STATEMENT, params)
       .map(r -> (Void) null)
-      .doOnTerminate(conn::close)
+      .doAfterTerminate(conn::close)
     );
 }
 ```
 
 > Note: Don't forget to close the database connection.
 
-Do you feel it's more concise and reactive by contrast with callback-based common Vert.x JDBC? Of course! Using RxJava can bring us a more reactive way. We can easily get a connection with `getConnectionObservable` method, then use the connection to execute save sql statement with the given parameters. Only two lines! By contrast, you have to write this in the common Vert.x JDBC:
+Do you feel it's more concise and reactive by contrast with callback-based common Vert.x JDBC? Of course! Using RxJava can bring us a more reactive way. We can easily get a connection with `rxGetConnection` method, then use the connection to execute save sql statement with the given parameters. Only two lines! By contrast, you have to write this in the common Vert.x JDBC:
 
 ```java
 client.getConnection(ar -> {
@@ -969,15 +969,20 @@ Then let's see the `retrieveOne` method, which retrieves a cart event with certa
 
 ```java
 @Override
-public Observable<CartEvent> retrieveOne(Long id) {
-  return client.getConnectionObservable()
+public Single<Optional<CartEvent>> retrieveOne(Long id) {
+  return client.rxGetConnection()
     .flatMap(conn ->
-      conn.queryWithParamsObservable(RETRIEVE_STATEMENT, new JsonArray().add(id))
+      conn.rxQueryWithParams(RETRIEVE_STATEMENT, new JsonArray().add(id))
         .map(ResultSet::getRows)
-        .filter(list -> !list.isEmpty())
-        .map(res -> res.get(0))
-        .map(this::wrapCartEvent)
-        .doOnTerminate(conn::close)
+        .map(list -> {
+          if (list.isEmpty()) {
+            return Optional.<CartEvent>empty();
+          } else {
+            return Optional.of(list.get(0))
+              .map(this::wrapCartEvent);
+          }
+        })
+        .doAfterTerminate(conn::close)
     );
 }
 ```
@@ -992,11 +997,11 @@ Next let's see another important implementation - `streamByUser`:
 @Override
 public Observable<CartEvent> streamByUser(String userId) {
   JsonArray params = new JsonArray().add(userId).add(userId);
-  return client.getConnectionObservable()
-    .flatMap(conn ->
-      conn.queryWithParamsObservable(STREAM_STATEMENT, params)
+  return client.rxGetConnection()
+    .flatMapObservable(conn ->
+      conn.rxQueryWithParams(STREAM_STATEMENT, params)
         .map(ResultSet::getRows)
-        .flatMapIterable(item -> item) // list merge into observable
+        .flatMapObservable(Observable::from)
         .map(this::wrapCartEvent)
         .doOnTerminate(conn::close)
     );
@@ -1018,7 +1023,7 @@ ORDER BY c.created_at ASC;
 
 It retrieves all cart events relevant to current cart. There are many cart events of many users, and each user can have mutiple cart events of different cart, so how to identify? The approach is - First get create time of the most recent **terminal** event, then retrieve all cart events of the user after the time.
 
-So back to `streamByUser` method. From our explanation above, we know we'll get a list of events, but the method returns `Observable<CartEvent>`. Why? That is because we use a operator `flatMapIterable`, to transform the single result into streams. So it is different from the `Future` in Vert.x or `CompletableFuture` in Java. The `Future` is more like a `Single` in Rx, which always either emits one value or an error notification. And the previous usage of `Observable` in `retrieveOne` and `save` method also resembles a `Single`. But in `streamByUser`, the `Observable` result is really a sequence of event stream. We'll consume the event stream in the `ShoppingCartService`.
+So back to `streamByUser` method. From our explanation above, we know we'll get a list of events, but the method returns `Observable<CartEvent>`. Why? That is because we use a operator `flatMapIterable`, to transform the single result into streams. So it is different from the `Future` in Vert.x or `Single` in RxJava. The `Future` is more like a `Single` in Rx, which always either emits one value or an error notification. Here the `Observable` result is really a sequence of event stream. We'll consume the event stream in the `ShoppingCartService`.
 
 Wow, you must have been attracted by the reactive style in Rx! In the next section, we'll explore the implementation of `ShoppingCartService`, which is also reactive with future-based pattern.
 
