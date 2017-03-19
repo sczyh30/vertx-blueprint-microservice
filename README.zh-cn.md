@@ -2,7 +2,7 @@
 
 [![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-microservice.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-microservice)
 
-本蓝图对应的Vert.x版本为 **3.4.0**。
+本蓝图对应的Vert.x版本为 **3.4.1**。
 
 ## 内容
 
@@ -15,9 +15,9 @@
 - 各种各样的服务类型（例如REST、数据源、Event Bus服务等）
 - 服务发现 (Service Discovery)
 - 熔断器模式 (Circuit Breaker)
-- 多种存储方式支持 (RDBMS, MongoDB, Redis)
+- 多种存储方式支持 (MySQL/Redis)
 - API Gateway
-- 微服务权限认证 (OAuth 2 + Keycloak)
+- 微服务权限认证 (OAuth 2)
 - 集中化日志(ELK整合)
 - 微服务监控
 

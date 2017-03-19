@@ -7,7 +7,7 @@
   <parent>
     <groupId>io.vertx.blueprint</groupId>
     <artifactId>vertx-blueprint-microservice</artifactId>
-    <version>1.0</version>
+    <version>3.4.1</version>
   </parent>
 
   <artifactId>microservice-blueprint-common</artifactId>
@@ -21,11 +21,6 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-jdbc-client</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-config</artifactId>
       <optional>true</optional>
     </dependency>
 
