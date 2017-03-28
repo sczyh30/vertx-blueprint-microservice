@@ -81,7 +81,7 @@
 
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-zookeeper</artifactId>
+      <artifactId>vertx-hazelcast</artifactId>
     </dependency>
 
     <!-- Microservice toolbox -->

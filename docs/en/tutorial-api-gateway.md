@@ -262,6 +262,7 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
           toRsp.end(body); // (6)
           cbFuture.complete(); // (7)
         }
+        ServiceDiscovery.releaseServiceObject(discovery, client);
       });
     });
   // set headers
@@ -283,6 +284,8 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
 The given `client` is the HTTP client for corresponding service and `context` for current route context. We send a HTTP request with `client.request(method, path, handler)` method (1). Origin HTTP method and headers from the routing `context` should be kept in the client request (2). Here we should also pass the authentication data to the request, which we'll pay attention to in the next section. The request won't be sent until the `end` method is called, so we should call the `end` method to send the request (3). If the context request has body content, it should also be sent.
 
 Then we can get the response in the response handler of `request` method. We can get the response body via `response.bodyHandler` method. As is mentioned above, if the status code corresponds to server error (5xx), we consider the request failed so the circuit breaker future should be failed as well (4). If the status code is well, we create a server response, set status code and headers (5), then write response to the user client (6). Don't forget to `complete` the circuit breaker future.
+
+> Note: Don't forget to release the resources of the HTTP endpoint. We can call `ServiceDiscovery.releaseServiceObject(discovery, object)` method to release the resource.
 
 Wow! A simple reverse proxy with failure handling is finished! Though this is a simple implementation, you may extend it for your concrete demand. And of course you can use Nginx for reverse proxy and load balancing if you like!
 

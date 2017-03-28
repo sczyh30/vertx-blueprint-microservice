@@ -23,6 +23,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
 import io.vertx.servicediscovery.Record;
+import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 
@@ -173,6 +174,7 @@ public class APIGatewayVerticle extends RestAPIVerticle {
             toRsp.end(body);
             cbFuture.complete();
           }
+          ServiceDiscovery.releaseServiceObject(discovery, client);
         });
       });
     // set headers
@@ -328,7 +330,10 @@ public class APIGatewayVerticle extends RestAPIVerticle {
         future.compose(accountService -> {
           Future<Account> accountFuture = Future.future();
           accountService.retrieveByUsername(username, accountFuture.completer());
-          return accountFuture;
+          return accountFuture.map(a -> {
+            ServiceDiscovery.releaseServiceObject(discovery, accountService);
+            return a;
+          });
         })
           .setHandler(resultHandlerNonEmpty(context)); // if user does not exist, should return 404
       }
@@ -362,5 +367,4 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     final String host = config().getString("api.gateway.http.address.external", "localhost");
     return String.format("https://%s:%d", host, port);
   }
-
 }

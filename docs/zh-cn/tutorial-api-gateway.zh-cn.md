@@ -266,6 +266,7 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
           toRsp.end(body); // (6)
           cbFuture.complete(); // (7)
         }
+        ServiceDiscovery.releaseServiceObject(discovery, client);
       });
     });
   // set headers
@@ -287,6 +288,8 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
 `doDispatch`方法中接受的`client`即为前面我们选出的REST端点，`context`为API Gateway内对应的路由上下文。我们通过`client.request(method, path, handler)`方法来发送HTTP请求，这里需要指定HTTP Method以及请求相对路径（1）。为了对请求进行“完美转发”，原先请求的Header也需要保持（2）。并且这里如果用户已登录的话，我们还需要添加一个特殊的HTTP头`user-principal`来传递对应的用户凭证数据，在下面的章节我们将着重讲述。注意只有`end`的方法被调用的时候，请求才会被发出，因此我们需要调用`end`方法发送请求（3）。注意如果原先的请求body不为空的话，我们也需要对其进行原样转发。
 
 下面我们就可以在`request`方法的回应处理器(response handler)中获取请求回应。我们可以通过`response.bodyHandler`方法来获取response body。之前提到过，如果回应的状态对应服务器错误(5xx)，那么我们就认为请求失败，所以Circuit Breaker中的`future`也要标记为失败状态（4）。如果回应状态正常，那么我们就从`context`创建一个server response，设定状态以及HTTP Headers（5），然后调用`end`方法将结果回应至用户端（6）。最后不要忘记将`future`标记为完成状态。
+
+> 注意：不要忘记释放HTTP Client的资源！我们可以利用 `ServiceDiscovery.releaseServiceObject(discovery, object)` 函数来释放对应的资源。
 
 这样，一个带有错误处理功能的反向代理模块就完成了！当然这个反向代理实现的很简单，大家可以自行扩展让它支持任意的模式，并且优化一下它的性能。当然我们也可以直接用Nginx做负载均衡和反向代理。
 

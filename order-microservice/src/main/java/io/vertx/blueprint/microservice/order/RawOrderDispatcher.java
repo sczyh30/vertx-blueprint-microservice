@@ -7,6 +7,7 @@ import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
+import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.types.MessageSource;
 
@@ -105,6 +106,7 @@ public class RawOrderDispatcher extends BaseMicroserviceVerticle {
             } else {
               resultFuture.fail(response.statusMessage());
             }
+            ServiceDiscovery.releaseServiceObject(discovery, client);
           })
             .exceptionHandler(resultFuture::fail)
             .end();
