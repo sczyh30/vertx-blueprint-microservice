@@ -89,7 +89,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         return future;
       })
       .collect(Collectors.toList());
-    return Functional.sequenceFuture(futures);
+    return Functional.allOfFutures(futures);
   }
 
   /**

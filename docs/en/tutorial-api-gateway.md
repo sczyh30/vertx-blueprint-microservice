@@ -127,7 +127,9 @@ Then we create the route for dispatcher (reverse proxy) (10) and enable health c
 
 Well, that's done. Now it's time to explore each functionality~
 
-## Failure Orinted - using circuit breaker
+## Fault-tolerance support - using Circuit Breaker
+
+> Note: this part will have a big change in next version.
 
 Let's first consider how to deal with failure in the API gateway. Seeing that we uses `HTTP-HTTP` pattern, if the internal endpoints returns a server error(e.g. **500 Internal Error**), we can think this request as failed. So we can wrap the dispatch logic in the circuit breaker. Once a server error returns, or timeout reaches, the failure counter would increase. If the counter reaches the threshold, the circuit breaker will be open and reset timer starts. As a result, the API Gateway would not accept any requests - just return **502 Bad Gateway**. When the timer triggered, the gateway could allow next request dispatching. If this dispatch succeeds, circuit breaker will be closed and the gateway is recovered from the failure. If this continues to return error, then back to **open** again and wait for next recovery time.
 
@@ -152,6 +154,8 @@ circuitBreaker.execute(future -> {
 We'll see the details in the next section.
 
 ## Reverse Proxy - dispatching requests
+
+> Note: this part will have a big change in next version.
 
 A key part of the API Gateway is reverse proxy. Requests are sent to the API Gateway and then dispatched to corresponding endpoints. Here we make a convention to distinguish the route:
 
@@ -400,90 +404,6 @@ private void logoutHandler(RoutingContext context) {
 
 We just clear the context user with `clearUser` method, then destroy the current session and respond with *204* status.
 
-## Simple heart beat check
+## Heart beat check
 
 > Note: this part will have a big change in next version.
-
-In this API Gateway implementation, we have a very, very simple heart-beat check mechanism. Every REST endpoints have a route `/health` for health check (simply returns the status). The API Gateway send check requests to all REST endpoints for every `period`. In normal situations, health components will respond with **200 OK** status. If any of the endpoints fails, we consider this time of the health check failed and returns the failed services name.
-
-The logic of doing health check is also executed in the circuit breaker:
-
-```java
-private void initHealthCheck() {
-  if (config().getBoolean("heartbeat.enable", true)) { // by default enabled
-    int period = config().getInteger("heartbeat.period", DEFAULT_CHECK_PERIOD);
-    vertx.setPeriodic(period, t -> {
-      circuitBreaker.execute(future -> { // behind the circuit breaker
-        sendHeartBeatRequest().setHandler(future.completer());
-      });
-    });
-  }
-}
-```
-
-Let's see the implementation of `sendHeartBeatRequest` logic:
-
-```java
-private Future<Object> sendHeartBeatRequest() {
-  final String HEARTBEAT_PATH = config().getString("heartbeat.path", "/health");
-  return getAllEndpoints()
-    .compose(records -> {
-      List<Future<JsonObject>> statusFutureList = records.stream()
-        .filter(record -> record.getMetadata().getString("api.name") != null)
-        .map(record -> { // for each client, send heart beat request
-          String apiName = record.getMetadata().getString("api.name");
-          HttpClient client = discovery.getReference(record).get();
-
-          Future<JsonObject> future = Future.future();
-          client.get(HEARTBEAT_PATH, response -> {
-            future.complete(new JsonObject()
-              .put("name", apiName)
-              .put("status", healthStatus(response.statusCode()))
-            );
-          })
-            .exceptionHandler(future::fail)
-            .end();
-          return future;
-        })
-        .collect(Collectors.toList());
-      return Functional.sequenceFuture(statusFutureList); // get all responses
-    })
-    .compose(statusList -> {
-      boolean notHealthy = statusList.stream().anyMatch(status -> !status.getBoolean("status"));
-
-      if (notHealthy) {
-        String issues = statusList.stream().filter(status -> !status.getBoolean("status"))
-          .map(status -> status.getString("name"))
-          .collect(Collectors.joining(", "));
-
-        String err = String.format("Heart beat check fail: %s", issues);
-        // publish log
-        publishGatewayLog(err);
-        return Future.failedFuture(new IllegalStateException(err));
-      } else {
-        // publish log
-        publishGatewayLog("api_gateway_heartbeat_check_success");
-        return Future.succeededFuture("OK");
-      }
-    });
-}
-```
-
-We've seen a lot of `compose` again as the method is asynchronous and future-based, so very reactive!
-We first get all REST endpoints from the service discovery, then for each endpoints with valid `api.name`, get corresponding HTTP client, send a health check request, check response code and set the check result. Notice that all procedures are asynchronous so we get a `List<Future<JsonObject>>`. Now we need to get each result in the list, that is - convert the `List<Future<JsonObject>>` to a `Future<List<JsonObject>>`.
-How to do this? Here I implemented a helper method `sequenceFuture` to do this.  It's in the `Functional` class in `io.vertx.blueprint.microservice.common.functional` package:
-
-```java
-public static <R> Future<List<R>> sequenceFuture(List<Future<R>> futures) {
-  return CompositeFutureImpl.all(futures.toArray(new Future[futures.size()])) // (1)
-    .map(v -> futures.stream()
-        .map(Future::result) // (2)
-        .collect(Collectors.toList()) // (3)
-    );
-}
-```
-
-This method is useful for reducing a sequence of futures into a single `Future` with a list of the results. Here we first invoke `CompositeFutureImpl#all` method (1).
-It returns a composite future, succeeds only if every result is successful and fails when any result is failed. Then we transform each `Future` to the corresponding result (2) as the `all` method have forced each `Future` to get results. Finally we collect the result list (3).
-
-So now we've got a `Future` of `List<JsonObject>` and it's time to validate if any endpoint is not active using `anyMatch` operator. If any inactive endpoint exists, we need to collect the damaged endpoint name, publish the log and return a failed future. If all endpoints are active, we publish the success log and return a completed future.

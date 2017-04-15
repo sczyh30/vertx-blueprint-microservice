@@ -3,7 +3,6 @@ package io.vertx.blueprint.microservice.gateway;
 import io.vertx.blueprint.microservice.account.Account;
 import io.vertx.blueprint.microservice.account.AccountService;
 import io.vertx.blueprint.microservice.common.RestAPIVerticle;
-import io.vertx.blueprint.microservice.common.functional.Functional;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
@@ -29,7 +28,6 @@ import io.vertx.servicediscovery.types.HttpEndpoint;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * A verticle for global API gateway.
@@ -40,7 +38,6 @@ import java.util.stream.Collectors;
  */
 public class APIGatewayVerticle extends RestAPIVerticle {
 
-  private static final int DEFAULT_CHECK_PERIOD = 60000;
   private static final int DEFAULT_PORT = 8787;
 
   private static final Logger logger = LoggerFactory.getLogger(APIGatewayVerticle.class);
@@ -81,9 +78,6 @@ public class APIGatewayVerticle extends RestAPIVerticle {
 
     // api dispatcher
     router.route("/api/*").handler(this::dispatchRequests);
-
-    // init heart beat check
-    initHealthCheck();
 
     // static content
     router.route("/*").handler(StaticHandler.create());
@@ -207,72 +201,6 @@ public class APIGatewayVerticle extends RestAPIVerticle {
     discovery.getRecords(record -> record.getType().equals(HttpEndpoint.TYPE),
       future.completer());
     return future;
-  }
-
-  // heart beat check (very simple)
-
-  private void initHealthCheck() {
-    if (config().getBoolean("heartbeat.enable", true)) { // by default enabled
-      int period = config().getInteger("heartbeat.period", DEFAULT_CHECK_PERIOD);
-      vertx.setPeriodic(period, t -> {
-        circuitBreaker.execute(future -> { // behind the circuit breaker
-          sendHeartBeatRequest().setHandler(future.completer());
-        });
-      });
-    }
-  }
-
-  /**
-   * Send heart-beat check request to every REST node in every interval and await response.
-   *
-   * @return async result. If all nodes are active, the result will be assigned `true`, else the result will fail
-   */
-  private Future<Object> sendHeartBeatRequest() {
-    final String HEARTBEAT_PATH = config().getString("heartbeat.path", "/health");
-    return getAllEndpoints()
-      .compose(records -> {
-        List<Future<JsonObject>> statusFutureList = records.stream()
-          .filter(record -> record.getMetadata().getString("api.name") != null)
-          .map(record -> { // for each client, send heart beat request
-            String apiName = record.getMetadata().getString("api.name");
-            HttpClient client = discovery.getReference(record).get();
-
-            Future<JsonObject> future = Future.future();
-            client.get(HEARTBEAT_PATH, response -> {
-              future.complete(new JsonObject()
-                .put("name", apiName)
-                .put("status", healthStatus(response.statusCode()))
-              );
-            })
-              .exceptionHandler(future::fail)
-              .end();
-            return future;
-          })
-          .collect(Collectors.toList());
-        return Functional.sequenceFuture(statusFutureList); // get all responses
-      })
-      .compose(statusList -> {
-        boolean notHealthy = statusList.stream().anyMatch(status -> !status.getBoolean("status"));
-
-        if (notHealthy) {
-          String issues = statusList.stream().filter(status -> !status.getBoolean("status"))
-            .map(status -> status.getString("name"))
-            .collect(Collectors.joining(", "));
-
-          String err = String.format("Heart beat check fail: %s", issues);
-          // publish log
-          publishGatewayLog(err);
-          return Future.failedFuture(new IllegalStateException(err));
-        } else {
-          // publish log
-          publishGatewayLog("api_gateway_heartbeat_check_success");
-          return Future.succeededFuture("OK");
-        }
-      });
-  }
-
-  private boolean healthStatus(int code) {
-    return code == 200;
   }
 
   // log methods

@@ -57,6 +57,8 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
     allowHeaders.add("accept");
     Set<HttpMethod> allowMethods = new HashSet<>();
     allowMethods.add(HttpMethod.GET);
+    allowMethods.add(HttpMethod.PUT);
+    allowMethods.add(HttpMethod.OPTIONS);
     allowMethods.add(HttpMethod.POST);
     allowMethods.add(HttpMethod.DELETE);
     allowMethods.add(HttpMethod.PATCH);
@@ -64,22 +66,6 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
     router.route().handler(CorsHandler.create("*")
       .allowedHeaders(allowHeaders)
       .allowedMethods(allowMethods));
-  }
-
-  /**
-   * Enable simple heartbeat check mechanism via HTTP.
-   *
-   * @param router router instance
-   * @param config configuration object
-   */
-  protected void enableHeartbeatCheck(Router router, JsonObject config) {
-    router.get(config.getString("heartbeat.path", "/health"))
-      .handler(context -> {
-        JsonObject checkResult = new JsonObject()
-          .put("status", "UP");
-        context.response()
-          .end(checkResult.encode());
-      });
   }
 
   /**
@@ -104,7 +90,7 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
       ClusteredSessionStore.create(vertx, "shopping.user.session")));
   }
 
-  // auth helper method
+  // Auth helper method
 
   /**
    * Validate if a user exists in the request scope.
@@ -346,5 +332,4 @@ public abstract class RestAPIVerticle extends BaseMicroserviceVerticle {
       .putHeader("content-type", "application/json")
       .end(new JsonObject().put("error", cause).encodePrettily());
   }
-
 }

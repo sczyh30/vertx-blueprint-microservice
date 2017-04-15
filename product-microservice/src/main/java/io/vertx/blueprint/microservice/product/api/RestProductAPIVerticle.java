@@ -52,8 +52,6 @@ public class RestProductAPIVerticle extends RestAPIVerticle {
     router.delete(API_DELETE).handler(this::apiDelete);
     router.delete(API_DELETE_ALL).handler(context -> requireLogin(context, this::apiDeleteAll));
 
-    enableHeartbeatCheck(router, config());
-
     // get HTTP host and port from configuration, or use default value
     String host = config().getString("product.http.address", "0.0.0.0");
     int port = config().getInteger("product.http.port", 8082);

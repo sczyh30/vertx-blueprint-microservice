@@ -171,7 +171,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         .stream()
         .map(product -> getInventory(product, client))
         .collect(Collectors.toList());
-      return Functional.sequenceFuture(futures)
+      return Functional.allOfFutures(futures)
         .map(r -> {
           ServiceDiscovery.releaseServiceObject(discovery, client);
           return r;

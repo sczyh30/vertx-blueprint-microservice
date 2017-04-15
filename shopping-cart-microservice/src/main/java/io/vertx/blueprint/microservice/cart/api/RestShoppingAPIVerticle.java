@@ -46,8 +46,6 @@ public class RestShoppingAPIVerticle extends RestAPIVerticle {
 
     enableLocalSession(router);
 
-    enableHeartbeatCheck(router, config());
-
     // get HTTP host and port from configuration, or use default value
     String host = config().getString("shopping.cart.http.address", "0.0.0.0");
     int port = config().getInteger("shopping.cart.http.port", 8084);

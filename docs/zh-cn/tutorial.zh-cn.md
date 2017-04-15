@@ -677,6 +677,8 @@ public Future<Integer> retrieveInventoryForProduct(String productId) {
 
 # 事件溯源 - 购物车服务
 
+> 注：此部分在日后会有较大变动。
+
 好了，现在我们与基础服务模块告一段落了。下面我们来到了另一个重要的服务模块 —— 购物车微服务。此模块负责购物车的获取、购物车事件的添加以及结算功能。与传统的实现不同，这里我们要介绍一种不同的开发模式 —— 事件溯源(**Event Sourcing**)。
 
 ## 解道Event Sourcing
@@ -1415,6 +1417,8 @@ private void apiAddCartEvent(RoutingContext context, JsonObject principal) {
 ![Cart Page](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/spa-cart.png)
 
 # 订单服务
+
+> 注：此部分在日后会有较大变动。
 
 好啦！现在我们已经提交了结算请求，在底层订单已经发送至订单微服务组件中了。所以下一步自然就是订单服务的责任了 —— 分发订单以及处理订单。在当前版本的Micro Shop实现中，我们仅仅将订单存储至数据库中并变更对应的商品库存数额。在正常的生产环境中，我们通常会将订单push到消息队列中，并且在下层服务中从消息队列中pull订单并进行处理。
 

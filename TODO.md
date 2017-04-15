@@ -22,10 +22,7 @@
 
 - [ ] With Apache Kafka (message queue/streaming)
 - [ ] With Consul (service discovery/heartbeat check)
-- [ ] With Netflix Hystrix
 
 ## Container/Deployment
 
-- [ ] Kubernetes
 - [ ] Mesos
-- [ ] Openshift
