@@ -10,7 +10,12 @@
   <packaging>pom</packaging>
 
   <modules>
+    <!-- infrastructure components -->
     <module>microservice-blueprint-common</module>
+    <module>database-middleware</module>
+    <module>api-gateway</module>
+
+    <!-- service components -->
     <module>account-microservice</module>
     <module>product-microservice</module>
     <module>inventory-microservice</module>
@@ -19,7 +24,6 @@
     <module>payment-microservice</module>
     <module>order-microservice</module>
     <module>recommendation-microservice</module>
-    <module>api-gateway</module>
     <module>cache-infrastructure</module>
     <module>shopping-ui</module>
     <module>monitor-dashboard</module>

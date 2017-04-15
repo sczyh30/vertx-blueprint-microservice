@@ -5,15 +5,15 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.vertx.blueprint</groupId>
     <artifactId>vertx-blueprint-microservice</artifactId>
+    <groupId>io.vertx.blueprint</groupId>
     <version>3.4.1</version>
   </parent>
 
-  <artifactId>order-microservice</artifactId>
+  <artifactId>database-middleware</artifactId>
 
   <properties>
-    <main.verticle>io.vertx.blueprint.microservice.order.OrderVerticle</main.verticle>
+    <main.verticle>io.vertx.blueprint.microservice.middleware.DatabaseMiddlewareVerticle</main.verticle>
   </properties>
 
   <dependencies>
@@ -22,28 +22,7 @@
       <artifactId>microservice-blueprint-common</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>io.vertx.blueprint</groupId>
-      <artifactId>product-microservice</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-jdbc-client</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-kafka-client</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <version>${mysql.conn.version}</version>
-      <optional>true</optional>
-    </dependency>
   </dependencies>
 
   <build>
