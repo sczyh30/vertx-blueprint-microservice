@@ -7,6 +7,10 @@ This repo is intended to be an illustration on how to design microservice archit
 
 This blueprint works with Vert.x **3.4.1**.
 
+> Note: We are refactoring the whole architecture of the microservice blueprint.
+This can take a long time and the improved new version is expected to be released
+by the end of May. See [here](https://github.com/sczyh30/vertx-blueprint-microservice/issues/17) for details.
+
 ## Content
 
 - Microservice with Vert.x

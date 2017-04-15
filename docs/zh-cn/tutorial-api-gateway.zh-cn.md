@@ -23,7 +23,7 @@ API Gateway如此重要，因此如果引入它的话，必须保证其高可用
 
 # Circuit Breaker
 
-[Circuit Breaker](http://martinfowler.com/bliki/CircuitBreaker.html)是一个非常有用的用于处理错误的模式。它可以描述为三种状态：**关闭**、**开启** 以及 **半开启** 状态。默认情况下断路器为 **关闭** 状态。我们可以在断路器中执行一些逻辑，每当执行失败时，断路器中的失败次数计数器会自动续一次。一旦失败次数达到设定的阈值，断路器会**开启**。此时任何在断路器内的调用都会快速失败。同时，断路器中的重置定时器也会开始计时，这段时间用于给下层服务恢复的时间。当计时时间到的时候，断路器会变为 **半开启** 模式。在半开启模式下，断路器允许一定次数的调用，但是非常脆弱，只要出现调用失败的情况，断路器马上置为 **开启** 状态并进入下一个等待轮回。而如果所有调用都成功的话，断路器会认为服务已经恢复正常，所以会重置失败次数并且置为 **关闭** 状态。
+[Circuit Breaker](http://martinfowler.com/bliki/CircuitBreaker.html)（熔断器）是一个非常有用的容错机制。它可以描述为三种状态：**关闭**、**开启** 以及 **半开启** 状态。默认情况下断路器为 **关闭** 状态。我们可以在断路器中执行一些逻辑，每当执行失败时，断路器中的失败次数计数器会自动续一次。一旦失败次数达到设定的阈值，断路器会**开启**。此时任何在断路器内的调用都会快速失败。同时，断路器中的重置定时器也会开始计时，这段时间用于给下层服务恢复的时间。当计时时间到的时候，断路器会变为 **半开启** 模式。在半开启模式下，断路器允许一定次数的调用，但是非常脆弱，只要出现调用失败的情况，断路器马上置为 **开启** 状态并进入下一个等待轮回。而如果所有调用都成功的话，断路器会认为服务已经恢复正常，所以会重置失败次数并且置为 **关闭** 状态。
 
 Vert.x提供了现成的Circuit Breaker实现 —— [Vert.x Circuit Breaker](http://vertx.io/docs/vertx-circuit-breaker/java/)。在我们的API Gateway中，我们会使用Vert.x Circuit Breaker来进行错误处理。
 
@@ -31,18 +31,20 @@ Vert.x提供了现成的Circuit Breaker实现 —— [Vert.x Circuit Breaker](ht
 
 在本蓝图应用中，API Gateway作为一个单独的模块`api-gateway`出现。此模块中只有一个Verticle - `APIGatewayVerticle`。我们的API Gateway使用了`HTTPS - HTTP`模式进行通信，也就是说，API Gateway本身通过SSL加密，但是与其他组件的通信则是使用HTTP。
 
-正如之前我们提到的那样，API Gateway同时还负责：
+正如之前我们提到的那样，API Gateway 同时还负责：
 
 - 权限认证
 - 错误处理
 - 负载均衡
-- 简单的心跳检测
+- 协议适配
 
 > 注： 在Chris Richardson的 [Building Microservices: Using an API Gateway](https://www.nginx.com/blog/building-microservices-using-an-api-gateway) 文章中提到，API Gateway还负责服务的编排(orchestration)，即将几个REST API的结果组合成一个。这种观点的争议比较大，我们认为如果加入了服务编排，API Gateway就过于庞大，职责太多，不利于解耦，因此在本文API Gateway实现中我们并没有加入服务编排的内容。
 
+> 注：通常情况下，心跳检测应由服务治理模块负责。
+
 ## 总览
 
-我们首先通过探索其中最重要的方法 - `start`方法来对`APIGatewayVerticle`做个总览：
+我们首先通过探索其中最重要的方法 - `start` 方法来对 `APIGatewayVerticle` 做个总览：
 
 ```java
 @Override
@@ -131,9 +133,9 @@ protected void enableLocalSession(Router router) {
 
 好了，接下来我们来看看API Gateway的各个功能是如何设计和实现的～
 
-## 面向失败设计 — 基于断路器
+## 基于熔断器的容错机制
 
-我们的失败处理是基于Circuit Breaker的。考虑到我们使用`HTTP-HTTP`模式，如果请求内部的API端点得到的状态为服务器错误（如 **500 Internal Error**），我们就可以认为这次请求是失败的。我们在Circuit Breaker中执行分发请求的逻辑。一旦请求出现了错误，或者请求超时，Circuit Breaker中的失败次数就会增加。一旦次数达到设定的阈值，断路器就会开启，此时断路器不会处理任何的请求 —— 直接返回 **502 Bad Gateway** 状态。下面的过程可以参考上面Circuit Breaker的状态变换过程。
+我们的失败处理（容错机制）是基于Circuit Breaker的。考虑到我们使用 `HTTP-HTTP` 模式，如果请求内部的API端点得到的状态为服务器错误（如 **500 Internal Error**），我们就可以认为这次请求是失败的。我们在Circuit Breaker中执行分发请求的逻辑。一旦请求出现了错误，或者请求超时，Circuit Breaker中的失败次数就会增加。一旦次数达到设定的阈值，断路器就会开启，此时断路器不会处理任何的请求 —— 直接返回 **502 Bad Gateway** 状态。下面的过程可以参考上面Circuit Breaker的状态变换过程。
 
 我们可以用以下的伪代码来简单地描述上述过程：
 
@@ -297,4 +299,6 @@ private void doDispatch(RoutingContext context, String path, HttpClient client, 
 
 ## 权限管理
 
-请见英文版本：[Authentication management](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#authentication-management)。此部分在日后可能会有变动。
+请见英文版本：[Authentication management](http://sczyh30.github.io/vertx-blueprint-microservice/api-gateway.html#authentication-management)。
+
+> 注：此部分在日后会有较大变动。

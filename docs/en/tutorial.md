@@ -769,6 +769,8 @@ Finally, we need to identify `api.name` in `config.json`:
 
 # Event sourcing pattern - Shopping cart microservice
 
+> Note: this part will have a big change in next version.
+
 Well, as we've completed the journey with base backend components, let's step into another important backend component - `shopping-cart-microservice`. This component is responsible for shopping cart retrieve and checkout. Differently, the shopping cart service uses **Event Sourcing** rather than the traditional storage.
 
 ## Introduction to event sourcing
@@ -1190,6 +1192,8 @@ private Product getProductFromStream(List<Product> productList, String productId
 After constructing the `ProductTuple`, we set it to the given `ShoppingCart`  (6) and then return the cart future (7). Now we finally made a complete shopping cart!
 
 ## Checkout - generate order from shopping cart
+
+> Note: this part will have a big change in next version.
 
 Now that we have chosen our favorite products and the shopping cart is prepared, it's time to checkout! The `CheckoutService` interface only contains one method: `checkout`:
 
