@@ -38,8 +38,6 @@ public class RestStoreAPIVerticle extends RestAPIVerticle {
     router.get(API_RETRIEVE).handler(this::apiRetrieve);
     router.delete(API_CLOSE).handler(this::apiClose);
 
-    enableHeartbeatCheck(router, config());
-
     // get HTTP host and port from configuration, or use default value
     String host = config().getString("store.http.address", "0.0.0.0");
     int port = config().getInteger("store.http.port", 8085);
