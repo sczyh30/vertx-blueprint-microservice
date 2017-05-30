@@ -7,14 +7,14 @@ services:
     volumes:
       - ${DIR}/config-server:/usr/local/apache2/htdocs:ro
   mysql:
-    image: mysql:5.7
+    image: mysql:latest
     expose:
       - "3306"
     environment:
       - MYSQL_ROOT_PASSWORD=666666
       - MYSQL_DATABASE=vertx_blueprint
   mongo:
-    image: mongo:3.3
+    image: mongo:latest
     expose:
       - "27017"
   keycloak-server:
@@ -67,10 +67,8 @@ services:
       - config-server
       - redis
       - logstash
-#    expose:
-#      - "8086"
-    ports:
-      - "8086:8086"
+    expose:
+      - "8086"
   product-microservice:
     image: vertx-blueprint/product-microservice
     links:

@@ -106,7 +106,6 @@ public class RawOrderDispatcher extends BaseMicroserviceVerticle {
             } else {
               resultFuture.fail(response.statusMessage());
             }
-            ServiceDiscovery.releaseServiceObject(discovery, client);
           })
             .exceptionHandler(resultFuture::fail)
             .end();
@@ -120,6 +119,7 @@ public class RawOrderDispatcher extends BaseMicroserviceVerticle {
         } else {
           future.fail(ar.cause());
         }
+        ServiceDiscovery.releaseServiceObject(discovery, client); // Release the resources.
       });
       return future;
     });

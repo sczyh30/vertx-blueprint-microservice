@@ -247,7 +247,8 @@ public class APIGatewayVerticle extends RestAPIVerticle {
   private void authUaaHandler(RoutingContext context) {
     if (context.user() != null) {
       JsonObject principal = context.user().principal();
-      String username = KeycloakHelper.preferredUsername(principal);
+      String username = null;  // TODO: Only for demo. Complete this in next version.
+      // String username = KeycloakHelper.preferredUsername(principal);
       if (username == null) {
         context.response()
           .putHeader("content-type", "application/json")
