@@ -12,9 +12,6 @@ This component provides a monitor dashboard web UI to inspect the status of the 
 
 ## Build
 
-First enter the `src/main/resources/webroot` directory
-and execute `bower install` command to prepare frontend resources.
+build the code using maven:
 
-Then build the code:
-
-    mvn clean install
+    mvn clean install -P front

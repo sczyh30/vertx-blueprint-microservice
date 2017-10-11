@@ -1746,16 +1746,11 @@ And for Docker Machine users, memory might be an issue as well. If applications 
 
 ## Build the code and containers
 
-Before we build the code, we have to install the frontend dependencies with **bower** for `api-gateway` and `monitor-dashboard` component. Enter to each `src/main/resources/webroot` directory and execute:
+
+Build the code using maven:
 
 ```
-bower install
-```
-
-Then we can build the code:
-
-```
-mvn clean install -Dmaven.test.skip=true
+mvn clean install -P front -Dmaven.test.skip=true
 ```
 
 After that, we build all Docker containers:

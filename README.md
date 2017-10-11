@@ -45,16 +45,10 @@ Detailed tutorials are available here!
   
 ## Build/Run
 
-First, for `api-gateway` and `monitor-dashboard` component, you have to enter the `src/main/resources/webroot` directory and install the frontend dependencies with **bower**:
+Build the code using maven:
 
 ```
-bower install
-```
-
-Then build the code:
-
-```
-mvn clean install -Dmaven.test.skip=true
+mvn clean install -P front -Dmaven.test.skip=true
 ```
 
 To run the microservice with Docker Compose, please refer to the [running instruction](http://www.sczyh30.com/vertx-blueprint-microservice/index.html#show-time-).
