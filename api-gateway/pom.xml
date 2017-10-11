@@ -44,4 +44,18 @@
     </plugins>
   </build>
 
+  <profiles>
+    <profile>
+      <id>front</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>

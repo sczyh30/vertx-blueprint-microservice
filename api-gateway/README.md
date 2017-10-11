@@ -16,5 +16,5 @@ In current version, the SPA frontend is also integrated in the API gateway.
 
 ## Build
 
-    mvn clean install
+    mvn clean install -P front
 
