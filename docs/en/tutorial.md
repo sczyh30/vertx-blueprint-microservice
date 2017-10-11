@@ -1777,45 +1777,16 @@ When the entire microservice is running successful, we can visit the shop SPA in
 
 ## Some configuration for the first time
 
-If we run the microservice for the first time, we must configure the **Keycloak** server manually. First we need to map the `keycloak-server` to the local host. Modify the `hosts` file (for Linux it's in `/etc` directory) and add:
+If we run the microservice for the first time, we need to map the `keycloak-server` to the local host. Modify the `hosts` file (for Linux it's in `/etc` directory) and add:
 
 ```
 0.0.0.0	keycloak-server
 ```
 
-Then we should visit `http://keycloak-server:8080` and enter the admin console. By default the user and password is all **admin**. Now we enter into the admin dashboard. First we should create a new realm with any name. Then in this realm, we create a new client like this:
-
-![Keycloak configuration](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-microservice/master/docs/images/keycloak-client-config.png)
-
-After created, we shep into the **Installation** tab and copy the JSON configuration. Replace the corresponding part of `api-gateway/src/config/docker.json` file with the copied configuration. For example:
-
-```json
-{
-  "api.gateway.http.port": 8787,
-  "api.gateway.http.address": "localhost",
-  "circuit-breaker": {
-    "name": "api-gateway-cb",
-    "timeout": 10000,
-    "max-failures": 5
-  },
-  // from here is the config of keycloak
-  "realm": "Vert.x",
-  "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkto9ZZm69cmdA9e7X4NUSo8T4CyvrYzlRiJdhr+LMqELdfN3ghEY0EBpaROiOueva//iUc/KViYGiAHVXEQ3nr3kytF6uZs9iwqkshKvltpxkOm2Qpj/FSRsCyHlB8Ahbt5xBmzH2mI1VDIxmVTdEBze4u6tLoi4ieo72b2q/dz09yrEokRm/sSYqzNgfE0i1JY6DI8C7FaKszKTK5DRGMIAib8wURrTyf8au0iiisKEXOHKEjo/g0uHCFGSOKqPOprNNIWYwedV+qaQa9oSah2IpwNgFNRLtHpvbcanftMLQOQIR0iufIJ+bHrNhH0RISZhTzcGX3pSIBw/HaERwQIDAQAB",
-  "auth-server-url": "http://127.0.0.1:8180/auth",
-  "ssl-required": "external",
-  "resource": "vertx-blueprint",
-  "credentials": {
-    "secret": "ea99a8e6-f503-4bdb-afbd-9ae322ee7089"
-  },
-  "use-resource-role-mappings": true
-}
-```
-
-You should also create a user or allow user register so that you can login as the user later.
+Then we should visit `http://keycloak-server:8080` and enter the admin console. By default the user and password is all **admin**. Now we enter into the admin dashboard.
+at the first startup a realm named "Vert.x" is created automatically, it contain a unique user named **john** with password **a**
 
 For the details of configuring Keycloak, here is a wonderful tutorial: [Vertx 3 and Keycloak tutorial](http://vertx.io/blog/vertx-3-and-keycloak-tutorial/).
-
-After modifying the config file, you have to rebuild the container of `api-gateway` and then restart with `docker-compose`.
 
 ## Enjoy our shopping!
 

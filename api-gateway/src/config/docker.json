@@ -8,12 +8,11 @@
     "max-failures": 5
   },
   "realm": "Vert.x",
-  "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArFhuwIVRXG3RqtpS6JH7tCTt1iQv+Muqx+o+7/7KeLE0LTbXhOGcRcWoIkgQXKLE0wTYecJr6rLB3j/eWOFIKeYdrjBbVCInE0oJ2monrV0kPb2giCWrRcpDa6vwsUAOAWZ4HN5HHXu3RD/AFgictbkKQXl3AA1g7CU47gAiE5nxNh/vIVR+o5TBjyady0Sc5eXBZSGkSo1Aw1T7yDbGcuNhztBZ8bURDSBCP5GMXF9bhnln4rcT7PPiuNVbMbGIDs/qaPWAInUNGZUq9SmC/4kLV5YCEIavj3w+gA66nf+iJEKM7FEGCdULlomQHRUhYjmXNrSLMiR1JyNZPWBi9QIDAQAB",
   "auth-server-url": "http://keycloak-server:8080/auth",
-  "ssl-required": "external",
+  "ssl-required": "none",
   "resource": "vertx-blueprint",
   "credentials": {
-    "secret": "0c5a42df-48ce-40e3-986c-06bd4e91fadb"
+    "secret": "d822ebca-69ae-4fc0-9848-c347b2d4f69a"
   },
   "use-resource-role-mappings": true
 }

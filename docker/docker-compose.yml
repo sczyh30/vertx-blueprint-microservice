@@ -19,6 +19,14 @@ services:
       - "27017"
   keycloak-server:
     image: jboss/keycloak:latest
+    command: >
+        -b 0.0.0.0 \
+        -Dkeycloak.migration.action=import \
+        -Dkeycloak.migration.provider=singleFile \
+        -Dkeycloak.migration.file=/mnt/config-keycloak/keycloak-import.json \
+        -Dkeycloak.migration.strategy=IGNORE_EXISTING
+    volumes:
+      - ${DIR}/config-server/config-keycloak:/mnt/config-keycloak
     ports:
       - "8080:8080"
     environment:
