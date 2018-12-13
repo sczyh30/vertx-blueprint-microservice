@@ -256,7 +256,7 @@ vertxApp.controller('HeaderCtrl', ['$scope', '$http', '$rootScope', '$location',
         $rootScope.authenticated = true;
         $rootScope.user = data;
       }).error(() => {
-        scope.user = {};
+        $scope.user = {};
         $rootScope.authenticated = false;
       });
     };
